@@ -103,6 +103,7 @@ class YouTubeService:
         if not yt_id:
             raise ValueError("Could not extract YouTube ID")
 
+        # pyrefly: ignore [missing-import]
         from youtube_transcript_api import YouTubeTranscriptApi
         import json
 
