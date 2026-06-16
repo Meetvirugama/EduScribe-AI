@@ -15,11 +15,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     
     # Storage
-    UPLOAD_DIR: str = "storage/uploads"
-    OUTPUT_DIR: str = "storage/outputs"
-    TEMP_DIR: str = "storage/temp"
-    TRANSCRIPT_DIR: str = "storage/transcripts"
-    EMBEDDING_DIR: str = "storage/embeddings"
+    UPLOAD_DIR: str = "../storage/uploads"
+    OUTPUT_DIR: str = "../storage/outputs"
+    TEMP_DIR: str = "../storage/temp"
+    TRANSCRIPT_DIR: str = "../storage/transcripts"
+    EMBEDDING_DIR: str = "../storage/embeddings"
     
     # AI Models
     WHISPER_MODEL: str = "base"

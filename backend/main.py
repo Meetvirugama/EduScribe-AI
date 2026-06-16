@@ -17,8 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs("storage", exist_ok=True)
-app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+os.makedirs("../storage", exist_ok=True)
+app.mount("/storage", StaticFiles(directory="../storage"), name="storage")
 
 @app.get("/health")
 async def health_check():
