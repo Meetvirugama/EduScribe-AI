@@ -6,29 +6,39 @@ export default function UploadModal({ onClose, onSuccess }) {
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [retentionDays, setRetentionDays] = useState(7);
   const { token } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
     
     try {
+      let res;
       if (tab === 'upload') {
-        if (!file) return;
+        if (!file) {
+          setErrorMsg('Please select a file.');
+          setLoading(false);
+          return;
+        }
         const formData = new FormData();
         formData.append('file', file);
         formData.append('retention_days', retentionDays);
         
-        const res = await fetch('http://localhost:5001/videos/upload', {
+        res = await fetch('http://localhost:5001/videos/upload', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData,
         });
-        if (res.ok) onSuccess();
       } else {
-        if (!url) return;
-        const res = await fetch('http://localhost:5001/videos/youtube', {
+        if (!url) {
+          setErrorMsg('Please enter a YouTube URL.');
+          setLoading(false);
+          return;
+        }
+        res = await fetch('http://localhost:5001/videos/youtube', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -36,10 +46,21 @@ export default function UploadModal({ onClose, onSuccess }) {
           },
           body: JSON.stringify({ url, retention_days: retentionDays }),
         });
-        if (res.ok) onSuccess();
+      }
+      
+      if (res.ok) {
+        onSuccess();
+      } else {
+        if (res.status === 401) {
+          setErrorMsg('Your session has expired. Please log out and log back in.');
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setErrorMsg(data.detail || 'Failed to add content. Please try again.');
+        }
       }
     } catch (err) {
       console.error(err);
+      setErrorMsg('A network error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -62,6 +83,11 @@ export default function UploadModal({ onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {errorMsg && (
+            <div style={{ padding: '0.75rem', marginBottom: '1rem', background: '#DC2626', color: 'white', borderRadius: '6px', fontSize: '0.9rem' }}>
+              {errorMsg}
+            </div>
+          )}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#D1D5DB' }}>Retention Policy</label>
             <select 

@@ -24,6 +24,36 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eduscribe_backend
+    ports:
+      - "5001:5001"
+    environment:
+      - REDIS_URL=redis://eduscribe_redis:6379/0
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/storage:/app/storage
+      - paddlex_models:/root/.paddlex
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eduscribe_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
+  paddlex_models:

@@ -2,17 +2,18 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, BackgroundTasks,
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from core.database import get_db
-from core.config import settings
 from core.security import get_current_user
 from models.user import User
 from models.video import Video, VideoStatus, SourceType
 from models.transcript import Transcript
-from schemas.video import VideoResponse, YoutubeRequest, VideoUpdateRetention
+from schemas.video import VideoResponse, YoutubeRequest
 from services import storage_service
 from tasks import process_video_pipeline_async
 import uuid
 import os
 import json
+import glob
+from services.vision.frame_extractor import frame_extractor_service
 
 router = APIRouter(prefix="/videos", tags=["Videos"])
 
@@ -235,6 +236,22 @@ async def delete_video(
     except Exception:
         pass
         
+    # Delete extracted frames from disk
+    await frame_extractor_service.delete_frames_for_video(video_id)
+    
+    # Clean up any lingering temporary files (e.g. .ytdl parts or .wav files)
+    from core.config import settings
+    for temp_file in glob.glob(f"{settings.TEMP_DIR}/*{video_id}*"):
+        try:
+            os.remove(temp_file)
+        except Exception:
+            pass
+    for upload_file in glob.glob(f"{settings.UPLOAD_DIR}/*{video_id}*"):
+        try:
+            os.remove(upload_file)
+        except Exception:
+            pass
+
     await db.delete(video)
     await db.commit()
     

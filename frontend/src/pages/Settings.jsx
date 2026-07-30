@@ -102,6 +102,7 @@ export default function Settings() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {videos.length > 0 ? videos.map(v => {
               const expiresDate = new Date(new Date(v.created_at).getTime() + (v.retention_days * 86400000));
+              // eslint-disable-next-line react-hooks/purity
               const daysLeft = Math.ceil((expiresDate.getTime() - Date.now()) / 86400000);
               const isUrgent = daysLeft <= 2;
               

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UploadModal from '../components/UploadModal';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +10,7 @@ export default function Dashboard() {
   const { token } = useAuth();
   const navigate = useNavigate();
 
-  const fetchVideos = async () => {
+  const fetchVideos = useCallback(async () => {
     if (!token) return;
     try {
       const res = await fetch('http://localhost:5001/videos', {
@@ -23,9 +23,9 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to fetch videos", err);
     }
-  };
+  }, [token]);
   
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     if (!token) return;
     try {
       const res = await fetch('http://localhost:5001/videos/analytics', {
@@ -38,7 +38,7 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to fetch analytics", err);
     }
-  };
+  }, [token]);
 
   const deleteVideo = async (id) => {
     if (!token) return;
@@ -60,6 +60,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchVideos();
     fetchAnalytics();
     const interval = setInterval(() => {
@@ -67,7 +68,7 @@ export default function Dashboard() {
         fetchAnalytics();
     }, 5000); 
     return () => clearInterval(interval);
-  }, [token]);
+  }, [fetchVideos, fetchAnalytics]);
 
   return (
     <div className="dashboard-container" style={{ padding: '2rem' }}>

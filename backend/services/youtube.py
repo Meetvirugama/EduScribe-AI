@@ -32,7 +32,7 @@ class YouTubeService:
                 }
         try:
             return await asyncio.to_thread(_fetch, base_ydl_opts)
-        except Exception as e:
+        except Exception:
             # Fallback to cookies if metadata fetch is blocked
             opts = dict(base_ydl_opts)
             opts['cookiesfrombrowser'] = ('chrome',)
@@ -75,13 +75,13 @@ class YouTubeService:
             return await asyncio.to_thread(_download, opts)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
-        except Exception as first_error:
+        except Exception:
             # Second attempt: Chrome cookies
             try:
                 opts = dict(base_ydl_opts)
                 opts['cookiesfrombrowser'] = ('chrome',)
                 return await asyncio.to_thread(_download, opts)
-            except Exception as second_error:
+            except Exception:
                 # If both fail, raise the protection error
                 raise Exception("youtube_bot_protection")
 

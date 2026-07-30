@@ -1,13 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routers import video, auth
+from api.routers import frames as frames_router
 from fastapi.staticfiles import StaticFiles
+import logging
 import os
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 app = FastAPI(title="EduScribe AI Phase 1 API")
 
 app.include_router(video.router)
 app.include_router(auth.router)
+app.include_router(frames_router.router)
 
 app.add_middleware(
     CORSMiddleware,
