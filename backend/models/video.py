@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -44,6 +44,8 @@ class Video(Base):
     error_message = Column(String, nullable=True)
     retention_days = Column(Integer, default=7)
     expires_at = Column(DateTime, nullable=True)
+    # Populated at upload time; used for O(1) SQL SUM in /videos/storage
+    file_size_bytes = Column(BigInteger, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

@@ -306,20 +306,36 @@ class VisionPipeline:
         """
         Deletes the physical files for frames that did not pass the selection criteria.
         Long videos create many temporary images which fill up disk space quickly.
+        
+        Frame paths are stored as web-relative paths (e.g. storage/frames/vid/file.jpg).
+        We resolve them to absolute OS paths before deletion.
         """
+        from core.config import settings
+        import re
+
+        def _abs(web_path: str) -> str:
+            """Convert web-relative path to absolute path using FRAMES_DIR base."""
+            if not web_path:
+                return ""
+            # web_path looks like: storage/frames/{video_id}/scene_xxx.jpg
+            # Resolve via the project storage root, two levels up from backend/
+            storage_root = os.path.normpath(os.path.join(os.path.dirname(settings.FRAMES_DIR), ".."))
+            return os.path.join(storage_root, web_path)
+
         selected_paths = {f.get("frame_path") for f in selected_frames if f.get("is_selected")}
         all_paths = {f.get("frame_path") for f in all_frames}
-        
+
         unselected_paths = all_paths - selected_paths
         deleted = 0
-        for path in unselected_paths:
-            if path and os.path.exists(path):
+        for web_path in unselected_paths:
+            abs_path = _abs(web_path)
+            if abs_path and os.path.exists(abs_path):
                 try:
-                    os.remove(path)
+                    os.remove(abs_path)
                     deleted += 1
                 except Exception as e:
-                    logger.debug("Failed to delete unused frame %s: %s", path, e)
-                    
+                    logger.debug("Failed to delete unused frame %s: %s", abs_path, e)
+
         logger.info("Cleaned up %d unused frame files.", deleted)
 
 

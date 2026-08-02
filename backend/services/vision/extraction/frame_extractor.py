@@ -108,7 +108,7 @@ class FrameExtractorService:
 
         try:
             for scene in scenes:
-                frame_info = self._extract_best_from_scene(cap, scene, output_dir)
+                frame_info = self._extract_best_from_scene(cap, scene, output_dir, video_id)
                 if frame_info:
                     extracted.append(frame_info)
         finally:
@@ -121,6 +121,7 @@ class FrameExtractorService:
         cap: cv2.VideoCapture,
         scene: Dict[str, Any],
         output_dir: str,
+        video_id: str = "",
     ) -> Optional[Dict[str, Any]]:
         """
         Adaptive Frame Extraction Strategy:
@@ -193,10 +194,15 @@ class FrameExtractorService:
             return None
 
         # Step 4: Return metadata with cached blur_score
+        # Store frame_path as a web-relative path so the frontend can construct a
+        # correct URL as: `http://localhost:5001/${frame.frame_path}`
+        # e.g. "storage/frames/{video_id}/scene_0001_12345.jpg"
+        # We store the absolute path separately for internal file-system ops.
+        web_relative_path = os.path.join("storage", "frames", video_id, filename)
         return {
             "scene_number": scene_num,
             "timestamp_ms": best_ts_ms,
-            "frame_path": frame_path,
+            "frame_path": web_relative_path,
             "duration_ms": duration_ms,
             "blur_score": round(best_score, 4),
             "blur_checked": True

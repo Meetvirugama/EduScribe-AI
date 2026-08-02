@@ -1,26 +1,54 @@
 """
-In-memory cache for OCR results.
+In-memory LRU cache for OCR results.
+
+Uses cachetools.LRUCache to cap memory usage at 500 entries.
+Without eviction, the cache grows unboundedly for long videos
+with hundreds of frames (50–200MB of accumulated OCR data).
+
+LRU eviction automatically removes the least-recently-used entries
+when the cache is full, keeping memory predictable.
 """
 from typing import Dict, Any, Optional
 
+try:
+    from cachetools import LRUCache
+    _backend = LRUCache(maxsize=500)
+    _HAS_CACHETOOLS = True
+except ImportError:
+    # Graceful fallback: plain dict (unbounded) if cachetools not installed yet
+    _backend = {}
+    _HAS_CACHETOOLS = False
+
+
 class OCRCache:
     """
-    In-memory cache to prevent redundant OCR inference on identical paths.
-    
-    # OCR results are cached because visual ranking may happen multiple
-    # times during processing. Re-running OCR would unnecessarily increase
-    # GPU utilization.
+    Thread-safe LRU cache for OCR results.
+
+    OCR results are cached because visual ranking may trigger re-runs
+    during processing. Re-running OCR on the same frame would unnecessarily
+    increase GPU/CPU utilization.
+
+    With LRU eviction (maxsize=500), the cache holds at most 500 frame
+    results before evicting the oldest unused entries, preventing the
+    unbounded memory growth seen with plain dicts in long-video processing.
     """
-    def __init__(self):
-        self._cache = {}
 
     def get(self, frame_path: str) -> Optional[Dict[str, Any]]:
-        return self._cache.get(frame_path)
+        return _backend.get(frame_path)
 
-    def set(self, frame_path: str, data: Dict[str, Any]):
-        self._cache[frame_path] = data
+    def set(self, frame_path: str, data: Dict[str, Any]) -> None:
+        _backend[frame_path] = data
 
-    def clear(self):
-        self._cache.clear()
+    def clear(self) -> None:
+        _backend.clear()
+
+    @property
+    def size(self) -> int:
+        return len(_backend)
+
+    @property
+    def maxsize(self) -> int:
+        return getattr(_backend, "maxsize", -1)
+
 
 ocr_cache = OCRCache()

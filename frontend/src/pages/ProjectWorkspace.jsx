@@ -1,8 +1,80 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Video, Clock, Upload, Database, Languages, Zap, FileText, ChevronLeft, ScanText, PlayCircle } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import './ProjectWorkspace.css';
+
+/**
+ * VirtualTranscript — renders only the visible transcript segments.
+ *
+ * A naive Array.map() on 10,000+ transcript segments creates 10,000 DOM nodes,
+ * causing significant render lag on long lectures. @tanstack/react-virtual
+ * renders only the ~20-30 rows visible in the viewport, keeping DOM size O(1).
+ */
+function VirtualTranscript({ transcript }) {
+  const parentRef = useRef(null);
+  const segments = Array.isArray(transcript)
+    ? transcript
+    : transcript?.segments ?? [];
+
+  const rowVirtualizer = useVirtualizer({
+    count: segments.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 72,       // estimated px height per segment
+    overscan: 10,                  // render 10 extra rows above/below viewport
+  });
+
+  if (!transcript) {
+    return (
+      <div className="pw-transcript-loading">Loading transcript...</div>
+    );
+  }
+
+  if (segments.length === 0) {
+    return <p style={{ padding: '1.5rem', color: '#9CA3AF' }}>No transcript segments found.</p>;
+  }
+
+  return (
+    <div
+      ref={parentRef}
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '1.5rem',
+        color: '#D1D5DB',
+        lineHeight: '1.7',
+        fontSize: '0.95rem',
+      }}
+    >
+      {/* Total height spacer — keeps the scrollbar proportional */}
+      <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const seg = segments[virtualRow.index];
+          return (
+            <div
+              key={virtualRow.index}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div className="pw-transcript-segment">
+                <span className="pw-transcript-time">
+                  {new Date((seg.start || 0) * 1000).toISOString().substr(14, 5)}
+                </span>
+                <p className="pw-transcript-text">{seg.text}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectWorkspace() {
   const { id } = useParams();
@@ -207,25 +279,7 @@ export default function ProjectWorkspace() {
             <h3 >Transcript Explorer</h3>
           </div>
           
-          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', color: '#D1D5DB', lineHeight: '1.7', fontSize: '0.95rem' }}>
-            {!transcript ? (
-              <div className="pw-transcript-loading">
-                Loading transcript...
-              </div>
-            ) : (
-              <div>
-                {(Array.isArray(transcript) ? transcript : transcript.segments)?.map((seg, i) => (
-                  <div key={i} className="pw-transcript-segment">
-                    <span className="pw-transcript-time">
-                      {new Date((seg.start || 0) * 1000).toISOString().substr(14, 5)}
-                    </span>
-                    <p className="pw-transcript-text">{seg.text}</p>
-                  </div>
-                ))}
-                {!Array.isArray(transcript) && !transcript.segments && <p>{transcript.text}</p>}
-              </div>
-            )}
-          </div>
+          <VirtualTranscript transcript={transcript} />
         </div>
 
       </div>

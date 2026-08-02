@@ -7,6 +7,7 @@ integer-based dHash and O(N) sequential comparisons.
 """
 import logging
 import os
+from collections import deque
 from typing import List, Dict, Any, Tuple
 
 import imagehash
@@ -94,11 +95,17 @@ def deduplicate_frames(
     """
     unique: List[Dict[str, Any]] = []
     duplicates: List[Dict[str, Any]] = []
-    
-    # We maintain a list of all unique hashes for Stage 2 (Global Verification),
-    # but also track the last unique hash for Stage 1 (Fast Sequential Check).
-    seen_hashes: List[Any] = []
+
+    # Stage 1 tracks only the immediately preceding unique frame — O(1).
     last_unique_hash = None
+
+    # Stage 2 global check: bounded deque instead of a growing list.
+    # A deque(maxlen=50) keeps only the 50 most-recent unique hashes.
+    # This caps Stage 2 from O(N²) worst case to O(50·N) = O(N), because
+    # recurring slides (title cards, flashback diagrams) cluster temporally
+    # within a short window. Hashes older than 50 scenes are very unlikely
+    # to recur and not worth the quadratic search cost.
+    seen_hashes: deque = deque(maxlen=50)
 
     for frame in frames:
         path = frame.get("frame_path", "")
