@@ -1,14 +1,21 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, Enum
+from sqlalchemy import Column, String, Integer, DateTime, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import enum
 from core.database import Base
 
 class VideoStatus(str, enum.Enum):
     UPLOADING = "UPLOADING"
-    PROCESSING = "PROCESSING"
+    EXTRACTING_AUDIO = "EXTRACTING_AUDIO"
     TRANSCRIBING = "TRANSCRIBING"
+    EXTRACTING_FRAMES = "EXTRACTING_FRAMES"
+    RUNNING_OCR = "RUNNING_OCR"
+    CHUNKING = "CHUNKING"
+    DETECTING_TOPICS = "DETECTING_TOPICS"
+    GENERATING_NOTES = "GENERATING_NOTES"
+    EXPORTING = "EXPORTING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
@@ -20,8 +27,8 @@ class Video(Base):
     __tablename__ = "videos"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # Using String for user_id for simplicity unless we have a users table locally
-    user_id = Column(String, nullable=True) 
+    # Linked to the users table
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True) 
     title = Column(String(500), nullable=False)
     source_type = Column(Enum(SourceType), nullable=False)
     youtube_url = Column(String, nullable=True)
@@ -38,3 +45,8 @@ class Video(Base):
     retention_days = Column(Integer, default=7)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", backref="videos")
+    transcripts = relationship("Transcript", backref="video", cascade="all, delete-orphan")
+    frames = relationship("VideoFrame", backref="video", cascade="all, delete-orphan")

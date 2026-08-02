@@ -12,9 +12,6 @@ class VideoBase(BaseModel):
     channel_name: Optional[str] = None
     retention_days: int = 7
 
-class VideoCreate(VideoBase):
-    user_id: Optional[str] = None
-
 class VideoResponse(VideoBase):
     id: uuid.UUID
     status: VideoStatus

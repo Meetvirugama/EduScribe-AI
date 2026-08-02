@@ -9,10 +9,16 @@ class WhisperService:
         os.makedirs(settings.TRANSCRIPT_DIR, exist_ok=True)
         # Load model lazily to save memory during startup
         self.model = None
+        import threading
+        self._model_lock = threading.Lock()
 
     def _get_model(self):
         if self.model is None:
-            self.model = whisper.load_model(settings.WHISPER_MODEL, device=settings.WHISPER_DEVICE)
+            with self._model_lock:
+                if self.model is None:
+                    import logging
+                    logging.getLogger(__name__).info("Loading Whisper model '%s'...", settings.WHISPER_MODEL)
+                    self.model = whisper.load_model(settings.WHISPER_MODEL, device=settings.WHISPER_DEVICE)
         return self.model
 
     async def transcribe(self, audio_path: str, video_id: str) -> dict:

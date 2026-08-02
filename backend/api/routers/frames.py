@@ -9,6 +9,7 @@ Endpoints:
 """
 import logging
 import uuid
+from core.utils import parse_video_id
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -42,7 +43,7 @@ router = APIRouter(tags=["Frame Extraction"])
 async def _resolve_video(video_id: str, user: User, db: AsyncSession) -> Video:
     """Fetch a video and verify the requesting user owns it."""
     try:
-        vid_uuid = uuid.UUID(video_id)
+        vid_uuid = parse_video_id(video_id)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid video ID format.")
 
@@ -55,25 +56,10 @@ async def _resolve_video(video_id: str, user: User, db: AsyncSession) -> Video:
     return video
 
 
-async def _build_frame_response(
-    frame: VideoFrame, db: AsyncSession
+def _build_frame_response_sync(
+    frame: VideoFrame, meta, ocr, score
 ) -> VideoFrameResponse:
-    """Hydrate a VideoFrame ORM object with its related metadata, OCR, and score."""
-    meta_result = await db.execute(
-        select(FrameMetadata).where(FrameMetadata.frame_id == frame.id)
-    )
-    meta = meta_result.scalar_one_or_none()
-
-    ocr_result = await db.execute(
-        select(OCRResult).where(OCRResult.frame_id == frame.id)
-    )
-    ocr = ocr_result.scalar_one_or_none()
-
-    score_result = await db.execute(
-        select(FrameScore).where(FrameScore.frame_id == frame.id)
-    )
-    score = score_result.scalar_one_or_none()
-
+    """Hydrate a VideoFrame ORM object with its related metadata, OCR, and score without DB access."""
     return VideoFrameResponse(
         id=frame.id,
         video_id=frame.video_id,
@@ -194,27 +180,40 @@ async def list_frames(
     await _resolve_video(video_id, current_user, db)
 
     frames_query = select(VideoFrame).where(
-        VideoFrame.video_id == uuid.UUID(video_id)
+        VideoFrame.video_id == parse_video_id(video_id)
     ).order_by(VideoFrame.scene_number)
 
     result = await db.execute(frames_query)
     frames = result.scalars().all()
 
-    if selected_only:
-        # Filter by joining with frame_scores
-        score_result = await db.execute(
-            select(FrameScore).where(
-                FrameScore.frame_id.in_([f.id for f in frames]),
-                FrameScore.is_selected == True,  # noqa: E712
-            )
-        )
-        selected_ids = {s.frame_id for s in score_result.scalars().all()}
-        frames = [f for f in frames if f.id in selected_ids]
+    if not frames:
+        return []
 
-    responses = []
-    for frame in frames:
-        responses.append(await _build_frame_response(frame, db))
-    return responses
+    frame_ids = [f.id for f in frames]
+
+    metas = {
+        m.frame_id: m for m in (
+            await db.execute(select(FrameMetadata).where(FrameMetadata.frame_id.in_(frame_ids)))
+        ).scalars().all()
+    }
+    ocrs = {
+        o.frame_id: o for o in (
+            await db.execute(select(OCRResult).where(OCRResult.frame_id.in_(frame_ids)))
+        ).scalars().all()
+    }
+
+    scores_query = select(FrameScore).where(FrameScore.frame_id.in_(frame_ids))
+    if selected_only:
+        scores_query = scores_query.where(FrameScore.is_selected == True)
+        
+    scores = {
+        s.frame_id: s for s in (await db.execute(scores_query)).scalars().all()
+    }
+
+    if selected_only:
+        frames = [f for f in frames if f.id in scores]
+
+    return [_build_frame_response_sync(f, metas.get(f.id), ocrs.get(f.id), scores.get(f.id)) for f in frames]
 
 
 @router.get(
@@ -251,7 +250,13 @@ async def get_frame(
     if not video_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Frame not found.")
 
-    return await _build_frame_response(frame, db)
+    meta_result = await db.execute(select(FrameMetadata).where(FrameMetadata.frame_id == frame.id))
+    meta = meta_result.scalar_one_or_none()
+    ocr_result = await db.execute(select(OCRResult).where(OCRResult.frame_id == frame.id))
+    ocr = ocr_result.scalar_one_or_none()
+    score_result = await db.execute(select(FrameScore).where(FrameScore.frame_id == frame.id))
+    score = score_result.scalar_one_or_none()
+    return _build_frame_response_sync(frame, meta, ocr, score)
 
 
 @router.delete(

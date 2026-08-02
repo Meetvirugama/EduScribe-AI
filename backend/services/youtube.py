@@ -89,16 +89,9 @@ class YouTubeService:
         self.validate_url(video_url)
         # extract just the youtube ID from URL or assume video_id from db is the youtube ID? 
         # wait, the video_id from db is a UUID. We need the youtube ID!
-        parsed = urlparse(video_url)
-        # handle different youtube URL formats
-        yt_id = None
-        if "youtu.be" in parsed.netloc:
-            yt_id = parsed.path.lstrip('/')
-        else:
-            from urllib.parse import parse_qs
-            qs = parse_qs(parsed.query)
-            if 'v' in qs:
-                yt_id = qs['v'][0]
+        import re
+        match = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11}).*', video_url)
+        yt_id = match.group(1) if match else None
         
         if not yt_id:
             raise ValueError("Could not extract YouTube ID")
@@ -111,7 +104,9 @@ class YouTubeService:
             transcript_list = YouTubeTranscriptApi().list(yt_id)
             try:
                 transcript = transcript_list.find_manually_created_transcript(['en'])
-            except:
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).debug("No manual transcript for %s; using auto-generated: %s", yt_id, e)
                 transcript = transcript_list.find_generated_transcript(['en'])
             
             transcript_data = transcript.fetch()

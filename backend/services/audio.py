@@ -22,8 +22,8 @@ class AudioService:
                 duration = float(format_info.get('duration', 0))
                 size = int(format_info.get('size', 0))
                 
-                if duration > 4 * 3600:
-                    raise Exception("Video exceeds 4 hour maximum duration")
+                if duration > 2 * 3600:
+                    raise Exception("Video exceeds 2 hour maximum duration")
                 
                 max_size_bytes = settings.MAX_VIDEO_SIZE_MB * 1024 * 1024
                 if size > max_size_bytes:

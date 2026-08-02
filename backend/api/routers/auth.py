@@ -10,12 +10,10 @@ from models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
-
 @router.get("/google/login")
 async def google_login():
     # Build the Google login URL
-    redirect_uri = "http://localhost:5001/auth/google/callback"
+    redirect_uri = f"{settings.BASE_URL}/auth/google/callback"
     auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth"
         f"?client_id={settings.GOOGLE_CLIENT_ID}"
@@ -28,7 +26,7 @@ async def google_login():
 
 @router.get("/google/callback")
 async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
-    redirect_uri = "http://localhost:5001/auth/google/callback"
+    redirect_uri = f"{settings.BASE_URL}/auth/google/callback"
     token_url = "https://oauth2.googleapis.com/token"
     
     async with httpx.AsyncClient() as client:
@@ -43,6 +41,9 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
                 "grant_type": "authorization_code",
             },
         )
+        if not token_res.is_success:
+            raise HTTPException(status_code=502, detail="Authentication provider error. Please try again.")
+
         token_data = token_res.json()
         if "error" in token_data:
             raise HTTPException(status_code=400, detail=token_data.get("error_description", "Failed to authenticate"))
@@ -78,8 +79,8 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
     access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
     
     # Redirect to frontend dashboard with token
-    frontend_url = "http://localhost:5173/auth/callback"
-    return RedirectResponse(f"{frontend_url}?token={access_token}")
+    frontend_url = f"{settings.FRONTEND_URL}/auth/callback"
+    return RedirectResponse(f"{frontend_url}#token={access_token}")
 
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user)):

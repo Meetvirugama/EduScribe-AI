@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+const sortByExpiration = (videos) => {
+  return [...videos].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime() + (a.retention_days * 86400000);
+    const dateB = new Date(b.created_at).getTime() + (b.retention_days * 86400000);
+    return dateA - dateB;
+  });
+};
+
 export default function Settings() {
   const { token, logout } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -29,13 +37,7 @@ export default function Settings() {
     })
     .then(res => res.json())
     .then(data => {
-      // Sort by soonest expiration
-      const sorted = [...data].sort((a, b) => {
-         const dateA = new Date(a.created_at).getTime() + (a.retention_days * 86400000);
-         const dateB = new Date(b.created_at).getTime() + (b.retention_days * 86400000);
-         return dateA - dateB;
-      });
-      setVideos(sorted);
+      setVideos(sortByExpiration(data));
     })
     .catch(console.error);
   }, [token]);
@@ -140,11 +142,7 @@ export default function Settings() {
                              const updatedVideo = await res.json();
                              setVideos(prev => {
                                const newVideos = prev.map(vid => vid.id === updatedVideo.id ? updatedVideo : vid);
-                               return newVideos.sort((a, b) => {
-                                 const dateA = new Date(a.created_at).getTime() + (a.retention_days * 86400000);
-                                 const dateB = new Date(b.created_at).getTime() + (b.retention_days * 86400000);
-                                 return dateA - dateB;
-                               });
+                               return sortByExpiration(newVideos);
                              });
                           }
                         } catch (err) {

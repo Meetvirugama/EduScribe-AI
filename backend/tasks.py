@@ -12,16 +12,19 @@ All heavy work runs via asyncio.to_thread inside FastAPI BackgroundTasks.
 import logging
 import os
 import time
+import gc
 import uuid
+from core.utils import parse_video_id
 from typing import Optional
 
 from sqlalchemy import select
 
 from core.database import AsyncSessionLocal
 from models.video import Video, VideoStatus, SourceType
-from models.transcript import Transcript
+from models.transcript import Transcript, TranscriptSource
 from services import youtube_service, audio_service, whisper_service
 from services.vision.pipeline import vision_pipeline, VisionPipelineError
+from services.merge_service import merge_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,22 +45,24 @@ async def process_video_pipeline_async(video_id: str) -> None:  # noqa: C901 (co
 
     async def update_progress(percent: int, step: str, eta: Optional[int] = None) -> None:
         """Write live progress back to the DB without re-using the outer session."""
+        from sqlalchemy import update
         async with AsyncSessionLocal() as db:
-            result = await db.execute(select(Video).where(Video.id == uuid.UUID(video_id)))
-            v = result.scalar_one_or_none()
-            if v:
-                v.progress_percent = percent
-                v.current_step = step
-                if eta is not None:
-                    v.estimated_time_remaining_seconds = eta
-                await db.commit()
+            stmt = (
+                update(Video)
+                .where(Video.id == parse_video_id(video_id))
+                .values(progress_percent=percent, current_step=step)
+            )
+            if eta is not None:
+                stmt = stmt.values(estimated_time_remaining_seconds=eta)
+            await db.execute(stmt)
+            await db.commit()
 
     async with AsyncSessionLocal() as db:
         try:
             # ---------------------------------------------------------------- #
             # Load video record
             # ---------------------------------------------------------------- #
-            result = await db.execute(select(Video).where(Video.id == uuid.UUID(video_id)))
+            result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id)))
             video = result.scalar_one_or_none()
             if not video:
                 logger.error("Pipeline called for unknown video_id: %s", video_id)
@@ -80,11 +85,11 @@ async def process_video_pipeline_async(video_id: str) -> None:  # noqa: C901 (co
 
                 await update_progress(30, "Downloading Captions...", 3)
                 trans_info = None
-                transcript_source = "whisper_audio"
+                transcript_source = TranscriptSource.WHISPER_AUDIO
 
                 try:
                     trans_info = await youtube_service.fetch_captions(video.youtube_url, video_id)
-                    transcript_source = "youtube_captions"
+                    transcript_source = TranscriptSource.YOUTUBE_CAPTIONS
                     logger.info("YouTube captions fetched for video %s", video_id)
                 except Exception as cap_err:
                     logger.info(
@@ -107,6 +112,8 @@ async def process_video_pipeline_async(video_id: str) -> None:  # noqa: C901 (co
                     eta_tr = int((video.duration_seconds or 300) * 0.4)
                     await update_progress(60, "Transcribing with Whisper AI...", eta_tr)
                     trans_info = await whisper_service.transcribe(audio_path, video_id)
+                    
+                    gc.collect()
 
             # ---------------------------------------------------------------- #
             # Uploaded video path
@@ -143,7 +150,9 @@ async def process_video_pipeline_async(video_id: str) -> None:  # noqa: C901 (co
 
                 await update_progress(65, "Transcribing with Whisper AI...", 120)
                 trans_info = await whisper_service.transcribe(audio_path, video_id)
-                transcript_source = "manual_upload"
+                transcript_source = TranscriptSource.MANUAL_UPLOAD
+                
+                gc.collect()
 
             # ---------------------------------------------------------------- #
             # Persist transcript record
@@ -166,12 +175,18 @@ async def process_video_pipeline_async(video_id: str) -> None:  # noqa: C901 (co
             video.estimated_time_remaining_seconds = 0
             await db.commit()
 
+            # Execute Merge Pipeline
+            try:
+                await merge_service.generate_merged_markdown(video_id)
+            except Exception as e:
+                logger.error("Merge pipeline failed for video %s: %s", video_id, e)
+
             logger.info("Pipeline completed for video %s in %ds", video_id, processing_time)
 
         except Exception as exc:
             logger.exception("Pipeline failed for video %s: %s", video_id, exc)
             try:
-                result = await db.execute(select(Video).where(Video.id == uuid.UUID(video_id)))
+                result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id)))
                 video = result.scalar_one_or_none()
                 if video:
                     video.status = VideoStatus.FAILED
@@ -191,3 +206,33 @@ async def process_video_pipeline_async(video_id: str) -> None:  # noqa: C901 (co
                     logger.warning(
                         "Failed to clean up audio file %s: %s", audio_path, cleanup_err
                     )
+            
+            # Clean up the original video file to save space
+            try:
+                async with AsyncSessionLocal() as db_cleanup:
+                    result = await db_cleanup.execute(select(Video).where(Video.id == parse_video_id(video_id)))
+                    v = result.scalar_one_or_none()
+                    if v and v.video_path and os.path.exists(v.video_path):
+                        os.remove(v.video_path)
+                        logger.info("Cleaned up original video file: %s", v.video_path)
+            except Exception as e:
+                logger.warning("Failed to clean up video file for %s: %s", video_id, e)
+                
+            # Clean up unselected frames
+            try:
+                from models.vision import VideoFrame, FrameScore
+                async with AsyncSessionLocal() as db_cleanup:
+                    f_result = await db_cleanup.execute(
+                        select(VideoFrame)
+                        .outerjoin(FrameScore, FrameScore.frame_id == VideoFrame.id)
+                        .where(VideoFrame.video_id == parse_video_id(video_id), 
+                               (FrameScore.is_selected == False) | (FrameScore.is_selected == None))
+                    )
+                    unselected = f_result.scalars().all()
+                    for frame in unselected:
+                        if frame.frame_path and os.path.exists(frame.frame_path):
+                            os.remove(frame.frame_path)
+                            
+                    logger.info("Cleaned up %d unselected frames for video %s", len(unselected), video_id)
+            except Exception as e:
+                logger.warning("Failed to clean up unselected frames for %s: %s", video_id, e)

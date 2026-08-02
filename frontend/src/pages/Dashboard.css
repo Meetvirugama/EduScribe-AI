@@ -1,0 +1,26 @@
+
+.dashboard-container { padding: 2rem; }
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.btn-add-content { padding: 0.75rem 1.5rem; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.btn-add-content:hover { background: var(--accent-hover); }
+.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.analytics-card { background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
+.analytics-card h3 { margin: 0; color: var(--text-secondary); font-size: 0.875rem; }
+.analytics-card p { margin: 0.5rem 0 0; font-size: 2rem; font-weight: bold; color: white; }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+.video-card { padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; color: white; position: relative; }
+.btn-delete { position: absolute; top: 10px; right: 10px; background: #EF4444; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0.25rem 0.5rem; }
+.btn-delete:hover { background: #DC2626; }
+.video-card h3 { margin-top: 0; padding-right: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-card-type { color: var(--text-secondary); margin: 0.5rem 0; }
+.progress-container { margin-top: 1rem; background: #374151; border-radius: 8px; padding: 1rem; }
+.progress-text { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.5rem; color: #D1D5DB; }
+.progress-bar-bg { width: 100%; height: 8px; background: #4B5563; border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--accent); transition: width 0.5s ease-in-out; }
+.progress-eta { margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); text-align: right; }
+.video-card-status { color: var(--text-secondary); margin: 0.5rem 0; }
+.video-error { margin-top: 0.5rem; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; border-radius: 6px; }
+.video-error p { color: #FCA5A5; margin: 0; font-size: 0.875rem; }
+.btn-view-workspace { padding: 0.5rem 1rem; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer; }
+.btn-view-workspace:hover { background: #059669; }
+.no-content { color: var(--text-secondary); }
