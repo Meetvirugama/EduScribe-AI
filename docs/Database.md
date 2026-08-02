@@ -4,7 +4,7 @@ EduScribe AI uses **PostgreSQL** to store relational data across users, videos, 
 
 ## Entity Relationship Diagram
 
-![Database Schema](images/database_schema_1785262327655.png)
+![Database Schema](images/database_schema.png)
 *Figure 4. PostgreSQL Database Schema.*
 
 ```mermaid

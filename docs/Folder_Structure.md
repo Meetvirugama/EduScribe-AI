@@ -4,7 +4,7 @@ EduScribe AI is organized into distinct, decoupled directories ensuring maintain
 
 ## Root Directory
 
-![Folder Structure](images/folder_structure_1785262407158.png)
+![System Architecture](images/system_architecture.png)
 *Figure 6. High-level Folder Directory Structure.*
 
 ```text

@@ -10,7 +10,7 @@ The EduScribe AI backend exposes a RESTful API powered by FastAPI. All endpoints
 
 ## Authentication
 
-![API Flow Diagram](images/api_flow_1785262383428.png)
+![System Architecture](images/system_architecture.png)
 *Figure 5. REST API Request Lifecycle.*
 
 | Method | Endpoint | Auth | Description |

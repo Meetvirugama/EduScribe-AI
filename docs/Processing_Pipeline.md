@@ -4,7 +4,7 @@ The Processing Pipeline is the central nervous system of EduScribe AI. When a vi
 
 ## 🔄 End-to-End Workflow
 
-![Processing Pipeline](images/processing_pipeline_1785262306494.png)
+![Processing Pipeline](images/processing_pipeline.png)
 *Figure 2. End-to-End Video Processing Pipeline.*
 
 ```mermaid

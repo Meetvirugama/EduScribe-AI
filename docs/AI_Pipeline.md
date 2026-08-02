@@ -4,7 +4,7 @@ EduScribe AI uses a combination of specialized AI models and classic computer vi
 
 ## 🧠 Core AI Models
 
-![AI Pipeline](images/ai_pipeline_1785262317301.png)
+![Vision Pipeline](images/vision_pipeline.png)
 *Figure 3. AI Models and Pipeline Flow.*
 
 ---

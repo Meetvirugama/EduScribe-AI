@@ -4,7 +4,7 @@ EduScribe AI follows a modular, decoupled architecture where a high-speed asynch
 
 ## 🏗️ High-Level Architecture Diagram
 
-![System Architecture](images/system_architecture_1785262295824.png)
+![System Architecture](images/system_architecture.png)
 *Figure 1. EduScribe AI System Architecture.*
 
 ```mermaid
