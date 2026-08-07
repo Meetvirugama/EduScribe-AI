@@ -229,33 +229,42 @@ async def get_frame(
 ) -> VideoFrameResponse:
     """
     Retrieve complete metadata, OCR results, and scoring for a specific frame.
+
+    ISSUE-12: Ownership check is now a single atomic JOIN query. This prevents
+    the IDOR window where a user could confirm a frame's existence before the
+    ownership check ran.
     """
     try:
         frame_uuid = uuid.UUID(frame_id)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid frame ID format.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid frame ID format.",
+        )
 
-    result = await db.execute(select(VideoFrame).where(VideoFrame.id == frame_uuid))
-    frame = result.scalar_one_or_none()
-    if not frame:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Frame not found.")
-
-    # Verify user owns the parent video
-    video_result = await db.execute(
-        select(Video).where(
-            Video.id == frame.video_id,
+    # Single JOIN query — frame only returned if the parent video belongs to
+    # the requesting user. Prevents IDOR (ISSUE-12).
+    result = await db.execute(
+        select(VideoFrame)
+        .join(Video, Video.id == VideoFrame.video_id)
+        .where(
+            VideoFrame.id == frame_uuid,
             Video.user_id == str(current_user.id),
         )
     )
-    if not video_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Frame not found.")
+    frame = result.scalar_one_or_none()
+    if not frame:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Frame not found.",
+        )
 
-    meta_result = await db.execute(select(FrameMetadata).where(FrameMetadata.frame_id == frame.id))
-    meta = meta_result.scalar_one_or_none()
-    ocr_result = await db.execute(select(OCRResult).where(OCRResult.frame_id == frame.id))
-    ocr = ocr_result.scalar_one_or_none()
+    meta_result  = await db.execute(select(FrameMetadata).where(FrameMetadata.frame_id == frame.id))
+    meta         = meta_result.scalar_one_or_none()
+    ocr_result   = await db.execute(select(OCRResult).where(OCRResult.frame_id == frame.id))
+    ocr          = ocr_result.scalar_one_or_none()
     score_result = await db.execute(select(FrameScore).where(FrameScore.frame_id == frame.id))
-    score = score_result.scalar_one_or_none()
+    score        = score_result.scalar_one_or_none()
     return _build_frame_response_sync(frame, meta, ocr, score)
 
 

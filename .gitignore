@@ -1,13 +1,63 @@
-backend/venv/
-storage/
-.DS_Store
-testData/
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+pip-wheel-metadata/
 
-# Environment Variables
+# ── Environment Variables (NEVER commit real .env files) ──────────────────────
 .env
 .env.*
+!.env.example
 
-# Databases
+# ── Databases ─────────────────────────────────────────────────────────────────
 *.sqlite
 *.sqlite3
+*.db
 backend/database.sqlite
+backend/eduscribe.db
+
+# ── Storage / Generated files ─────────────────────────────────────────────────
+storage/
+backend/storage/
+
+# ── OS / IDE ──────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Test data / Dev artifacts ─────────────────────────────────────────────────
+testData/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# (docker-compose.yml is committed — but override files are not)
+docker-compose.override.yml
+
+# ── Alembic ───────────────────────────────────────────────────────────────────
+# Migration versions are committed; __pycache__ is not
+backend/migrations/__pycache__/
