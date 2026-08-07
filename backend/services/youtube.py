@@ -33,7 +33,9 @@ class YouTubeService:
         try:
             return await asyncio.to_thread(_fetch, base_ydl_opts)
         except Exception:
-            # Fallback to cookies if metadata fetch is blocked
+            # Fallback to cookies if metadata fetch is blocked (ISSUE-021)
+            if os.path.exists("/.dockerenv"):
+                raise Exception("youtube_bot_protection")
             opts = dict(base_ydl_opts)
             opts['cookiesfrombrowser'] = ('chrome',)
             return await asyncio.to_thread(_fetch, opts)
@@ -54,9 +56,6 @@ class YouTubeService:
                 info = ydl.extract_info(url, download=False)
                 
                 duration = info.get("duration", 0)
-                if duration > 4 * 3600:
-                    raise ValueError("Video too long (max 4 hours)")
-                    
                 ydl.download([url])
                 
                 ext = info.get('ext', 'mp4')
@@ -76,7 +75,9 @@ class YouTubeService:
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except Exception:
-            # Second attempt: Chrome cookies
+            # Second attempt: Chrome cookies (ISSUE-021)
+            if os.path.exists("/.dockerenv"):
+                raise Exception("youtube_bot_protection")
             try:
                 opts = dict(base_ydl_opts)
                 opts['cookiesfrombrowser'] = ('chrome',)

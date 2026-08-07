@@ -9,10 +9,12 @@ Endpoints:
 """
 import logging
 import uuid
+import os
 from core.utils import parse_video_id
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -266,6 +268,47 @@ async def get_frame(
     score_result = await db.execute(select(FrameScore).where(FrameScore.frame_id == frame.id))
     score        = score_result.scalar_one_or_none()
     return _build_frame_response_sync(frame, meta, ocr, score)
+
+@router.get(
+    "/videos/{video_id}/frames/{frame_id}/image",
+    summary="Get the actual image file for a frame.",
+    responses={404: {"description": "Frame image not found."}},
+)
+async def get_frame_image(
+    video_id: str,
+    frame_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FileResponse:
+    """
+    Serve a specific frame image file from the server securely.
+    (ISSUE-011 fix: No longer exposing server file paths directly to client)
+    """
+    await _resolve_video(video_id, current_user, db)
+
+    try:
+        frame_uuid = uuid.UUID(frame_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid frame ID format.",
+        )
+
+    result = await db.execute(
+        select(VideoFrame).where(
+            VideoFrame.id == frame_uuid,
+            VideoFrame.video_id == parse_video_id(video_id)
+        )
+    )
+    frame = result.scalar_one_or_none()
+
+    if not frame:
+        raise HTTPException(status_code=404, detail="Frame not found.")
+
+    if not frame.frame_path or not os.path.exists(frame.frame_path):
+        raise HTTPException(status_code=404, detail="Image file not found on server.")
+
+    return FileResponse(frame.frame_path)
 
 
 @router.delete(

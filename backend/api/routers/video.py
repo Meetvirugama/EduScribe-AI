@@ -18,7 +18,7 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 import asyncio
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +36,7 @@ from schemas.video import VideoResponse, YoutubeRequest, VideoUpdateRetention
 from services import storage_service
 from services.youtube import youtube_service
 from tasks import process_video_pipeline_async
+from worker import enqueue_video_job
 from services.vision.extraction.frame_extractor import frame_extractor_service
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,6 @@ def _compute_expires_at(retention_days: int) -> datetime:
 
 @router.post("/upload", response_model=VideoResponse)
 async def upload_video(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     retention_days: int = Form(7),
     db: AsyncSession = Depends(get_db),
@@ -134,7 +134,9 @@ async def upload_video(
     await db.commit()
     await db.refresh(video)
 
-    background_tasks.add_task(process_video_pipeline_async, video_id)
+    # ISSUE-002: Use ARQ job queue instead of FastAPI BackgroundTasks
+    # This ensures job persistence and retry on server restart.
+    await enqueue_video_job(video_id)
     return video
 
 
@@ -179,7 +181,8 @@ async def process_youtube(
     await db.commit()
     await db.refresh(video)
 
-    background_tasks.add_task(process_video_pipeline_async, video_id)
+    # ISSUE-002: Use ARQ job queue instead of FastAPI BackgroundTasks
+    await enqueue_video_job(video_id)
     return video
 
 
@@ -195,7 +198,7 @@ async def list_videos(
     """List all videos belonging to the current user."""
     result = await db.execute(
         select(Video)
-        .where(Video.user_id == str(current_user.id))
+        .where(Video.user_id == current_user.id)  # ISSUE-024: use UUID directly
         .order_by(Video.created_at.desc())
     )
     return result.scalars().all()
@@ -211,7 +214,7 @@ async def get_analytics(
         select(
             func.count(Video.id).label("total_videos"),
             func.coalesce(func.sum(Video.duration_seconds), 0).label("total_duration"),
-        ).where(Video.user_id == str(current_user.id))
+        ).where(Video.user_id == current_user.id)  # ISSUE-024: use UUID directly
     )
     row = stats.one()
 
@@ -241,7 +244,7 @@ async def get_storage(
     row = await db.execute(
         select(
             func.coalesce(func.sum(Video.file_size_bytes), 0).label("total_bytes")
-        ).where(Video.user_id == str(current_user.id))
+        ).where(Video.user_id == current_user.id)  # ISSUE-024: use UUID directly
     )
     total_bytes = row.scalar() or 0
     transcript_est = int(total_bytes * 0.001)

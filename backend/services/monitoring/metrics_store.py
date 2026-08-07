@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Metrics log file path
 _METRICS_LOG_PATH = os.path.join(
-    getattr(settings, "OUTPUT_DIR", "storage/outputs"),
-    "..",
-    "metrics",
+    getattr(settings, "METRICS_DIR", "storage/metrics"),
     "llm_requests.jsonl",
 )
 

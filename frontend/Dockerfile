@@ -1,16 +1,28 @@
-FROM node:20-alpine
+# Stage 1: Build the React application
+FROM node:20-alpine AS build
 
 WORKDIR /app
+
+# Accept VITE_API_URL as a build argument (ISSUE-010/014)
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 # Install dependencies
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# Copy source code
+# Copy source code and build
 COPY . .
+RUN npm run build
 
-# Expose Vite's default port
-EXPOSE 5173
+# Stage 2: Serve with Nginx in production (ISSUE-014)
+FROM nginx:alpine
 
-# Start the dev server, bound to 0.0.0.0 so it is accessible from outside the container
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Copy built assets from the build stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

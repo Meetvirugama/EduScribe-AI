@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import UploadModal from '../components/UploadModal';
 import './Dashboard.css';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../lib/api';
 
 export default function Dashboard() {
   const [videos, setVideos] = useState([]);
@@ -14,9 +15,7 @@ export default function Dashboard() {
   const fetchVideos = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:5001/videos', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiFetch('/videos', {}, token);
       if (res.ok) {
         const data = await res.json();
         setVideos(data);
@@ -29,9 +28,7 @@ export default function Dashboard() {
   const fetchAnalytics = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:5001/videos/analytics', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiFetch('/videos/analytics', {}, token);
       if (res.ok) {
         const data = await res.json();
         setAnalytics(data);
@@ -45,10 +42,9 @@ export default function Dashboard() {
     if (!token) return;
     if (!confirm('Are you sure you want to delete this video?')) return;
     try {
-      const res = await fetch(`http://localhost:5001/videos/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiFetch(`/videos/${id}`, {
+        method: 'DELETE'
+      }, token);
       if (res.ok) {
         fetchVideos();
         fetchAnalytics();

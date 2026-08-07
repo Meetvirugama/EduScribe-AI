@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -13,6 +12,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d eduscribe"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   redis:
@@ -22,6 +26,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   backend:
@@ -39,16 +48,41 @@ services:
       - ./backend/storage:/app/storage
       - paddlex_models:/root/.paddlex
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eduscribe_worker
+    command: ["arq", "worker.WorkerSettings"]
+    environment:
+      - REDIS_URL=redis://eduscribe_redis:6379/0
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/storage:/app/storage
+      - paddlex_models:/root/.paddlex
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5001
     container_name: eduscribe_frontend
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
       - backend
     restart: unless-stopped

@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Float, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from core.database import Base
+
 
 class VideoFrame(Base):
     __tablename__ = "video_frames"
@@ -12,7 +13,9 @@ class VideoFrame(Base):
     timestamp_ms = Column(Integer, nullable=False)
     frame_path = Column(String, nullable=False)
     scene_number = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # ISSUE-004: timezone-aware datetime
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))
+
 
 class FrameMetadata(Base):
     __tablename__ = "frame_metadata"
@@ -23,6 +26,7 @@ class FrameMetadata(Base):
     phash = Column(String, nullable=True)
     duration_ms = Column(Integer, nullable=True)
 
+
 class OCRResult(Base):
     __tablename__ = "ocr_results"
 
@@ -31,6 +35,7 @@ class OCRResult(Base):
     raw_text = Column(String, nullable=True)
     clean_text = Column(String, nullable=True)
     average_confidence = Column(Float, nullable=True)
+
 
 class FrameScore(Base):
     __tablename__ = "frame_scores"

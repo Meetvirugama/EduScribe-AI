@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../lib/api';
 
 const sortByExpiration = (videos) => {
   return [...videos].sort((a, b) => {
@@ -18,23 +19,17 @@ export default function Settings() {
   useEffect(() => {
     if (!token) return;
 
-    fetch('http://localhost:5001/auth/me', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    apiFetch('/auth/me', {}, token)
     .then(res => res.json())
     .then(data => setProfile(data))
     .catch(console.error);
 
-    fetch('http://localhost:5001/videos/storage', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    apiFetch('/videos/storage', {}, token)
     .then(res => res.json())
     .then(data => setStorage(data))
     .catch(console.error);
 
-    fetch('http://localhost:5001/videos', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    apiFetch('/videos', {}, token)
     .then(res => res.json())
     .then(data => {
       setVideos(sortByExpiration(data));
@@ -130,14 +125,13 @@ export default function Settings() {
                       onChange={async (e) => {
                         const newDays = parseInt(e.target.value);
                         try {
-                          const res = await fetch(`http://localhost:5001/videos/${v.id}/retention`, {
+                          const res = await apiFetch(`/videos/${v.id}/retention`, {
                             method: 'PATCH',
                             headers: { 
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${token}` 
+                              'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({ retention_days: newDays })
-                          });
+                          }, token);
                           if (res.ok) {
                              const updatedVideo = await res.json();
                              setVideos(prev => {

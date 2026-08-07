@@ -1,15 +1,17 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from core.database import Base
 
 import enum
 
+
 class TranscriptSource(str, enum.Enum):
     YOUTUBE_CAPTIONS = "youtube_captions"
     WHISPER_AUDIO = "whisper_audio"
     MANUAL_UPLOAD = "manual_upload"
+
 
 class Transcript(Base):
     __tablename__ = "transcripts"
@@ -20,4 +22,5 @@ class Transcript(Base):
     language = Column(String(20), nullable=True)
     word_count = Column(Integer, nullable=True)
     source = Column(String(50), default=TranscriptSource.WHISPER_AUDIO)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # ISSUE-004: timezone-aware datetime
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))

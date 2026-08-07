@@ -138,7 +138,8 @@ class WorkerSettings:
     def get_redis_settings(cls):
         """Return ARQ RedisSettings from REDIS_URL environment variable."""
         from arq.connections import RedisSettings  # type: ignore
-        redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        from core.config import settings
+        redis_url = settings.REDIS_URL or "redis://localhost:6379/0"
         return RedisSettings.from_dsn(redis_url)
 
     redis_settings = property(get_redis_settings)
@@ -161,7 +162,8 @@ async def enqueue_video_job(video_id: str) -> str:
 
     Returns the ARQ job ID.
     """
-    redis_url = os.environ.get("REDIS_URL")
+    from core.config import settings
+    redis_url = settings.REDIS_URL
 
     if not redis_url:
         logger.warning(

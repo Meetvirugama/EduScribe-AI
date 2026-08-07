@@ -64,7 +64,7 @@ async def stream_progress(
     result = await db.execute(
         select(Video).where(
             Video.id == parse_video_id(video_id),
-            Video.user_id == str(current_user.id),
+            Video.user_id == current_user.id,
         )
     )
     video = result.scalar_one_or_none()

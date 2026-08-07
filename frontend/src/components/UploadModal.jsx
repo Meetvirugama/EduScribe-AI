@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../lib/api';
 
 export default function UploadModal({ onClose, onSuccess }) {
   const [tab, setTab] = useState('upload');
@@ -27,25 +28,23 @@ export default function UploadModal({ onClose, onSuccess }) {
         formData.append('file', file);
         formData.append('retention_days', retentionDays);
         
-        res = await fetch('http://localhost:5001/videos/upload', {
+        res = await apiFetch('/videos/upload', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
           body: formData,
-        });
+        }, token);
       } else {
         if (!url) {
           setErrorMsg('Please enter a YouTube URL.');
           setLoading(false);
           return;
         }
-        res = await fetch('http://localhost:5001/videos/youtube', {
+        res = await apiFetch('/videos/youtube', {
           method: 'POST',
           headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ url, retention_days: retentionDays }),
-        });
+        }, token);
       }
       
       if (res.ok) {

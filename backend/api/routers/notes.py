@@ -1,5 +1,6 @@
 import os
 import uuid
+import asyncio
 from core.utils import parse_video_id
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -25,7 +26,7 @@ async def get_notes(
     current_user: User = Depends(get_current_user)
 ):
     """Fetch the merged markdown content for previewing."""
-    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == str(current_user.id)))
+    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == current_user.id))
     video = result.scalar_one_or_none()
     
     if not video:
@@ -35,8 +36,11 @@ async def get_notes(
     if not os.path.exists(notes_path):
         raise HTTPException(status_code=404, detail="Notes have not been generated yet or were deleted.")
         
-    with open(notes_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    def _read_file():
+        with open(notes_path, "r", encoding="utf-8") as f:
+            return f.read()
+    
+    content = await asyncio.to_thread(_read_file)
         
         
     return {"video_id": video_id, "content": content}
@@ -49,7 +53,10 @@ async def search_notes(
     current_user: User = Depends(get_current_user)
 ):
     """Semantic search across the generated notes."""
-    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == str(current_user.id)))
+    if len(query) > 500:
+        raise HTTPException(status_code=400, detail="Query too long (max 500 characters)")
+        
+    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == current_user.id))
     video = result.scalar_one_or_none()
     
     if not video:
@@ -68,7 +75,7 @@ async def download_notes(
     current_user: User = Depends(get_current_user)
 ):
     """Download the merged markdown file."""
-    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == str(current_user.id)))
+    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == current_user.id))
     video = result.scalar_one_or_none()
     
     if not video:
@@ -91,7 +98,7 @@ async def delete_notes(
     current_user: User = Depends(get_current_user)
 ):
     """Delete the generated notes file without deleting the video."""
-    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == str(current_user.id)))
+    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == current_user.id))
     video = result.scalar_one_or_none()
     
     if not video:
@@ -100,7 +107,7 @@ async def delete_notes(
     notes_path = _get_notes_path(video_id)
     if os.path.exists(notes_path):
         try:
-            os.remove(notes_path)
+            await asyncio.to_thread(os.remove, notes_path)
             return {"status": "success", "message": "Notes deleted successfully."}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to delete notes: {e}")

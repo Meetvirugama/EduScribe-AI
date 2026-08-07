@@ -1,10 +1,11 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Enum, ForeignKey
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Enum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
 from core.database import Base
+
 
 class VideoStatus(str, enum.Enum):
     UPLOADING = "UPLOADING"
@@ -19,16 +20,18 @@ class VideoStatus(str, enum.Enum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
+
 class SourceType(str, enum.Enum):
     UPLOAD = "UPLOAD"
     YOUTUBE = "YOUTUBE"
+
 
 class Video(Base):
     __tablename__ = "videos"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # Linked to the users table
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True) 
+    # ISSUE-006: user_id must always have an owner — nullable=False enforced at DB level
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(500), nullable=False)
     source_type = Column(Enum(SourceType), nullable=False)
     youtube_url = Column(String, nullable=True)
@@ -43,10 +46,14 @@ class Video(Base):
     estimated_time_remaining_seconds = Column(Integer, nullable=True)
     error_message = Column(String, nullable=True)
     retention_days = Column(Integer, default=7)
-    expires_at = Column(DateTime, nullable=True)
+    # ISSUE-004: all DateTime columns are timezone-aware
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    # ISSUE-001: processing_started_at was missing — caused AttributeError in orchestrator.py line 95
+    processing_started_at = Column(DateTime(timezone=True), nullable=True)
     # Populated at upload time; used for O(1) SQL SUM in /videos/storage
     file_size_bytes = Column(BigInteger, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # ISSUE-004: timezone-aware lambda replaces deprecated datetime.utcnow
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))
 
     # Relationships
     user = relationship("User", backref="videos")

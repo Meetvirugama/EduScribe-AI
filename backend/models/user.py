@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, DateTime
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from core.database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -12,4 +13,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
     picture = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # ISSUE-003: is_admin field for admin RBAC — defaults to False for all users
+    is_admin = Column(Boolean, nullable=False, default=False)
+    # ISSUE-004: timezone-aware datetime
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))

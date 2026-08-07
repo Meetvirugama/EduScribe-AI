@@ -27,18 +27,27 @@ logger = logging.getLogger(__name__)
 _memory_store: dict[tuple, list] = defaultdict(list)
 
 
+_redis_pool = None
+
 def _get_redis():
     """
-    Lazily connect to Redis. Returns None if REDIS_URL is not set or
-    Redis is unreachable, which triggers the in-memory fallback.
+    Lazily connect to Redis using a connection pool. Returns None if REDIS_URL 
+    is not set or Redis is unreachable, triggering the in-memory fallback.
+    (ISSUE-018, ISSUE-019 fix)
     """
+    global _redis_pool
     redis_url = getattr(settings, "REDIS_URL", None)
     if not redis_url:
         return None
     try:
         import redis as redis_lib  # type: ignore
 
-        r = redis_lib.from_url(redis_url, decode_responses=True, socket_connect_timeout=1)
+        if _redis_pool is None:
+            _redis_pool = redis_lib.ConnectionPool.from_url(
+                redis_url, decode_responses=True, socket_connect_timeout=1
+            )
+        
+        r = redis_lib.Redis(connection_pool=_redis_pool)
         r.ping()
         return r
     except Exception as exc:

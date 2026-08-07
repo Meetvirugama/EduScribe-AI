@@ -78,6 +78,9 @@ function VirtualTranscript({ transcript }) {
   );
 }
 
+import { useAuth } from '../context/AuthContext';
+import { apiFetch, API_BASE } from '../lib/api';
+
 export default function ProjectWorkspace() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -92,10 +95,10 @@ export default function ProjectWorkspace() {
     if (!token) return;
     
     Promise.all([
-      fetch(`http://localhost:5001/videos/${id}/details`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()),
-      fetch(`http://localhost:5001/videos/${id}/transcript`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()),
-      fetch(`http://localhost:5001/videos/${id}/frames?selected_only=false`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()),
-      fetch(`http://localhost:5001/notes/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.ok ? res.json() : null)
+      apiFetch(`/videos/${id}/details`, {}, token).then(res => res.json()),
+      apiFetch(`/videos/${id}/transcript`, {}, token).then(res => res.json()),
+      apiFetch(`/videos/${id}/frames?selected_only=false`, {}, token).then(res => res.json()),
+      apiFetch(`/notes/${id}`, {}, token).then(res => res.ok ? res.json() : null)
     ])
     .then(([detailsData, transcriptData, framesData, notesData]) => {
       setDetails(detailsData);
@@ -200,10 +203,9 @@ export default function ProjectWorkspace() {
                   onClick={async () => {
                     if (confirm('Extract frames for this video? This may take a minute.')) {
                       try {
-                        const res = await fetch(`http://localhost:5001/videos/${id}/extract-frames`, {
-                          method: 'POST',
-                          headers: { 'Authorization': `Bearer ${token}` }
-                        });
+                        const res = await apiFetch(`/videos/${id}/extract-frames`, {
+                          method: 'POST'
+                        }, token);
                         if (res.ok) {
                           alert('Frame extraction started! Check back in a few minutes.');
                         } else {
@@ -237,7 +239,7 @@ export default function ProjectWorkspace() {
                   >
                     <div className="pw-frame-img-wrap">
                       <img 
-                        src={`http://localhost:5001/${frame.frame_path}`} 
+                        src={`${API_BASE}/videos/${id}/frames/${frame.id}/image?token=${token}`}
                         alt={`Segment ${frame.scene_number}`} 
                         className="pw-frame-img"
                         onError={(e) => { e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="140" fill="%23111827"><rect width="100%25" height="100%25"/></svg>' }}
@@ -309,7 +311,7 @@ export default function ProjectWorkspace() {
                       img: ({node, ...props}) => {
                         let src = props.src;
                         if (src && src.startsWith('/storage/')) {
-                          src = `http://localhost:5001${src}`;
+                          src = `${API_BASE}${src}`;
                         }
                         return <img {...props} src={src} style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '1rem', border: '1px solid rgba(255,255,255,0.1)' }} />
                       }

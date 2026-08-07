@@ -1,7 +1,9 @@
+import { API_BASE } from '../lib/api';
+
 const Login = () => {
   const handleGoogleLogin = () => {
     // Navigate to backend auth endpoint
-    window.location.href = 'http://localhost:5001/auth/google/login';
+    window.location.href = `${API_BASE}/auth/google/login`;
   };
 
   return (

@@ -28,27 +28,70 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # ---------------------------------------------------------------------------
-# In-memory short-lived token stores
-# In production these should be backed by Redis with TTL.
+# Redis-backed short-lived token stores (ISSUE-005)
 # ---------------------------------------------------------------------------
 
-# state → expiry_ts  (CSRF protection for OAuth flow — SEC-05)
-_pending_states: dict[str, float] = {}
+_STATE_TTL_SECONDS: int = 300   # 5 minutes
+_CODE_TTL_SECONDS:  int = 60    # 1 minute
 
-# code → (jwt, expiry_ts)  (one-time code for token exchange — ISSUE-03)
+def _get_redis():
+    """Lazily connect to Redis. Returns None if REDIS_URL is not set."""
+    redis_url = getattr(settings, "REDIS_URL", None)
+    if not redis_url:
+        return None
+    try:
+        import redis  # type: ignore
+        return redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=1)
+    except Exception as exc:
+        logger.warning("auth: Redis unavailable (%s) — using in-memory fallback.", exc)
+        return None
+
+# Fallback in-memory stores
+_pending_states: dict[str, float] = {}
 _pending_codes: dict[str, tuple[str, float]] = {}
 
-_STATE_TTL_SECONDS: float = 300.0   # 5 minutes
-_CODE_TTL_SECONDS:  float = 60.0    # 1 minute
+def _set_state(state: str) -> None:
+    r = _get_redis()
+    if r:
+        r.setex(f"oauth_state:{state}", _STATE_TTL_SECONDS, "1")
+    else:
+        _pending_states[state] = time.time() + _STATE_TTL_SECONDS
 
+def _verify_state(state: str) -> bool:
+    r = _get_redis()
+    if r:
+        return r.delete(f"oauth_state:{state}") == 1
+    else:
+        now = time.time()
+        if state in _pending_states and now <= _pending_states[state]:
+            del _pending_states[state]
+            return True
+        if state in _pending_states:
+            del _pending_states[state]
+        return False
 
-def _cleanup_expired() -> None:
-    """Remove expired entries to prevent unbounded memory growth."""
-    now = time.time()
-    for k in [k for k, v in _pending_states.items() if now > v]:
-        del _pending_states[k]
-    for k in [k for k, (_, exp) in _pending_codes.items() if now > exp]:
-        del _pending_codes[k]
+def _set_code(code: str, jwt_token: str) -> None:
+    r = _get_redis()
+    if r:
+        r.setex(f"oauth_code:{code}", _CODE_TTL_SECONDS, jwt_token)
+    else:
+        _pending_codes[code] = (jwt_token, time.time() + _CODE_TTL_SECONDS)
+
+def _pop_code(code: str) -> Optional[str]:
+    r = _get_redis()
+    if r:
+        jwt_token = r.get(f"oauth_code:{code}")
+        if jwt_token:
+            r.delete(f"oauth_code:{code}")
+        return jwt_token
+    else:
+        now = time.time()
+        if code in _pending_codes:
+            jwt_token, exp = _pending_codes[code]
+            del _pending_codes[code]
+            if now <= exp:
+                return jwt_token
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -63,9 +106,8 @@ async def google_login():
     SEC-05: Generates a random `state` value, stores it server-side, and
     includes it in the redirect. The callback verifies it before proceeding.
     """
-    _cleanup_expired()
     state = secrets.token_urlsafe(32)
-    _pending_states[state] = time.time() + _STATE_TTL_SECONDS
+    _set_state(state)
 
     redirect_uri = f"{settings.BASE_URL}/auth/google/callback"
     auth_url = (
@@ -95,16 +137,12 @@ async def google_callback(
               the URL fragment. The frontend exchanges the code for a JWT via
               POST /auth/exchange.
     """
-    _cleanup_expired()
-
     # ── CSRF check (SEC-05) ──────────────────────────────────────────────────
-    now = time.time()
-    if not state or state not in _pending_states or now > _pending_states[state]:
+    if not state or not _verify_state(state):
         raise HTTPException(
             status_code=400,
             detail="Invalid or expired OAuth state. Please try logging in again.",
         )
-    del _pending_states[state]  # consume it — one-time use
 
     # ── Exchange code for Google tokens ──────────────────────────────────────
     redirect_uri = f"{settings.BASE_URL}/auth/google/callback"
@@ -165,7 +203,7 @@ async def google_callback(
     # The JWT never appears in the URL. The frontend POSTs the code to
     # /auth/exchange and receives the JWT in the response body.
     exchange_code = secrets.token_urlsafe(32)
-    _pending_codes[exchange_code] = (jwt_token, time.time() + _CODE_TTL_SECONDS)
+    _set_code(exchange_code, jwt_token)
 
     frontend_callback = f"{settings.FRONTEND_URL}/auth/callback"
     return RedirectResponse(f"{frontend_callback}?code={exchange_code}")
@@ -183,18 +221,12 @@ async def exchange_code(code: str):
     Returns:
         {"access_token": "<jwt>", "token_type": "bearer"}
     """
-    _cleanup_expired()
-    now = time.time()
-
-    entry = _pending_codes.get(code)
-    if not entry or now > entry[1]:
+    jwt_token = _pop_code(code)
+    if not jwt_token:
         raise HTTPException(
             status_code=400,
             detail="Invalid or expired authentication code. Please log in again.",
         )
-
-    jwt_token, _ = entry
-    del _pending_codes[code]   # consume — single use
 
     return {"access_token": jwt_token, "token_type": "bearer"}
 

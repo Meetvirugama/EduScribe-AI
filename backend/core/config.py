@@ -34,7 +34,9 @@ class Settings(BaseSettings):
     TRANSCRIPT_DIR: str = "storage/transcripts"
     FRAMES_DIR: str = "storage/frames"
     EMBEDDING_DIR: str = "storage/embeddings"
+    METRICS_DIR: str = "storage/metrics"
     YOUTUBE_API_KEY: Optional[str] = None
+    REDIS_URL: Optional[str] = None
 
     # ── Retention Policy ──────────────────────────────────────────────────────
     DEFAULT_RETENTION_DAYS: int = 7

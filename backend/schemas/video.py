@@ -28,9 +28,7 @@ _YOUTUBE_HOSTNAMES = {
     "music.youtube.com",
 }
 
-# Hard cap on retention — mirrors settings.MAX_RETENTION_DAYS
-# Imported lazily to avoid circular imports during Pydantic model init.
-_MAX_RETENTION_DAYS: int = 15
+# We lazily import settings.MAX_RETENTION_DAYS in validators
 
 
 class VideoBase(BaseModel):
@@ -87,11 +85,13 @@ class YoutubeRequest(BaseModel):
         Enforce the maximum retention limit at the schema level (ISSUE-08).
         Clients cannot request a retention period longer than MAX_RETENTION_DAYS.
         """
+        from core.config import settings
+        max_days = settings.MAX_RETENTION_DAYS
         if v < 1:
             raise ValueError("retention_days must be at least 1")
-        if v > _MAX_RETENTION_DAYS:
+        if v > max_days:
             raise ValueError(
-                f"retention_days cannot exceed {_MAX_RETENTION_DAYS} days"
+                f"retention_days cannot exceed {max_days} days"
             )
         return v
 
@@ -103,10 +103,12 @@ class VideoUpdateRetention(BaseModel):
     @classmethod
     def clamp_retention(cls, v: int) -> int:
         """Enforce max retention on updates too (ISSUE-08)."""
+        from core.config import settings
+        max_days = settings.MAX_RETENTION_DAYS
         if v < 1:
             raise ValueError("retention_days must be at least 1")
-        if v > _MAX_RETENTION_DAYS:
+        if v > max_days:
             raise ValueError(
-                f"retention_days cannot exceed {_MAX_RETENTION_DAYS} days"
+                f"retention_days cannot exceed {max_days} days"
             )
         return v

@@ -19,13 +19,14 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 def _require_admin(current_user: User = Depends(get_current_user)) -> User:
     """
-    Simple admin check: currently any authenticated user can access.
-    Extend this to check a User.is_admin flag when role management is added.
+    Admin guard: only users with is_admin=True may access these endpoints.
+    All other authenticated users receive a 403 Forbidden response.
+    (ISSUE-003 fix)
     """
-    # TODO: uncomment when is_admin field is added to User model
-    # if not getattr(current_user, "is_admin", False):
-    #     raise HTTPException(status_code=403, detail="Admin access required.")
+    if not getattr(current_user, "is_admin", False):
+        raise HTTPException(status_code=403, detail="Admin access required.")
     return current_user
+
 
 
 @router.get("/metrics/summary")
