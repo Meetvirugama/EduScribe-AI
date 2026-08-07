@@ -11,6 +11,7 @@ from core.security import get_current_user
 from core.config import settings
 from models.user import User
 from models.video import Video
+from services.vector_store import vector_store
 
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
@@ -37,7 +38,28 @@ async def get_notes(
     with open(notes_path, "r", encoding="utf-8") as f:
         content = f.read()
         
+        
     return {"video_id": video_id, "content": content}
+
+@router.get("/{video_id}/search")
+async def search_notes(
+    video_id: str,
+    query: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Semantic search across the generated notes."""
+    result = await db.execute(select(Video).where(Video.id == parse_video_id(video_id), Video.user_id == str(current_user.id)))
+    video = result.scalar_one_or_none()
+    
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+        
+    try:
+        results = await vector_store.search(video_id, query)
+        return {"video_id": video_id, "query": query, "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {e}")
 
 @router.get("/{video_id}/download")
 async def download_notes(
