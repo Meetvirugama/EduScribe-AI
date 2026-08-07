@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Video, Clock, Upload, Database, Languages, Zap, FileText, ChevronLeft, ScanText, PlayCircle } from 'lucide-react';
+import { Video, Clock, Upload, Database, Languages, Zap, FileText, ChevronLeft, ScanText, PlayCircle, BookOpen } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './ProjectWorkspace.css';
 
 /**
@@ -82,6 +84,8 @@ export default function ProjectWorkspace() {
   const [details, setDetails] = useState(null);
   const [transcript, setTranscript] = useState(null);
   const [frames, setFrames] = useState([]);
+  const [notesContent, setNotesContent] = useState(null);
+  const [activeTab, setActiveTab] = useState('notes');
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -90,12 +94,14 @@ export default function ProjectWorkspace() {
     Promise.all([
       fetch(`http://localhost:5001/videos/${id}/details`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()),
       fetch(`http://localhost:5001/videos/${id}/transcript`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()),
-      fetch(`http://localhost:5001/videos/${id}/frames?selected_only=false`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json())
+      fetch(`http://localhost:5001/videos/${id}/frames?selected_only=false`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.json()),
+      fetch(`http://localhost:5001/notes/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }).then(res => res.ok ? res.json() : null)
     ])
-    .then(([detailsData, transcriptData, framesData]) => {
+    .then(([detailsData, transcriptData, framesData, notesData]) => {
       setDetails(detailsData);
       setTranscript(transcriptData);
       setFrames(framesData);
+      if (notesData && notesData.content) setNotesContent(notesData.content);
     })
     .catch(err => { console.error(err); setError('Failed to load workspace data.'); });
   }, [id, token]);
@@ -272,14 +278,51 @@ export default function ProjectWorkspace() {
           </div>
         </div>
 
-        {/* Right Column: Transcript Explorer */}
+        {/* Right Column: AI Notes & Transcript */}
         <div className="pw-right-col">
           <div className="pw-transcript-header">
-            <Languages size={20} color="#60A5FA"/>
-            <h3 >Transcript Explorer</h3>
+            <div className="pw-tabs">
+              <button 
+                className={`pw-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
+                onClick={() => setActiveTab('notes')}
+              >
+                <BookOpen size={16} /> AI Notes
+              </button>
+              <button 
+                className={`pw-tab-btn ${activeTab === 'transcript' ? 'active' : ''}`}
+                onClick={() => setActiveTab('transcript')}
+              >
+                <Languages size={16} /> Transcript Explorer
+              </button>
+            </div>
           </div>
           
-          <VirtualTranscript transcript={transcript} />
+          <div className="pw-right-content">
+            {activeTab === 'transcript' ? (
+              <VirtualTranscript transcript={transcript} />
+            ) : (
+              <div className="pw-markdown-container">
+                {notesContent ? (
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({node, ...props}) => {
+                        let src = props.src;
+                        if (src && src.startsWith('/storage/')) {
+                          src = `http://localhost:5001${src}`;
+                        }
+                        return <img {...props} src={src} style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '1rem', border: '1px solid rgba(255,255,255,0.1)' }} />
+                      }
+                    }}
+                  >
+                    {notesContent}
+                  </ReactMarkdown>
+                ) : (
+                  <div className="pw-transcript-loading">AI Notes are pending generation...</div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

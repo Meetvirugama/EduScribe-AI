@@ -2,3 +2,12 @@ backend/venv/
 storage/
 .DS_Store
 testData/
+
+# Environment Variables
+.env
+.env.*
+
+# Databases
+*.sqlite
+*.sqlite3
+backend/database.sqlite

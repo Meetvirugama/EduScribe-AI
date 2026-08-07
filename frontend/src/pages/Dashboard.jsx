@@ -66,7 +66,7 @@ export default function Dashboard() {
   }, [fetchVideos, fetchAnalytics]);
 
   useEffect(() => {
-    const hasPending = videos.some(v => ['PROCESSING', 'UPLOADING', 'TRANSCRIBING'].includes(v.status));
+    const hasPending = videos.some(v => ['PROCESSING', 'UPLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING', 'EXTRACTING_FRAMES', 'RUNNING_OCR', 'CHUNKING', 'DETECTING_TOPICS', 'GENERATING_NOTES', 'EXPORTING'].includes(v.status));
     const delay = hasPending ? 3000 : 30000;
     const timer = setTimeout(() => {
       fetchVideos();
@@ -116,7 +116,7 @@ export default function Dashboard() {
             <h3 >{v.title}</h3>
             <p className="video-card-type">Type: {v.source_type}</p>
             
-            {v.status === 'PROCESSING' || v.status === 'UPLOADING' || v.status === 'TRANSCRIBING' ? (
+            {['PROCESSING', 'UPLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING', 'EXTRACTING_FRAMES', 'RUNNING_OCR', 'CHUNKING', 'DETECTING_TOPICS', 'GENERATING_NOTES', 'EXPORTING'].includes(v.status) ? (
               <div className="progress-container">
                 <div className="progress-text">
                   <span>{v.current_step || 'Initializing'}</span>
