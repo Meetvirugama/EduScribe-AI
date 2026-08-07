@@ -1,34 +1,41 @@
 """
 key_manager.py — Per-Provider API Key Rotation
 
-Cycles through all registered API keys for a provider before declaring
-that provider exhausted. Switching keys within the same provider is
-always preferred over switching providers, because a key switch
-preserves the currently selected model's quality characteristics,
-whereas a provider switch changes the underlying model entirely.
+Cycles through all registered API keys for a provider using round-robin.
+Handles dynamic loading of API keys from the environment and 
+intelligent cooldowns for temporary rate limits.
 
 LLD Reference: §21 API Key Rotation
-               §21.3 Detailed Explanation
-               §21.4 Internal Workflow
-
-Three-layer resilience architecture (§21.3):
-    1. API Key Rotation (§21)  — try all keys on current provider
-            ↓ all keys exhausted
-    2. Retry Strategy (§19)    — retry with exponential backoff on current provider
-            ↓ all retries exhausted
-    3. Fallback Strategy (§20) — switch to next provider in sequence
-
-Key rotation example (§21.3):
-    Google: Key 1 → Quota Full → Key 2 → Quota Full → Key 3 → Quota Full
-            → Switch Provider (Fallback Strategy §20)
 """
 
 import os
+import re
+import time
 import logging
+from dataclasses import dataclass
 from threading import Lock
-from typing import Optional
+from typing import Optional, Dict, List
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class KeyMetadata:
+    """Tracks the health and usage metadata of a single API key."""
+    key: str
+    account_id: Optional[str] = None
+    last_used: float = 0.0
+    failure_count: int = 0
+    cooldown_until: float = 0.0
+    exhausted: bool = False
+
+    def is_healthy(self) -> bool:
+        """A key is healthy if it's not permanently exhausted and not in cooldown."""
+        if self.exhausted:
+            return False
+        if time.time() < self.cooldown_until:
+            return False
+        return True
 
 
 class KeyManager:
@@ -36,134 +43,98 @@ class KeyManager:
     Per-provider API key rotation manager.
 
     Maintains an ordered list of API keys for each integrated provider
-    and cycles through them round-robin when a key's quota is exhausted.
-    Only after every key for a given provider is exhausted does the
-    system escalate to the Fallback Strategy (switching providers).
-
-    Thread-safe: uses a per-provider lock so multiple Celery workers
-    can safely rotate keys concurrently without racing.
-
-    LLD Reference: §21 API Key Rotation
+    and cycles through them round-robin.
     """
 
-    # ---------------------------------------------------------------------------
-    # Registered providers and their environment-variable names.
-    # ---------------------------------------------------------------------------
-    # Provider → Ordered list of env-var names for that provider's API keys.
-    # Keys are tried in order; exhausted keys are skipped until quota resets.
-    # Naming matches backend/.env exactly — update both files together.
-    # Architecture: AI Router → LLM Router | Embedding Router | Vision Router
-    # ---------------------------------------------------------------------------
-    _PROVIDER_ENV_VARS: dict[str, list[str]] = {
-        # LLM Router — Tier 2: High-Speed Free (14,400 RPD per key)
-        # Key purposes: K1=DeepSeek-R1(Math), K2=Llama33(Notes), K3=Qwen(Code),
-        #               K4=Whisper(Speech), K5=Backup
-        "groq": [
-            "GROQ_API_KEY_1",
-            "GROQ_API_KEY_2",
-            "GROQ_API_KEY_3",
-            "GROQ_API_KEY_4",
-            "GROQ_API_KEY_5",
-        ],
-        # LLM Router — Tier 1: Premium Free (1M context, OCR, multimodal)
-        # Key purposes: K1=NoteGen, K2=OCR+Vision, K3=HTML+Markdown, K4=Backup
-        "gemini": [
-            "GEMINI_API_KEY_1",
-            "GEMINI_API_KEY_2",
-            "GEMINI_API_KEY_3",
-            "GEMINI_API_KEY_4",
-        ],
-        # LLM Router — Tier 1 & 3: OpenRouter free models
-        # Key purposes: K1=DeepSeekV3, K2=Qwen, K3=Llama, K4=Mistral, K5=Emergency
-        "openrouter": [
-            "OPENROUTER_API_KEY_1",
-            "OPENROUTER_API_KEY_2",
-            "OPENROUTER_API_KEY_3",
-            "OPENROUTER_API_KEY_4",
-            "OPENROUTER_API_KEY_5",
-        ],
-        # Embedding Router — Primary (BGE-M3, e5-Mistral, Jina-via-HF)
-        # Key purposes: K1=BGE-M3, K2=e5-Mistral, K3=Jina-via-HF, K4=Research
-        "huggingface": [
-            "HF_API_KEY_1",
-            "HF_API_KEY_2",
-            "HF_API_KEY_3",
-            "HF_API_KEY_4",
-        ],
-        # Embedding Router — RAG pipeline (Transcript→Chunking→Jina→Qdrant)
-        "jina": [
-            "JINA_API_KEY",
-        ],
-        # Embedding Router — Reranking + Semantic Search
-        # Key purposes: K1=Reranking, K2=Embeddings, K3=Search, K4=Backup, K5=HighTraffic
-        "cohere": [
-            "COHERE_API_KEY_1",
-            "COHERE_API_KEY_2",
-            "COHERE_API_KEY_3",
-            "COHERE_API_KEY_4",
-            "COHERE_API_KEY_5",
-        ],
-        # Dev/Test ONLY — NOT for production (benchmarking, A/B testing, CI/CD)
-        "github": [
-            "GITHUB_MODELS_TOKEN",
-        ],
-        # Vision Router / Edge — Cloudflare Workers AI
-        # Key purposes: K1=Llama(edge), K2=BGE-embed, K3=Whisper, K4=EdgeChat, K5=Backup
-        "cloudflare": [
-            "CLOUDFLARE_API_KEY_1",
-            "CLOUDFLARE_API_KEY_2",
-            "CLOUDFLARE_API_KEY_3",
-            "CLOUDFLARE_API_KEY_4",
-            "CLOUDFLARE_API_KEY_5",
-        ],
-    }
-
-
     def __init__(self) -> None:
-        # provider_name → [list of available keys]
-        self._keys: dict[str, list[str]] = {}
-        # provider_name → current index into the key list
-        self._current_index: dict[str, int] = {}
-        # provider_name → set of exhausted key indices
-        self._exhausted: dict[str, set[int]] = {}
+        # provider_name → list of KeyMetadata
+        self._keys: Dict[str, List[KeyMetadata]] = {}
+        # provider_name → current index into the key list (round-robin)
+        self._current_index: Dict[str, int] = {}
         # per-provider threading lock
-        self._locks: dict[str, Lock] = {}
+        self._locks: Dict[str, Lock] = {}
 
         self._load_keys()
 
+    def _validate_key(self, provider: str, key: str) -> bool:
+        """Validates key format based on provider to catch malformed keys early."""
+        if not key:
+            return False
+        provider = provider.lower()
+        if provider == "groq" and not key.startswith("gsk_"):
+            return False
+        if provider == "openrouter" and not key.startswith("sk-or-"):
+            return False
+        if provider in ("huggingface", "hf") and not key.startswith("hf_"):
+            return False
+        return True
+
     def _load_keys(self) -> None:
         """
-        Load all API keys from environment variables.
-        Keys that are missing or empty are silently skipped.
+        Dynamically loads all API keys from environment variables.
+        Supports both PROVIDER_API_KEYS (comma-separated) and 
+        PROVIDER_API_KEY_1 (numbered).
         """
-        for provider, env_vars in self._PROVIDER_ENV_VARS.items():
-            loaded: list[str] = []
-            for env_var in env_vars:
-                value = os.environ.get(env_var, "").strip()
-                if value:
-                    loaded.append(value)
-                else:
-                    logger.debug(
-                        "key_manager: env var %s not set for provider %s — skipped",
-                        env_var,
-                        provider,
-                    )
+        providers_found = set()
+        
+        # Scan os.environ for anything matching *_API_KEY*
+        for env_key in os.environ.keys():
+            env_key = env_key.upper()
+            
+            match_numbered = re.match(r'^([A-Z0-9]+)_API_KEY(?:_\d+)?$', env_key)
+            if match_numbered:
+                providers_found.add(match_numbered.group(1).lower())
+                
+            match_plural = re.match(r'^([A-Z0-9]+)_API_KEYS$', env_key)
+            if match_plural:
+                providers_found.add(match_plural.group(1).lower())
 
-            self._keys[provider] = loaded
-            self._current_index[provider] = 0
-            self._exhausted[provider] = set()
-            self._locks[provider] = Lock()
+        for provider in providers_found:
+            loaded_meta: List[KeyMetadata] = []
+            
+            # Special case for huggingface
+            env_prefix = "HUGGINGFACE" if provider in ("huggingface", "hf") else provider.upper()
+            actual_provider = "huggingface" if provider == "hf" else provider
+            
+            # 1. Check plural comma-separated format
+            plural_var = f"{env_prefix}_API_KEYS"
+            if plural_var in os.environ:
+                keys = [k.strip() for k in os.environ[plural_var].split(",") if k.strip()]
+                for k in keys:
+                    if self._validate_key(actual_provider, k):
+                        loaded_meta.append(KeyMetadata(key=k))
+            
+            # 2. Check numbered format
+            for i in range(1, 20):
+                single_var = f"{env_prefix}_API_KEY_{i}"
+                if single_var in os.environ:
+                    k = os.environ[single_var].strip()
+                    if k and self._validate_key(actual_provider, k):
+                        meta = KeyMetadata(key=k)
+                        
+                        # Handle Cloudflare Account IDs paired with keys
+                        if actual_provider == "cloudflare":
+                            acc_var = f"{env_prefix}_ACCOUNT_ID_{i}"
+                            meta.account_id = os.environ.get(acc_var, "").strip()
+                            
+                        loaded_meta.append(meta)
+            
+            # 3. Check singular format without number
+            single_var_no_num = f"{env_prefix}_API_KEY"
+            if single_var_no_num in os.environ and plural_var not in os.environ:
+                k = os.environ[single_var_no_num].strip()
+                if k and self._validate_key(actual_provider, k):
+                    if not any(m.key == k for m in loaded_meta):
+                        loaded_meta.append(KeyMetadata(key=k))
 
-            if loaded:
+            if loaded_meta:
+                self._keys[actual_provider] = loaded_meta
+                self._current_index[actual_provider] = 0
+                self._locks[actual_provider] = Lock()
                 logger.info(
                     "key_manager: loaded %d key(s) for provider '%s'",
-                    len(loaded),
-                    provider,
-                )
-            else:
-                logger.warning(
-                    "key_manager: no API keys found for provider '%s'",
-                    provider,
+                    len(loaded_meta),
+                    actual_provider,
                 )
 
     # ---------------------------------------------------------------------------
@@ -172,95 +143,95 @@ class KeyManager:
 
     def get_active_key(self, provider: str) -> Optional[str]:
         """
-        Return the current active API key for the given provider.
-
-        Returns None if the provider is unknown or has no configured keys.
-        Does NOT advance the rotation index — call mark_key_exhausted() when
-        a key returns a quota error.
-
-        LLD Reference: §21.4 Internal Workflow step B → "Use Key N"
+        Return the next healthy API key for the given provider using round-robin.
+        Automatically cycles to the next healthy key on every call.
         """
         keys = self._keys.get(provider)
         if not keys:
             return None
 
         with self._locks[provider]:
-            idx = self._current_index[provider]
-            if idx < len(keys):
-                return keys[idx]
-            return None  # all keys exhausted
+            start_idx = self._current_index[provider]
+            for i in range(len(keys)):
+                idx = (start_idx + i) % len(keys)
+                meta = keys[idx]
+                
+                if meta.is_healthy():
+                    meta.last_used = time.time()
+                    # Advance for the next call to achieve round-robin load balancing
+                    self._current_index[provider] = (idx + 1) % len(keys)
+                    return meta.key
 
-    def mark_key_exhausted(self, provider: str) -> bool:
+            return None  # all keys exhausted or in cooldown
+
+    def get_active_account_id(self, provider: str, key: str) -> Optional[str]:
+        """Return the associated account_id for a specific key (e.g. Cloudflare)."""
+        keys = self._keys.get(provider)
+        if not keys:
+            return None
+        for meta in keys:
+            if meta.key == key:
+                return meta.account_id
+        return None
+
+    def mark_key_exhausted(self, provider: str, key_val: str, error_type: str = "quota") -> bool:
         """
-        Mark the current key as quota-exhausted and advance to the next key.
-
+        Mark a specific key as exhausted or place it in cooldown.
+        error_type: "quota" (permanent), "rate_limit" (60s cooldown)
+        
         Returns:
-            True  — a next key is available; the caller should retry with it.
-            False — all keys are exhausted; the caller must escalate to
-                    the Fallback Strategy (switch provider).
-
-        LLD Reference: §21.4 Internal Workflow — Key N → Quota Full → Key N+1
+            True  — at least one key is still healthy; retry.
+            False — all keys exhausted; switch providers.
         """
         keys = self._keys.get(provider)
         if not keys:
             return False
 
         with self._locks[provider]:
-            current_idx = self._current_index[provider]
-            self._exhausted[provider].add(current_idx)
+            for meta in keys:
+                if meta.key == key_val:
+                    meta.failure_count += 1
+                    if error_type == "rate_limit":
+                        meta.cooldown_until = time.time() + 60.0
+                        logger.warning(
+                            "key_manager: %s key placed in 60s cooldown (429 Rate Limit)", 
+                            provider
+                        )
+                    else:
+                        meta.exhausted = True
+                        logger.warning(
+                            "key_manager: %s key permanently exhausted (%s)", 
+                            provider, error_type
+                        )
+                    break
 
-            # Find the next non-exhausted key
-            for next_idx in range(current_idx + 1, len(keys)):
-                if next_idx not in self._exhausted[provider]:
-                    self._current_index[provider] = next_idx
-                    logger.info(
-                        "key_manager: key %d exhausted for '%s' → rotating to key %d",
-                        current_idx + 1,
-                        provider,
-                        next_idx + 1,
-                    )
-                    return True  # next key available
-
-            # All keys exhausted → escalate to Fallback Strategy
-            logger.warning(
-                "key_manager: all %d key(s) exhausted for provider '%s' "
-                "→ escalating to Fallback Strategy",
-                len(keys),
-                provider,
-            )
-            return False
+            # Check if any keys are still healthy
+            return any(m.is_healthy() for m in keys)
 
     def all_keys_exhausted(self, provider: str) -> bool:
-        """
-        Return True if every configured key for this provider has been
-        marked as exhausted. Signals that the Fallback Strategy should
-        switch providers entirely.
-
-        LLD Reference: §21.4 Internal Workflow — "All keys exhausted → Switch Provider"
-        """
+        """Return True if every configured key for this provider is unavailable."""
         keys = self._keys.get(provider)
         if not keys:
             return True
 
         with self._locks[provider]:
-            return len(self._exhausted[provider]) >= len(keys)
+            return not any(m.is_healthy() for m in keys)
 
     def reset_provider_keys(self, provider: str) -> None:
-        """
-        Reset exhaustion state for a provider (e.g., after a daily quota reset).
-        Typically called at midnight UTC when most free-tier quotas refresh.
-
-        LLD Reference: §15.6 — "quotas reset at midnight UTC"
-        """
+        """Reset exhaustion/cooldown state for a provider."""
+        keys = self._keys.get(provider)
+        if not keys:
+            return
         with self._locks[provider]:
+            for meta in keys:
+                meta.exhausted = False
+                meta.cooldown_until = 0.0
+                meta.failure_count = 0
             self._current_index[provider] = 0
-            self._exhausted[provider] = set()
         logger.info("key_manager: reset all keys for provider '%s'", provider)
 
     def get_key_count(self, provider: str) -> int:
-        """Return the number of configured keys for a provider."""
         return len(self._keys.get(provider, []))
 
     def get_available_providers(self) -> list[str]:
-        """Return the list of providers that have at least one configured key."""
         return [p for p, keys in self._keys.items() if keys]

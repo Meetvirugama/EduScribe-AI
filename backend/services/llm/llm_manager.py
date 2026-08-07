@@ -1,32 +1,18 @@
 """
-llm_manager.py — Tier Waterfall Orchestrator
+llm_manager.py — Pipeline Orchestrator
 
 The central orchestrator for all LLM calls in EduScribe AI.
-No component outside of services/llm/ ever calls an LLM directly —
-every request flows through this class.
-
-Call flow (LLD §15.4 Internal Workflow):
-    Business Logic
-        → LLMManager.generate()
-        → model_selector.get_model_config(task)
-        → quota_tracker.has_quota(primary)
-        → key_manager.get_active_key(provider)
-        → LiteLLM (via fallback_manager + retry_manager)
-        → response_parser.parse()
-        → PydanticAI schema validation (caller's responsibility)
-        → Structured Response → calling service
+Implements a clean pipeline architecture separating context analysis,
+capability detection, model selection, execution, and metric collection.
 
 LLD Reference: §15 LLM Provider Architecture
-               §15.4 Internal Workflow
-               §16 LiteLLM
-               §16.3 Usage in Application Code
-               §18 Model Routing
-               §18.3 Routing Decision Workflow
 """
 
 import logging
 import os
-from typing import Any, Optional
+import time
+import uuid
+from typing import Any, AsyncGenerator, Optional
 
 import litellm
 
@@ -34,52 +20,29 @@ from .model_selector import TaskType, ModelConfig, get_model_config
 from .key_manager import KeyManager
 from .quota_tracker import QuotaTracker
 from .retry_manager import RetryManager
-from .fallback_manager import FallbackManager, AllProvidersExhaustedError
-from .response_parser import ResponseParser, ResponseParseError
-from .base_provider import ProviderTransientError, ProviderPermanentError
+from .fallback_manager import FallbackManager
+from pydantic import ValidationError
+from .validation import (
+    RawResponseParser,
+    JSONExtractor,
+    SchemaRegistry,
+    ResponseParseError,
+    JSONExtractionError,
+    SchemaValidationError,
+    BaseLLMOutput
+)
+from .base_provider import ProviderTransientError
+
+from .pipeline import RequestContext, CapabilityDetector, RequestCache, MetricsRecorder
+from .error_handler import ErrorHandler
+from .providers.adapters import ProviderAdapterFactory
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# LiteLLM Proxy URL
-# When the LiteLLM proxy is running (Docker, localhost, or sidecar),
-# route all calls through it. The proxy handles key rotation,
-# budget tracking, and fallback at the infrastructure level.
-# LLD Reference: §16.2 LiteLLM Proxy (Self-Hosted Gateway)
-# ---------------------------------------------------------------------------
 LITELLM_PROXY_URL: Optional[str] = os.environ.get("LITELLM_PROXY_URL")
-
 
 class LLMManager:
     """
-    Tier waterfall orchestrator for all LLM calls.
-
-    Responsibilities (LLD §15.4):
-        - Select the best provider and model for the current task (§18).
-        - Check quota availability before making a call (§15.4).
-        - Delegate key selection to KeyManager (§21).
-        - Execute the call through LiteLLM (§16).
-        - Apply exponential-backoff retry via RetryManager (§19).
-        - Cascade to the next provider on failure via FallbackManager (§20).
-        - Normalise the raw response via ResponseParser.
-        - Record request statistics against QuotaTracker.
-
-    All downstream services (notes_service, quiz_service, rag_service, etc.)
-    call LLMManager.generate() — they never import litellm or any provider
-    SDK directly. This enforces the "mandatory provider abstraction" design
-    commitment (LLD §24.2, §15).
-
-    Usage:
-        manager = LLMManager()
-
-        response = await manager.generate(
-            task=TaskType.TOPIC_DETECTION,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user",   "content": user_prompt},
-            ],
-        )
-        content: str = response["content"]
+    Decoupled pipeline orchestrator for all LLM calls.
     """
 
     def __init__(
@@ -88,28 +51,41 @@ class LLMManager:
         key_manager: Optional[KeyManager] = None,
         retry_manager: Optional[RetryManager] = None,
         fallback_manager: Optional[FallbackManager] = None,
-        response_parser: Optional[ResponseParser] = None,
+        # Validation is now static via the validation package
+        request_cache: Optional[RequestCache] = None,
     ) -> None:
-        """
-        All sub-managers are injectable for testing and can be provided
-        externally; sensible defaults are created if not supplied.
-        """
         self.quota_tracker   = quota_tracker   or QuotaTracker()
         self.key_manager     = key_manager     or KeyManager()
         self.retry_manager   = retry_manager   or RetryManager()
         self.fallback_manager = fallback_manager or FallbackManager()
-        self.response_parser = response_parser or ResponseParser()
+        # validation package methods are static
+        self.request_cache   = request_cache   or RequestCache()
+        self.adapter_factory = ProviderAdapterFactory(self.key_manager)
 
-        # Configure LiteLLM to route through the proxy if available
         if LITELLM_PROXY_URL:
             litellm.api_base = LITELLM_PROXY_URL
-            logger.info("llm_manager: routing all calls through LiteLLM proxy at %s", LITELLM_PROXY_URL)
-        else:
-            logger.info("llm_manager: no LiteLLM proxy configured — calling provider APIs directly")
+            logger.info("llm_manager: routing through LiteLLM proxy at %s", LITELLM_PROXY_URL)
 
-    # ---------------------------------------------------------------------------
-    # Primary entry point for all LLM calls
-    # ---------------------------------------------------------------------------
+    def _select_starting_model(self, config: ModelConfig) -> tuple[str, str]:
+        prim_prov = self._provider_from_model(config.primary)
+        if self.quota_tracker.has_quota(prim_prov):
+            return config.primary, prim_prov
+            
+        sec_prov = self._provider_from_model(config.secondary)
+        if self.quota_tracker.has_quota(sec_prov):
+            return config.secondary, sec_prov
+            
+        em_prov = self._provider_from_model(config.emergency)
+        return config.emergency, em_prov
+
+    def _provider_from_model(self, model: str) -> str:
+        model_lower = model.lower()
+        if model_lower.startswith("cloudflare/") or model_lower.startswith("@cf/"): return "cloudflare"
+        if model_lower.startswith("gemini"): return "gemini"
+        if model_lower.startswith("openrouter/"): return "openrouter"
+        if model_lower.startswith("groq/"): return "groq"
+        if model_lower.startswith("cohere/"): return "cohere"
+        return model_lower.split("/")[0]
 
     async def generate(
         self,
@@ -123,282 +99,178 @@ class LLMManager:
         **litellm_kwargs: Any,
     ) -> dict[str, Any]:
         """
-        Execute an LLM call for the given task type, applying the full
-        three-layer resilience architecture (key rotation → retry → fallback).
-
-        Args:
-            task:                  Task type — used to look up the routing table.
-            messages:              OpenAI-format message list.
-            override_model:        Bypass the routing table and use this model ID.
-            override_temperature:  Override the routing-table temperature.
-            override_max_tokens:   Override the routing-table max_tokens.
-            metadata:              Passed to Langfuse via LiteLLM callback for
-                                   observability (LLD §16.2 LiteLLM Proxy).
-            **litellm_kwargs:      Any additional litellm.acompletion() parameters.
-
-        Returns:
-            Normalised response dict from ResponseParser.parse().
-
-        Raises:
-            AllProvidersExhaustedError: If the entire four-tier fallback chain fails.
+        Executes a single LLM request through the pipeline.
         """
-        config: ModelConfig = get_model_config(task)
-
-        temperature = override_temperature if override_temperature is not None else config.temperature
-        max_tokens  = override_max_tokens  if override_max_tokens  is not None else config.max_tokens
-
-        # Determine the starting model
+        # 1. Pipeline Stage: Request Context Initialization
+        config = get_model_config(task)
+        temp = override_temperature if override_temperature is not None else config.temperature
+        max_t = override_max_tokens if override_max_tokens is not None else config.max_tokens
+        
+        context = RequestContext(
+            task=task,
+            messages=messages,
+            temperature=temp,
+            max_tokens=max_t,
+            metadata=metadata or {},
+            request_id=str(uuid.uuid4())[:8]
+        )
+        
+        # 2. Pipeline Stage: Capability Detection
+        response_format = litellm_kwargs.get("response_format", {}).get("type", "text")
+        context.capabilities = CapabilityDetector.detect(messages, expected_output_format=response_format)
+        
+        # 3. Pipeline Stage: Context Analyzer
         if override_model:
-            starting_model    = override_model
+            starting_model = override_model
             starting_provider = self._provider_from_model(override_model)
         else:
-            # Check quota on primary → secondary → emergency
             starting_model, starting_provider = self._select_starting_model(config)
+            
+        try:
+            prompt_tokens = litellm.token_counter(model=starting_model, messages=messages)
+            context.estimated_tokens = prompt_tokens
+            context.min_context_window = prompt_tokens + context.max_tokens
+        except Exception as e:
+            logger.debug(f"token_counter failed, defaulting context requirement to 0: {e}")
+            context.min_context_window = 0
 
-        logger.info(
-            "llm_manager: task=%s model=%s temp=%.2f max_tokens=%d",
-            task.value,
-            starting_model,
-            temperature,
-            max_tokens,
-        )
+        # 4. Pipeline Stage: Request Cache
+        cached_response = self.request_cache.get(context)
+        if cached_response:
+            logger.info(f"LLM_CACHE_HIT | req_id={context.request_id} | task={task.value}")
+            return cached_response
 
-        # Build the LiteLLM call function
+        # 5. Pipeline Stage: Execution Closure
         async def _call_provider(provider: str, model: str) -> dict[str, Any]:
             api_key = self.key_manager.get_active_key(provider)
-
+            adapter = self.adapter_factory.get_adapter(provider)
+            provider_kwargs = adapter.prepare_request(provider, model, api_key)
+            
+            call_kwargs = {**litellm_kwargs, **provider_kwargs}
+            start_time = time.time()
+            
             try:
                 raw = await litellm.acompletion(
                     model=model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
+                    messages=context.messages,
+                    temperature=context.temperature,
+                    max_tokens=context.max_tokens,
                     api_key=api_key,
-                    metadata=metadata or {"task": task.value},
-                    num_retries=0,         # retries handled by retry_manager
-                    **litellm_kwargs,
+                    metadata=context.metadata,
+                    num_retries=0, 
+                    **call_kwargs,
                 )
-                return self.response_parser.parse(raw, provider=provider)
-
-            except litellm.RateLimitError as exc:
-                # 429 — rate limit: transient, retry with backoff
-                if not self.key_manager.mark_key_exhausted(provider):
-                    # All keys exhausted — re-raise as transient to trigger fallback
-                    raise ProviderTransientError(
-                        f"All keys exhausted for '{provider}': {exc}"
-                    ) from exc
-                raise ProviderTransientError(str(exc)) from exc
-
-            except litellm.Timeout as exc:
-                raise ProviderTransientError(str(exc)) from exc
-
-            except litellm.ServiceUnavailableError as exc:
-                raise ProviderTransientError(str(exc)) from exc
-
-            except litellm.AuthenticationError as exc:
-                # 401/403 — bad API key: permanent, no retry
-                raise ProviderPermanentError(str(exc)) from exc
-
-            except litellm.BadRequestError as exc:
-                # 400 — malformed request: permanent, no retry
-                raise ProviderPermanentError(str(exc)) from exc
+                
+                # 6. Pipeline Stage: Raw Response Parsing
+                parsed = RawResponseParser.parse(raw, provider=provider)
+                
+                # 7. Pipeline Stage: Metrics Recorder
+                latency = time.time() - start_time
+                usage = parsed.get("usage", {})
+                MetricsRecorder.record(context, provider, model, latency, usage)
+                
+                # 8. Pipeline Stage: JSON Extraction & Pydantic Validation
+                schema_cls = SchemaRegistry.get_schema(task)
+                
+                # If the schema is GenericTextOutput, skip JSON extraction
+                if schema_cls.__name__ == "GenericTextOutput":
+                    return schema_cls(
+                        text=parsed["content"],
+                        provider=provider,
+                        model=model,
+                        latency=latency,
+                        total_tokens=usage.get("total_tokens", 0)
+                    )
+                
+                try:
+                    # Attempt to extract JSON (will repair if needed)
+                    json_data = JSONExtractor.extract_and_repair(parsed["content"])
+                except JSONExtractionError as e:
+                    logger.warning(f"LLM_JSON_ERROR | req_id={context.request_id} | provider={provider} | err={e}")
+                    raise ProviderTransientError(str(e)) from e
+                
+                try:
+                    # Validate against strict Pydantic schema
+                    validated_obj = schema_cls.model_validate(json_data)
+                    
+                    # Inject metadata (since schema inherits from BaseLLMOutput)
+                    # Use model_copy(update=...) for frozen models
+                    if hasattr(validated_obj, "model_copy"):
+                        validated_obj = validated_obj.model_copy(update={
+                            "provider": provider,
+                            "model": model,
+                            "latency": latency,
+                            "total_tokens": usage.get("total_tokens", 0)
+                        })
+                        
+                    return validated_obj
+                except ValidationError as e:
+                    logger.warning(f"LLM_VALIDATION_ERROR | req_id={context.request_id} | provider={provider} | err={e}")
+                    raise ProviderTransientError(f"Pydantic Validation Error: {e}") from e
 
             except ResponseParseError as exc:
-                # Treat parse failures as transient (response may have been malformed)
+                logger.warning(f"LLM_REQUEST_FAILED | req_id={context.request_id} | provider={provider} | reason=ResponseParseError")
                 raise ProviderTransientError(str(exc)) from exc
+            except Exception as exc:
+                # 7. Pipeline Stage: Error Handling
+                ErrorHandler.handle_litellm_error(exc, provider, model, context)
+                raise  # ErrorHandler always raises the mapped exception
 
-        # Execute through the fallback waterfall
-        return await self.fallback_manager.execute_with_fallback(
+        # 8. Pipeline Stage: Fallback Orchestration
+        final_response = await self.fallback_manager.execute_with_fallback(
             call_fn=_call_provider,
             quota_tracker=self.quota_tracker,
             key_manager=self.key_manager,
             retry_manager=self.retry_manager,
             preferred_provider=starting_provider,
             preferred_model=starting_model,
+            required_vision=context.capabilities.requires_vision,
+            min_context_window=context.min_context_window,
         )
+        
+        # 9. Pipeline Stage: Cache the result
+        self.request_cache.set(context, final_response)
+        
+        return final_response
 
-    # ---------------------------------------------------------------------------
-    # Convenience helpers for common task types
-    # ---------------------------------------------------------------------------
-
-    async def analyse_lecture(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.LECTURE_ANALYSIS."""
-        return await self.generate(TaskType.LECTURE_ANALYSIS, messages)
-
-    async def detect_topics(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.TOPIC_DETECTION."""
-        return await self.generate(TaskType.TOPIC_DETECTION, messages)
-
-    async def detect_subtopics(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.SUBTOPIC_DETECTION."""
-        return await self.generate(TaskType.SUBTOPIC_DETECTION, messages)
-
-    async def generate_notes(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.DETAILED_NOTES."""
-        return await self.generate(TaskType.DETAILED_NOTES, messages)
-
-    async def generate_quiz(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.QUIZ_GENERATION."""
-        return await self.generate(TaskType.QUIZ_GENERATION, messages)
-
-    async def generate_flashcards(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.FLASHCARD_GENERATION."""
-        return await self.generate(TaskType.FLASHCARD_GENERATION, messages)
-
-    async def answer_rag_query(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.RAG_ANSWERING."""
-        return await self.generate(TaskType.RAG_ANSWERING, messages)
-
-    async def correct_ocr(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.OCR_CORRECTION."""
-        return await self.generate(TaskType.OCR_CORRECTION, messages)
-
-    async def extract_concepts(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.CONCEPT_EXTRACTION."""
-        return await self.generate(TaskType.CONCEPT_EXTRACTION, messages)
-
-    async def extract_keywords(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.KEYWORD_EXTRACTION."""
-        return await self.generate(TaskType.KEYWORD_EXTRACTION, messages)
-
-    async def detect_learning_objectives(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.LEARNING_OBJECTIVE_DETECTION."""
-        return await self.generate(TaskType.LEARNING_OBJECTIVE_DETECTION, messages)
-
-    async def detect_prerequisites(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.PREREQUISITE_DETECTION."""
-        return await self.generate(TaskType.PREREQUISITE_DETECTION, messages)
-
-    async def classify_difficulty(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.DIFFICULTY_CLASSIFICATION."""
-        return await self.generate(TaskType.DIFFICULTY_CLASSIFICATION, messages)
-
-    async def generate_definitions(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.DEFINITION_GENERATION."""
-        return await self.generate(TaskType.DEFINITION_GENERATION, messages)
-
-    async def generate_step_by_step(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.STEP_BY_STEP_EXPLANATION."""
-        return await self.generate(TaskType.STEP_BY_STEP_EXPLANATION, messages)
-
-    async def detect_misconceptions(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.MISCONCEPTION_DETECTION."""
-        return await self.generate(TaskType.MISCONCEPTION_DETECTION, messages)
-
-    async def detect_edge_cases(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.EDGE_CASE_DETECTION."""
-        return await self.generate(TaskType.EDGE_CASE_DETECTION, messages)
-
-    async def generate_learning_path(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.LEARNING_PATH_RECOMMENDATION."""
-        return await self.generate(TaskType.LEARNING_PATH_RECOMMENDATION, messages)
-
-    async def generate_real_world_applications(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.REAL_WORLD_APPLICATIONS."""
-        return await self.generate(TaskType.REAL_WORLD_APPLICATIONS, messages)
-
-    async def verify_facts(self, messages: list[dict]) -> dict:
-        """Shortcut for TaskType.FACT_VERIFICATION."""
-        return await self.generate(TaskType.FACT_VERIFICATION, messages)
-
-    async def generate_embeddings(self, text: str) -> list[float]:
+    async def generate_stream(
+        self,
+        task: TaskType,
+        messages: list[dict[str, str]],
+        *,
+        override_model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncGenerator[Any, None]:
         """
-        Generate vector embeddings for a given string using litellm.
-        We default to gemini-embedding-exp-03-07 or similar if proxy not configured.
+        Executes a streaming request through the pipeline.
+        Note: Caching and Fallback are bypassed for streams.
         """
-        # For V1, we simply call litellm.aembedding. In a full system, 
-        # this would route via a specific Embeddings config in ModelSelector.
+        config = get_model_config(task)
+        context = RequestContext(
+            task=task,
+            messages=messages,
+            request_id=str(uuid.uuid4())[:8]
+        )
+        context.capabilities = CapabilityDetector.detect(messages)
+        
+        starting_model = override_model or self._select_starting_model(config)[0]
+        starting_provider = self._provider_from_model(starting_model)
+        
+        api_key = self.key_manager.get_active_key(starting_provider)
+        adapter = self.adapter_factory.get_adapter(starting_provider)
+        provider_kwargs = adapter.prepare_request(starting_provider, starting_model, api_key)
+        call_kwargs = {**kwargs, **provider_kwargs}
+        
         try:
-            # We use text-embedding-3-small via openrouter or directly gemini embeddings
-            # We'll rely on litellm's default fallback or a specific model if needed
-            model_name = "gemini/text-embedding-004"
-            api_key = self.key_manager.get_active_key("gemini")
-            response = await litellm.aembedding(
-                model=model_name,
-                input=text,
-                api_key=api_key
+            response = await litellm.acompletion(
+                model=starting_model,
+                messages=context.messages,
+                api_key=api_key,
+                stream=True,
+                num_retries=0,
+                **call_kwargs,
             )
-            return response.data[0]["embedding"]
-        except Exception as e:
-            logger.error(f"Failed to generate embeddings: {e}")
-            return []
-
-    # ---------------------------------------------------------------------------
-    # Internal helpers
-    # ---------------------------------------------------------------------------
-
-    def _select_starting_model(self, config: ModelConfig) -> tuple[str, str]:
-        """
-        Walk primary → secondary → emergency and return the first model
-        whose provider has remaining quota.
-
-        LLD Reference: §18.3 Routing Decision Workflow
-        """
-        candidates = [
-            config.primary,
-            config.secondary,
-            config.emergency,
-        ]
-        for model_id in candidates:
-            provider = self._provider_from_model(model_id)
-            if self.quota_tracker.has_quota(provider):
-                return model_id, provider
-
-        # All three have no quota — start from primary anyway and let
-        # the fallback chain handle degradation
-        logger.warning(
-            "llm_manager: no preferred model has quota; starting from primary '%s'",
-            config.primary,
-        )
-        return config.primary, self._provider_from_model(config.primary)
-
-    @staticmethod
-    def _provider_from_model(model_id: str) -> str:
-        """
-        Infer the provider name from a LiteLLM model ID / proxy alias.
-
-        Handles the following provider ID schemes:
-          - gemini/...       → gemini
-          - cohere/...       → cohere
-          - cloudflare/...   → cloudflare
-          - groq/...         → groq
-          - openrouter/...   → openrouter
-          - jina/...         → jina
-          - huggingface/...  → huggingface
-          - Bare aliases     → inferred by keyword
-
-        LLD Reference: §15.2 Integrated Provider Reference
-        """
-        model_lower = model_id.lower()
-
-        # Explicit provider-prefixed IDs (standard LiteLLM format)
-        if model_lower.startswith("gemini/"):
-            return "gemini"
-        if model_lower.startswith("cohere/"):
-            return "cohere"
-        if model_lower.startswith("cloudflare/") or model_lower.startswith("@cf/"):
-            return "cloudflare"
-        if model_lower.startswith("groq/"):
-            return "groq"
-        if model_lower.startswith("openrouter/") or ":free" in model_lower:
-            return "openrouter"
-        if model_lower.startswith("jina/"):
-            return "jina"
-        if model_lower.startswith("huggingface/") or model_lower.startswith("hf/"):
-            return "huggingface"
-        if model_lower.startswith("github/"):
-            return "github"
-
-        # Legacy bare aliases (proxy aliases without prefix)
-        if "gemini" in model_lower or "flash" in model_lower:
-            return "gemini"
-        if "command" in model_lower or "cohere" in model_lower:
-            return "cohere"
-        if model_lower.startswith("groq") or "llama33" in model_lower or "llama8b" in model_lower:
-            return "groq"
-        if "deepseek" in model_lower or "qwen" in model_lower:
-            return "openrouter"
-        if "kimi" in model_lower or "mistral-small" in model_lower or "moondream" in model_lower:
-            return "cloudflare"
-
-        return "unknown"
+            async for chunk in response:
+                yield chunk
+        except Exception as exc:
+            ErrorHandler.handle_litellm_error(exc, starting_provider, starting_model, context)

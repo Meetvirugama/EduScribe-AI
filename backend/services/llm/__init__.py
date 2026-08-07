@@ -44,10 +44,11 @@ from .key_manager import KeyManager
 from .quota_tracker import QuotaTracker
 from .retry_manager import RetryManager
 from .fallback_manager import FallbackManager, AllProvidersExhaustedError, FALLBACK_CHAIN
-from .response_parser import (
-    ResponseParser,
+from .validation import (
+    RawResponseParser,
     ResponseParseError,
-    # Pydantic schemas for all pipeline stages (§17.2)
+)
+from .validation.schemas.core import (
     LectureAnalysis,
     TopicList,
     Topic,
@@ -91,7 +92,7 @@ __all__ = [
     "FALLBACK_CHAIN",
 
     # Response layer
-    "ResponseParser",
+    "RawResponseParser",
     "ResponseParseError",
 
     # PydanticAI schemas (§17.2)

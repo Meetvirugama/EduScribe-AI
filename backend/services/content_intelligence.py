@@ -1,14 +1,21 @@
 import logging
 import json
+import warnings
 from typing import Dict, Any, List
 
 from services.llm.llm_manager import LLMManager
 from services.llm.model_selector import TaskType
-from services.llm.response_parser import ResponseParser
+from services.llm.validation import JSONExtractor
+from services.llm.validation.schemas.core import GenericTextOutput
 
 logger = logging.getLogger(__name__)
 
 class ContentIntelligenceService:
+    def _get_json(self, response) -> dict:
+        if isinstance(response, GenericTextOutput):
+            return JSONExtractor.extract_and_repair(response.text)
+        return response.model_dump()
+
     def __init__(self):
         self.llm_manager = LLMManager()
 
@@ -88,11 +95,11 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.DETAILED_NOTES, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse topics JSON: {e}")
-            logger.debug(f"Raw output: {response['content']}")
+            logger.debug(f"Raw output: {getattr(response, "text", str(response))}")
             return {"summary": "Failed to generate notes.", "topics": []}
 
     # ── Phase 2: Content Understanding ──────────────────────────────────────
@@ -135,7 +142,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.CONCEPT_EXTRACTION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse concepts/keywords JSON: {e}")
@@ -181,7 +188,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.LEARNING_OBJECTIVE_DETECTION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse learning objectives JSON: {e}")
@@ -232,7 +239,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.PREREQUISITE_DETECTION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse prerequisites JSON: {e}")
@@ -277,7 +284,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.DIFFICULTY_CLASSIFICATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse difficulty JSON: {e}")
@@ -323,7 +330,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.DEFINITION_GENERATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse definitions JSON: {e}")
@@ -376,7 +383,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.STEP_BY_STEP_EXPLANATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse step-by-step JSON: {e}")
@@ -427,7 +434,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.REAL_WORLD_APPLICATIONS, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse real-world applications JSON: {e}")
@@ -477,7 +484,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.QUIZ_GENERATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse assessments JSON: {e}")
@@ -521,7 +528,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.EXAMPLE_GENERATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse examples JSON: {e}")
@@ -577,7 +584,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.MISCONCEPTION_DETECTION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse misconceptions/edge cases JSON: {e}")
@@ -616,7 +623,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.COMMON_MISTAKES_DETECTION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse learning support JSON: {e}")
@@ -675,7 +682,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.LEARNING_PATH_RECOMMENDATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse learning path JSON: {e}")
@@ -717,7 +724,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.DEFINITION_GENERATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse glossary JSON: {e}")
@@ -767,7 +774,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.FACT_VERIFICATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse QA JSON: {e}")
@@ -805,7 +812,7 @@ class ContentIntelligenceService:
         response = await self.llm_manager.generate(TaskType.MIND_MAP_GENERATION, messages)
         
         try:
-            parsed_json = ResponseParser.extract_json(response["content"])
+            parsed_json = self._get_json(response)
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse mind map JSON: {e}")

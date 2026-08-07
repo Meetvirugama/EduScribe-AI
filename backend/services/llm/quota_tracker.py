@@ -84,14 +84,7 @@ PROVIDER_FREE_TIER_LIMITS: dict[str, dict] = {
         "tokens_per_day": None,
         "context_window": 128_000,
     },
-    # GitHub Models — Dev/Test ONLY, NOT for production
-    # Use for: model benchmarking, A/B testing, CI/CD validation
-    "github": {
-        "rpm": 15,
-        "rpd": 150,
-        "tokens_per_day": None,
-        "context_window": 128_000,
-    },
+
     # Cloudflare Workers AI — free tier: 10,000 neurons/day
     # Vision Router / Edge: K1=Llama, K2=BGE-embed, K3=Whisper, K4=EdgeChat, K5=Backup
     "cloudflare": {
