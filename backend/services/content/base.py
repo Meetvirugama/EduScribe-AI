@@ -1,8 +1,8 @@
 import logging
 from typing import Any, Dict, List
-from .lecture_context import LectureContext
+from .context import LectureContext
 from ..llm.llm_manager import LLMManager
-from .prompt_manager import PromptManager
+from .prompts import PromptManager
 from ..llm.validation.schemas.core import GenericTextOutput
 
 logger = logging.getLogger(__name__)

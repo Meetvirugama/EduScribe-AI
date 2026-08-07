@@ -28,6 +28,8 @@ from apscheduler.triggers.cron import CronTrigger
 from api.routers import video, auth
 from api.routers import frames as frames_router
 from api.routers import notes as notes_router
+from api.routers import admin as admin_router
+from api.routers import progress as progress_router
 from core.config import settings
 
 # ---------------------------------------------------------------------------
@@ -114,7 +116,32 @@ async def cleanup_expired_videos() -> None:
                     except Exception:
                         pass
 
-                # 5. Delete DB record (cascades to transcripts, frames, scores)
+                # 5. ISSUE-15: Delete AI artifacts — embeddings, RAG index, outputs
+                _ai_artifact_dirs = [
+                    os.path.join(settings.EMBEDDING_DIR, video_id),  # embedding vectors
+                    os.path.join(settings.OUTPUT_DIR, video_id),      # merged markdown + RAG index
+                ]
+                for artifact_dir in _ai_artifact_dirs:
+                    if os.path.isdir(artifact_dir):
+                        import shutil
+                        try:
+                            shutil.rmtree(artifact_dir)
+                            logger.info("Deleted AI artifact dir for %s: %s", video_id, artifact_dir)
+                        except OSError as e:
+                            logger.warning("Could not remove AI artifact dir %s: %s", artifact_dir, e)
+
+                # 6. ISSUE-15: Delete OCR temp files (named by video_id)
+                for ocr_tmp in glob.glob(f"{settings.FRAMES_DIR}/{video_id}*"):
+                    try:
+                        if os.path.isdir(ocr_tmp):
+                            import shutil
+                            shutil.rmtree(ocr_tmp)
+                        else:
+                            os.remove(ocr_tmp)
+                    except Exception:
+                        pass
+
+                # 7. Delete DB record (cascades to transcripts, frames, scores)
                 await db.delete(video)
                 deleted_count += 1
 
@@ -190,6 +217,8 @@ app.include_router(video.router)
 app.include_router(auth.router)
 app.include_router(frames_router.router)
 app.include_router(notes_router.router)
+app.include_router(admin_router.router)
+app.include_router(progress_router.router)
 
 
 # ---------------------------------------------------------------------------

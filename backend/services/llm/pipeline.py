@@ -81,9 +81,26 @@ class MetricsRecorder:
         in_tokens = usage.get("prompt_tokens", 0)
         out_tokens = usage.get("completion_tokens", 0)
         total_tokens = usage.get("total_tokens", in_tokens + out_tokens)
-        
+
         logger.info(
             f"LLM_REQUEST_SUCCESS | req_id={context.request_id} | task={context.task.value} | "
             f"provider={provider} | model={model} | latency={latency:.2f}s | "
             f"in_tokens={in_tokens} | out_tokens={out_tokens} | total_tokens={total_tokens}"
         )
+
+        # Issue #17: persist to structured metrics store (fire-and-forget)
+        try:
+            from services.monitoring.metrics_store import metrics_store
+            metrics_store.record(
+                task=context.task.value,
+                provider=provider,
+                model=model,
+                latency_ms=latency * 1000,
+                input_tokens=in_tokens,
+                output_tokens=out_tokens,
+                success=True,
+                video_id=context.metadata.get("video_id"),
+                request_id=context.request_id,
+            )
+        except Exception:
+            pass  # Never let metrics failure affect the main pipeline

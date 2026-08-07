@@ -77,3 +77,9 @@ watchfiles==1.1.1
 wcwidth==0.8.1
 websockets==15.0.1
 yt-dlp==2025.10.14
+# Issue #19 — SSE progress streaming
+sse-starlette>=1.6.1
+# Issue #16 — ARQ async job queue (Redis-backed)
+arq>=0.25.0
+# Issue #18 — Rate limiter (Redis client)
+redis>=5.0.0

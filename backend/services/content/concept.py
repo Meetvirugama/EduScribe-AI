@@ -1,5 +1,5 @@
-from .base_service import BaseContentService
-from .lecture_context import LectureContext
+from .base import BaseContentService
+from .context import LectureContext
 from ..llm.model_selector import TaskType
 import logging
 

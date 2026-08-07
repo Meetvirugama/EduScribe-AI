@@ -9,6 +9,8 @@ Fixes applied:
   IMP-07:   processing_started_at is set before background task runs.
   CS-06:    video_path is excluded from VideoResponse schema.
   REF-02:   Uses get_owned_video shared dependency for ownership checks.
+  ISSUE-18: MIME type, file size, and video duration are validated before
+            any DB record is created. Per-user rate limits applied.
 """
 import glob
 import logging
@@ -24,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from core.database import get_db
 from core.dependencies import get_owned_video
+from core.rate_limiter import upload_rate_limit, youtube_rate_limit
 from core.security import get_current_user
 from core.utils import parse_video_id
 from models.transcript import Transcript
@@ -31,6 +34,7 @@ from models.user import User
 from models.video import Video, VideoStatus, SourceType
 from schemas.video import VideoResponse, YoutubeRequest, VideoUpdateRetention
 from services import storage_service
+from services.youtube import youtube_service
 from tasks import process_video_pipeline_async
 from services.vision.extraction.frame_extractor import frame_extractor_service
 
@@ -54,6 +58,7 @@ async def upload_video(
     retention_days: int = Form(7),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    _rate: None = Depends(upload_rate_limit),  # ISSUE-18: per-user rate limit
 ):
     """Upload a local video file and start the AI processing pipeline."""
     # ISSUE-08: enforce retention limit
@@ -62,6 +67,33 @@ async def upload_video(
         raise HTTPException(
             status_code=400,
             detail=f"retention_days must be between 1 and {max_days}.",
+        )
+
+    # ISSUE-18: MIME type check — reject before saving to disk
+    _ALLOWED_MIMES = {
+        "video/mp4",
+        "video/x-matroska",
+        "video/quicktime",
+        "video/x-msvideo",
+        "video/webm",
+        "video/mpeg",
+    }
+    content_type = file.content_type or ""
+    if content_type not in _ALLOWED_MIMES:
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                f"Unsupported file type '{content_type}'. "
+                f"Allowed: {', '.join(sorted(_ALLOWED_MIMES))}"
+            ),
+        )
+
+    # ISSUE-18: File size check — read Content-Length header if provided
+    max_bytes = settings.MAX_VIDEO_SIZE_MB * 1024 * 1024
+    if file.size and file.size > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is {settings.MAX_VIDEO_SIZE_MB} MB.",
         )
 
     video_id = str(uuid.uuid4())
@@ -74,6 +106,17 @@ async def upload_video(
         file_size_bytes = os.path.getsize(file_path)
     except OSError:
         file_size_bytes = None
+
+    # ISSUE-18: Post-save size guard (in case Content-Length was absent)
+    if file_size_bytes and file_size_bytes > max_bytes:
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is {settings.MAX_VIDEO_SIZE_MB} MB.",
+        )
 
     video = Video(
         id=parse_video_id(video_id),
@@ -101,8 +144,25 @@ async def process_youtube(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    _rate: None = Depends(youtube_rate_limit),  # ISSUE-18: per-user rate limit
 ):
     """Submit a YouTube URL for AI note generation."""
+    # ISSUE-18: Pre-fetch video duration to reject overlong videos before download
+    try:
+        metadata = await youtube_service.fetch_metadata(req.url)
+        duration = metadata.get("duration_seconds", 0)
+        if duration > settings.MAX_VIDEO_DURATION_SECONDS:
+            max_hours = settings.MAX_VIDEO_DURATION_SECONDS / 3600
+            raise HTTPException(
+                status_code=400,
+                detail=f"Video is too long ({duration // 60} min). Maximum allowed is {max_hours:.0f} hours.",
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Could not pre-fetch YouTube metadata for %s: %s", req.url, exc)
+        # Non-blocking: allow the pipeline to handle failures gracefully
+
     video_id = str(uuid.uuid4())
     video = Video(
         id=parse_video_id(video_id),

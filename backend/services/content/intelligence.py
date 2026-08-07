@@ -7,6 +7,8 @@ from services.llm.llm_manager import LLMManager
 from services.llm.model_selector import TaskType
 from services.llm.validation import JSONExtractor
 from services.llm.validation.schemas.core import GenericTextOutput
+from services.rag.context_optimizer import context_optimizer
+from services.content.prompts import prompt_registry
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +50,8 @@ class ContentIntelligenceService:
         """
         logger.info("Generating topics and detailed notes...")
         
-        # 1. Prepare Transcript
-        transcript_text = self._get_timed_transcript(transcript_segments)
+        # 1. Prepare Transcript (Optimized Context)
+        transcript_text = context_optimizer.build_from_transcript(transcript_segments, max_tokens=16000)
 
         # 2. Prepare Keyframes Metadata
         frames_meta = []
@@ -62,30 +64,9 @@ class ContentIntelligenceService:
         
         frames_context = "\n".join(frames_meta)
 
-        prompt = f"""
-        You are an expert AI tutor. Analyze the following video transcript and key visual frames.
-        
-        Your task is to generate a comprehensive set of educational notes.
-        You must output ONLY valid JSON matching this exact structure:
-        {{
-            "summary": "A 2-3 paragraph high-level summary of the entire video.",
-            "topics": [
-                {{
-                    "title": "Topic Name",
-                    "start_time": "HH:MM:SS",
-                    "end_time": "HH:MM:SS",
-                    "notes_markdown": "Detailed markdown notes explaining this topic. Use bolding, bullet points, and code blocks if applicable. IMPORTANT: If any of the provided Keyframes are relevant to this topic, embed them in your markdown using the format: ![Visual Reference](Path)",
-                    "key_takeaways": ["Takeaway 1", "Takeaway 2"]
-                }}
-            ]
-        }}
-        
-        Available Keyframes:
-        {frames_context}
-        
-        Transcript:
-        {transcript_text}
-        """
+        # 3. Load from Prompt Registry
+        prompt_version = prompt_registry.get("detailed_notes")
+        prompt = prompt_version.render(frames_context=frames_context, transcript_text=transcript_text)
 
         messages = [
             {"role": "system", "content": "You are an expert AI tutor that strictly outputs valid JSON."},
@@ -99,7 +80,7 @@ class ContentIntelligenceService:
             return parsed_json
         except Exception as e:
             logger.error(f"Failed to parse topics JSON: {e}")
-            logger.debug(f"Raw output: {getattr(response, "text", str(response))}")
+            logger.debug(f"Raw output: {getattr(response, 'text', str(response))}")
             return {"summary": "Failed to generate notes.", "topics": []}
 
     # ── Phase 2: Content Understanding ──────────────────────────────────────
@@ -110,29 +91,10 @@ class ContentIntelligenceService:
         from the lecture transcript. (T13: Concept Extraction, T14: Keyword Extraction)
         """
         logger.info("Extracting concepts and keywords...")
-        transcript_text = self._get_transcript_text(transcript_segments)
+        transcript_text = context_optimizer.build_from_transcript(transcript_segments, max_tokens=10000)
 
-        prompt = f"""
-        You are an expert AI tutor. Analyze the following lecture transcript.
-        Extract the most important academic concepts, technical terms, and keywords.
-        
-        You must output ONLY valid JSON matching this exact structure:
-        {{
-            "concepts": [
-                {{
-                    "name": "Concept name",
-                    "category": "Category (e.g. Algorithm, Data Structure, Theorem, Pattern)",
-                    "importance": "high/medium/low",
-                    "brief_description": "One-sentence description"
-                }}
-            ],
-            "keywords": ["keyword1", "keyword2", "keyword3"],
-            "key_phrases": ["important phrase 1", "important phrase 2"]
-        }}
-        
-        Transcript:
-        {transcript_text}
-        """
+        prompt_version = prompt_registry.get("concept_extraction")
+        prompt = prompt_version.render(transcript_text=transcript_text)
 
         messages = [
             {"role": "system", "content": "You are an expert AI tutor that strictly outputs valid JSON."},

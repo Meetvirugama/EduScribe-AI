@@ -1,4 +1,13 @@
 from .pipeline import ContentPipeline
-from .lecture_context import LectureContext
+from .context import LectureContext
+from .intelligence import ContentIntelligenceService, content_intelligence
+from .merge import MergeService, merge_service
 
-__all__ = ["ContentPipeline", "LectureContext"]
+__all__ = [
+    "ContentPipeline", 
+    "LectureContext", 
+    "ContentIntelligenceService", 
+    "content_intelligence",
+    "MergeService",
+    "merge_service"
+]

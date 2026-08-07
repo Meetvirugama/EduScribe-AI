@@ -11,7 +11,7 @@ from core.security import get_current_user
 from core.config import settings
 from models.user import User
 from models.video import Video
-from services.vector_store import vector_store
+from services.rag.pipeline import vector_store
 
 router = APIRouter(prefix="/notes", tags=["Notes"])
 

@@ -27,6 +27,8 @@ Capability Classes (from tasks_plan.md):
     5. Embeddings & Vector Search        → gemini-embedding-2 primary
 """
 
+import hashlib
+import random
 from enum import Enum
 from dataclasses import dataclass
 
@@ -167,6 +169,28 @@ class ModelConfig:
     emergency:   str
     temperature: float
     max_tokens:  int
+
+
+@dataclass
+class ModelExperiment:
+    """
+    A/B test definition for evaluating alternative models in production.
+    """
+    model_a: str           # The control model
+    model_b: str           # The treatment model
+    traffic_split: float   # 0.0 to 1.0 (e.g. 0.2 means 20% traffic goes to model_b)
+
+# Active experiments mapping TaskType to ModelExperiment
+_EXPERIMENT_REGISTRY = {}
+
+def register_experiment(task: TaskType, experiment: ModelExperiment):
+    """Register an A/B test for a specific task."""
+    _EXPERIMENT_REGISTRY[task] = experiment
+
+def unregister_experiment(task: TaskType):
+    """Remove an A/B test."""
+    if task in _EXPERIMENT_REGISTRY:
+        del _EXPERIMENT_REGISTRY[task]
 
 
 # ---------------------------------------------------------------------------
@@ -991,19 +1015,44 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
 }
 
 
-def get_model_config(task: TaskType) -> ModelConfig:
+def get_model_config(task: TaskType, user_id: str = None) -> ModelConfig:
     """
     Return the ModelConfig for the given TaskType.
+    If an A/B test is registered for the task, probabilistically modifies
+    the 'primary' model based on traffic split.
 
     Usage (from llm_manager.py or any service):
         config = get_model_config(TaskType.TOPIC_DETECTION)
-        # config.primary == "gemini/gemini-2.5-pro"
-        # config.temperature == 0.1
-        # config.max_tokens == 1024
 
     LLD Reference: §18.4 model_selector.py Reference Implementation
     """
-    return ROUTING_TABLE[task]
+    config = ROUTING_TABLE[task]
+    
+    experiment = _EXPERIMENT_REGISTRY.get(task)
+    if experiment:
+        # Determine if we should route to Model B
+        route_to_b = False
+        if user_id:
+            # Deterministic routing based on user_id
+            hash_val = int(hashlib.md5(f"{task.name}_{user_id}".encode()).hexdigest(), 16)
+            if (hash_val % 10000) / 10000.0 < experiment.traffic_split:
+                route_to_b = True
+        else:
+            # Random routing
+            if random.random() < experiment.traffic_split:
+                route_to_b = True
+                
+        if route_to_b:
+            # Create a copy so we don't mutate the global ROUTING_TABLE
+            return ModelConfig(
+                primary=experiment.model_b,
+                secondary=config.secondary,
+                emergency=config.emergency,
+                temperature=config.temperature,
+                max_tokens=config.max_tokens
+            )
+            
+    return config
 
 
 def get_primary_model(task: TaskType) -> str:

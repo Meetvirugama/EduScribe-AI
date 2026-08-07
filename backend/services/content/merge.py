@@ -40,6 +40,10 @@ class MergeService:
         misconceptions_data: dict = None,
         # Phase 5 enrichment
         learning_path_data: dict = None,
+        # Modular Generators
+        formula_data: dict = None,
+        interview_data: dict = None,
+        revision_data: dict = None,
     ) -> Optional[str]:
         """
         Generates a heavily formatted Markdown document from AI outputs.
@@ -176,6 +180,15 @@ class MergeService:
                     md_lines.append("\n**Key Takeaways:**")
                     for tk in takeaways:
                         md_lines.append(f"- {tk}")
+                        
+                citations = t.get("citations", [])
+                if citations:
+                    md_lines.append("\n**Sources:**")
+                    for cit in citations:
+                        ts = cit.get("timestamp", "")
+                        src = cit.get("source", "transcript")
+                        md_lines.append(f"- *[{ts}] ({src})*")
+                        
                 md_lines.append("\n---\n")
 
         # ── Key Concepts & Keywords ────────────────────────────────────────────
@@ -431,6 +444,75 @@ class MergeService:
             for i, card in enumerate(flashcards, 1):
                 md_lines.append(f"**Card {i}: {card.get('front', '')}**")
                 md_lines.append(f"> {card.get('back', '')}\n")
+
+        # ── Formula Sheet ───────────────────────────────────────────────────────
+        if formula_data:
+            formulas = formula_data.get("formulas", [])
+            if formulas:
+                md_lines.append("## 🧮 Formula Sheet\n")
+                for f in formulas:
+                    name = f.get("name", "")
+                    expr = f.get("expression", "")
+                    ctx = f.get("context", "")
+                    md_lines.append(f"### {name}")
+                    if expr:
+                        md_lines.append(f"**Formula:**\n```math\n{expr}\n```")
+                    if ctx:
+                        md_lines.append(f"**Context:** {ctx}")
+                    md_lines.append("")
+                md_lines.append("---\n")
+
+        # ── Interview Questions ─────────────────────────────────────────────────
+        if interview_data:
+            tq = interview_data.get("technical_questions", [])
+            cq = interview_data.get("conceptual_questions", [])
+            if tq or cq:
+                md_lines.append("## 🎤 Interview & Viva Questions\n")
+                
+                if tq:
+                    md_lines.append("### Technical Questions\n")
+                    for i, q in enumerate(tq, 1):
+                        md_lines.append(f"**Q{i}: {q.get('question', '')}**")
+                        ans_pts = q.get('expected_answer_points', [])
+                        if ans_pts:
+                            md_lines.append(f"<details><summary><b>Expected Answer Points</b></summary>")
+                            md_lines.append("<ul>")
+                            for pt in ans_pts:
+                                md_lines.append(f"<li>{pt}</li>")
+                            md_lines.append("</ul>")
+                            md_lines.append(f"</details>\n")
+                
+                if cq:
+                    md_lines.append("### Conceptual Questions\n")
+                    for i, q in enumerate(cq, 1):
+                        md_lines.append(f"**Q{i}: {q.get('question', '')}**")
+                        ans_pts = q.get('expected_answer_points', [])
+                        if ans_pts:
+                            md_lines.append(f"<details><summary><b>Expected Answer Points</b></summary>")
+                            md_lines.append("<ul>")
+                            for pt in ans_pts:
+                                md_lines.append(f"<li>{pt}</li>")
+                            md_lines.append("</ul>")
+                            md_lines.append(f"</details>\n")
+                md_lines.append("---\n")
+
+        # ── Revision Sheet ──────────────────────────────────────────────────────
+        if revision_data:
+            facts = revision_data.get("quick_facts", [])
+            must_know = revision_data.get("must_know_points", [])
+            if facts or must_know:
+                md_lines.append("## ⚡ Quick Revision Sheet\n")
+                if facts:
+                    md_lines.append("### Quick Facts")
+                    for fact in facts:
+                        md_lines.append(f"- {fact}")
+                    md_lines.append("")
+                if must_know:
+                    md_lines.append("### Must Know Points")
+                    for mk in must_know:
+                        md_lines.append(f"- {mk}")
+                    md_lines.append("")
+                md_lines.append("---\n")
 
         # ── Learning Path ───────────────────────────────────────────────────────
         if learning_path_data:

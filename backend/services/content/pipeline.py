@@ -1,14 +1,14 @@
 import asyncio
 import logging
 from typing import Dict, Any
-from .lecture_context import LectureContext
+from .context import LectureContext
 from ..llm.llm_manager import LLMManager
 
-from .notes_service import NotesService
-from .concept_service import ConceptService
-from .quiz_service import QuizService
-from .flashcard_service import FlashcardService
-from .mindmap_service import MindmapService
+from .notes import NotesService
+from .concept import ConceptService
+from .quiz import QuizService
+from .flashcard import FlashcardService
+from .mindmap import MindmapService
 
 logger = logging.getLogger(__name__)
 
