@@ -35,7 +35,6 @@ from models.video import Video, VideoStatus, SourceType
 from schemas.video import VideoResponse, YoutubeRequest, VideoUpdateRetention
 from services import storage_service
 from services.youtube import youtube_service
-from tasks import process_video_pipeline_async
 from worker import enqueue_video_job
 from services.vision.extraction.frame_extractor import frame_extractor_service
 
@@ -143,7 +142,6 @@ async def upload_video(
 @router.post("/youtube", response_model=VideoResponse)
 async def process_youtube(
     req: YoutubeRequest,       # ISSUE-07: URL validated by Pydantic before DB insert
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     _rate: None = Depends(youtube_rate_limit),  # ISSUE-18: per-user rate limit

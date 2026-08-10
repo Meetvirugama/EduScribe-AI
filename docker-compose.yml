@@ -5,15 +5,17 @@ services:
     image: postgres:15-alpine
     container_name: eduscribe_postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password123
-      POSTGRES_DB: eduscribe
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      # MEDIUM-003 / SEC-001: Never commit a real password here.
+      # Set POSTGRES_PASSWORD in your local .env file (which is gitignored).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
+      POSTGRES_DB: ${POSTGRES_DB:-eduscribe}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d eduscribe"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-eduscribe}"]
       interval: 5s
       timeout: 5s
       retries: 5

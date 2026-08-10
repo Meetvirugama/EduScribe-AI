@@ -58,6 +58,20 @@ class VideoResponse(VideoBase):
         from_attributes = True
 
 
+def _validate_retention_days(v: int) -> int:
+    """
+    Shared retention validator — enforces 1 ≤ v ≤ MAX_RETENTION_DAYS.
+    LOW-003: Extracted to avoid the identical body existing in two places.
+    """
+    from core.config import settings
+    max_days = settings.MAX_RETENTION_DAYS
+    if v < 1:
+        raise ValueError("retention_days must be at least 1")
+    if v > max_days:
+        raise ValueError(f"retention_days cannot exceed {max_days} days")
+    return v
+
+
 class YoutubeRequest(BaseModel):
     url: str
     retention_days: int = 7
@@ -81,19 +95,8 @@ class YoutubeRequest(BaseModel):
     @field_validator("retention_days")
     @classmethod
     def clamp_retention(cls, v: int) -> int:
-        """
-        Enforce the maximum retention limit at the schema level (ISSUE-08).
-        Clients cannot request a retention period longer than MAX_RETENTION_DAYS.
-        """
-        from core.config import settings
-        max_days = settings.MAX_RETENTION_DAYS
-        if v < 1:
-            raise ValueError("retention_days must be at least 1")
-        if v > max_days:
-            raise ValueError(
-                f"retention_days cannot exceed {max_days} days"
-            )
-        return v
+        """Enforce the maximum retention limit at the schema level (ISSUE-08)."""
+        return _validate_retention_days(v)
 
 
 class VideoUpdateRetention(BaseModel):
@@ -103,12 +106,4 @@ class VideoUpdateRetention(BaseModel):
     @classmethod
     def clamp_retention(cls, v: int) -> int:
         """Enforce max retention on updates too (ISSUE-08)."""
-        from core.config import settings
-        max_days = settings.MAX_RETENTION_DAYS
-        if v < 1:
-            raise ValueError("retention_days must be at least 1")
-        if v > max_days:
-            raise ValueError(
-                f"retention_days cannot exceed {max_days} days"
-            )
-        return v
+        return _validate_retention_days(v)

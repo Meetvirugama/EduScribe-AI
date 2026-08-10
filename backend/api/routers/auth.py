@@ -165,9 +165,14 @@ async def google_callback(
 
         token_data = token_res.json()
         if "error" in token_data:
+            logger.warning(
+                "google_callback: OAuth token error — %s: %s",
+                token_data.get("error"),
+                token_data.get("error_description", "no description"),
+            )
             raise HTTPException(
                 status_code=400,
-                detail=token_data.get("error_description", "Failed to authenticate"),
+                detail="Authentication failed. Please try signing in again.",
             )
 
         google_access_token = token_data["access_token"]

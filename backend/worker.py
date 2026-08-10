@@ -134,15 +134,6 @@ class WorkerSettings:
     # Concurrency: 2 videos at a time per worker process
     max_jobs = 2
 
-    @classmethod
-    def get_redis_settings(cls):
-        """Return ARQ RedisSettings from REDIS_URL environment variable."""
-        from arq.connections import RedisSettings  # type: ignore
-        from core.config import settings
-        redis_url = settings.REDIS_URL or "redis://localhost:6379/0"
-        return RedisSettings.from_dsn(redis_url)
-
-    redis_settings = property(get_redis_settings)
 
 
 # ---------------------------------------------------------------------------

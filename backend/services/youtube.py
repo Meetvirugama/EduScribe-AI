@@ -11,7 +11,12 @@ class YouTubeService:
 
     def validate_url(self, url: str):
         parsed = urlparse(url)
-        if parsed.netloc not in ("www.youtube.com", "youtube.com", "youtu.be", "m.youtube.com"):
+        # HIGH-005: Keep in sync with YoutubeRequest._YOUTUBE_HOSTNAMES in schemas/video.py
+        _ALLOWED_HOSTNAMES = {
+            "www.youtube.com", "youtube.com", "youtu.be",
+            "m.youtube.com", "music.youtube.com",
+        }
+        if parsed.netloc not in _ALLOWED_HOSTNAMES:
             raise HTTPException(status_code=400, detail="Invalid YouTube URL")
 
     async def fetch_metadata(self, url: str) -> dict:
@@ -44,7 +49,12 @@ class YouTubeService:
         self.validate_url(url)
         
         base_ydl_opts = {
-            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+            # CRITICAL-005: Request a proper video+audio stream so cv2.VideoCapture
+            # can open the file for the vision pipeline (frame extraction, OCR).
+            # The previous audio-only format caused the entire vision pipeline to
+            # silently fail for all YouTube-sourced videos.
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'merge_output_format': 'mp4',
             'outtmpl': os.path.join(settings.UPLOAD_DIR, f'{video_id}.%(ext)s'),
             'quiet': True,
             'no_warnings': True,

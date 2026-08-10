@@ -36,6 +36,7 @@ from .base_provider import ProviderTransientError
 from .pipeline import RequestContext, CapabilityDetector, RequestCache, MetricsRecorder
 from .error_handler import ErrorHandler
 from .providers.adapters import ProviderAdapterFactory
+from .embedding_manager import EmbeddingManager
 
 logger = logging.getLogger(__name__)
 LITELLM_PROXY_URL: Optional[str] = os.environ.get("LITELLM_PROXY_URL")
@@ -66,6 +67,11 @@ class LLMManager:
             litellm.api_base = LITELLM_PROXY_URL
             logger.info("llm_manager: routing through LiteLLM proxy at %s", LITELLM_PROXY_URL)
 
+        # CRITICAL-007: Lazily created EmbeddingManager shared by embed() calls.
+        # EmbeddingManager reuses the same resilience infrastructure (key rotation,
+        # quota tracking) as LLMManager to avoid redundant initialisation.
+        self._embedding_manager: Optional[EmbeddingManager] = None
+
     def _select_starting_model(self, config: ModelConfig) -> tuple[str, str]:
         prim_prov = self._provider_from_model(config.primary)
         if self.quota_tracker.has_quota(prim_prov):
@@ -86,6 +92,29 @@ class LLMManager:
         if model_lower.startswith("groq/"): return "groq"
         if model_lower.startswith("cohere/"): return "cohere"
         return model_lower.split("/")[0]
+
+    async def embed(
+        self,
+        text,
+        **kwargs,
+    ):
+        """
+        Generate embeddings by delegating to the shared EmbeddingManager.
+
+        CRITICAL-007: This method was previously missing entirely, causing an
+        AttributeError in rag/pipeline.py and rag/embedding_store.py that
+        silently killed the entire RAG pipeline (search always returned []).
+
+        The EmbeddingManager is lazily created on first call and reused
+        across subsequent calls within the same LLMManager instance.
+        """
+        if self._embedding_manager is None:
+            self._embedding_manager = EmbeddingManager(
+                quota_tracker=self.quota_tracker,
+                key_manager=self.key_manager,
+                retry_manager=self.retry_manager,
+            )
+        return await self._embedding_manager.embed(text, **kwargs)
 
     async def generate(
         self,

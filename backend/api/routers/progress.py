@@ -21,7 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_db
+from core.database import get_db, AsyncSessionLocal
 from core.security import get_current_user
 from core.utils import parse_video_id
 from models.user import User
@@ -82,11 +82,14 @@ async def stream_progress(
     async def _event_generator() -> AsyncGenerator[dict, None]:
         while True:
             try:
-                # Re-query with a fresh session snapshot
-                res = await db.execute(
-                    select(Video).where(Video.id == parse_video_id(video_id))
-                )
-                current = res.scalar_one_or_none()
+                # Open a fresh, short-lived session per poll so we never hold
+                # the Depends-injected session open for the full stream duration
+                # (HIGH-002 / PERF-001: avoids connection pool exhaustion).
+                async with AsyncSessionLocal() as poll_db:
+                    res = await poll_db.execute(
+                        select(Video).where(Video.id == parse_video_id(video_id))
+                    )
+                    current = res.scalar_one_or_none()
 
                 if current is None:
                     yield {

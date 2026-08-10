@@ -38,12 +38,49 @@ class LectureContext:
     
     @property
     def definitions(self) -> List[Dict[str, Any]]: return self.state.definitions
-    
+
     @definitions.setter
     def definitions(self, val: List[Dict[str, Any]]): self.state.definitions = val
-    
+
+    # CRITICAL-006: Proxy properties for the extended LectureState fields
+    @property
+    def quiz(self): return self.state.quiz
+
+    @quiz.setter
+    def quiz(self, val): self.state.quiz = val
+
+    @property
+    def flashcards(self): return self.state.flashcards
+
+    @flashcards.setter
+    def flashcards(self, val): self.state.flashcards = val
+
+    @property
+    def mindmap(self): return self.state.mindmap
+
+    @mindmap.setter
+    def mindmap(self, val): self.state.mindmap = val
+
+    @property
+    def interview(self): return self.state.interview
+
+    @interview.setter
+    def interview(self, val): self.state.interview = val
+
+    @property
+    def revision(self): return self.state.revision
+
+    @revision.setter
+    def revision(self, val): self.state.revision = val
+
+    @property
+    def formula(self): return self.state.formula
+
+    @formula.setter
+    def formula(self, val): self.state.formula = val
+
     @property
     def status(self) -> Dict[str, Any]: return self.state.status
-    
+
     @property
     def errors(self) -> Dict[str, str]: return self.state.errors

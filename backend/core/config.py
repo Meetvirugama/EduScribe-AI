@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # ── Retention Policy ──────────────────────────────────────────────────────
     DEFAULT_RETENTION_DAYS: int = 7
-    MAX_RETENTION_DAYS: int = 15
+    MAX_RETENTION_DAYS: int = 30  # HIGH-004: raised from 15 to match frontend "30 Days (Maximum)"
 
     # ── Upload Limits ─────────────────────────────────────────────────────────
     MAX_VIDEO_SIZE_MB: int = 1024

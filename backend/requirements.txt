@@ -83,3 +83,18 @@ sse-starlette>=1.6.1
 arq>=0.25.0
 # Issue #18 — Rate limiter (Redis client)
 redis>=5.0.0
+
+# ── HIGH-003 / DEP-001: Missing packages added ───────────────────────────────
+# Vision pipeline
+Pillow>=10.0.0
+opencv-python>=4.8.0
+imagehash>=4.3.0
+rapidfuzz>=3.0.0
+PySceneDetect>=0.6.0
+# LLM / embedding infrastructure
+litellm>=1.30.0
+tenacity>=8.2.0
+# Note: paddlepaddle + paddleocr are excluded due to platform-specific install
+# requirements (GPU/CPU variants, Paddle version matrix). Install manually:
+#   pip install paddlepaddle paddleocr
+# The codebase gracefully handles their absence with a runtime ImportError guard.

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch, API_BASE } from '../lib/api';
 import { Video, Clock, Upload, Database, Languages, Zap, FileText, ChevronLeft, ScanText, PlayCircle, BookOpen } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ReactMarkdown from 'react-markdown';
@@ -78,8 +79,6 @@ function VirtualTranscript({ transcript }) {
   );
 }
 
-import { useAuth } from '../context/AuthContext';
-import { apiFetch, API_BASE } from '../lib/api';
 
 export default function ProjectWorkspace() {
   const { id } = useParams();

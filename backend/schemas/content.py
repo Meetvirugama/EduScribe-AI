@@ -78,10 +78,20 @@ class LectureState:
     concepts: List[Concept] = field(default_factory=list)
     definitions: List[Definition] = field(default_factory=list)
     summaries: List[Summary] = field(default_factory=list)
-    
+
+    # CRITICAL-006: These fields were missing, causing pipeline.py to always
+    # return {} for quiz/flashcards/mindmap/interview/revision/formula even
+    # though the LLM services ran and produced real output.
+    quiz: List[Any] = field(default_factory=list)
+    flashcards: List[Any] = field(default_factory=list)
+    mindmap: Dict[str, Any] = field(default_factory=dict)
+    interview: List[Any] = field(default_factory=list)
+    revision: Dict[str, Any] = field(default_factory=dict)
+    formula: Dict[str, Any] = field(default_factory=dict)
+
     # Status tracking per service/phase
     status: Dict[str, ServiceStatus] = field(default_factory=dict)
-    
+
     # Errors and metadata
     errors: Dict[str, str] = field(default_factory=dict)
     metadata: Dict[str, GenerationMetadata] = field(default_factory=dict)
