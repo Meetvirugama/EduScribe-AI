@@ -1,23 +1,22 @@
 # Project Folder Structure
 
-EduScribe AI is organized into distinct, decoupled directories ensuring maintainability and separation of concerns.
+EduScribe AI is organised into distinct, decoupled directories.
 
 ## Root Directory
 
-![System Architecture](images/system_architecture.png)
-*Figure 6. High-level Folder Directory Structure.*
-
 ```text
 EduScribe-AI/
-├── backend/                # FastAPI Python Application
-├── frontend/               # React 19 + Vite 8 Application
-├── docs/                   # Markdown Documentation
-├── storage/                # Persistent Local File Storage (gitignored)
-│   ├── uploads/            # Original uploaded video files (deleted after pipeline)
-│   ├── temp/               # Temporary audio WAV files (deleted after transcription)
+├── backend/                # FastAPI + ARQ Python application
+├── frontend/               # React 19 + Vite SPA
+├── docs/                   # Markdown documentation
+├── storage/                # Persistent local file storage (gitignored)
+│   ├── uploads/            # Incoming video files (deleted after pipeline)
+│   ├── temp/               # Temporary WAV audio files (deleted after transcription)
 │   ├── transcripts/        # JSON + TXT transcript files
-│   ├── frames/             # Extracted JPEG keyframes (per {video_id}/ subdir)
-│   └── outputs/            # Smart Notes Markdown files (per {video_id}/ subdir)
+│   ├── frames/             # Extracted JPEG keyframes per {video_id}/
+│   ├── outputs/            # Merged Markdown notes per {video_id}/
+│   ├── embeddings/         # RAG vector indexes per {video_id}/
+│   └── metrics/            # Quality evaluation metrics
 ├── docker-compose.yml      # Infrastructure orchestration
 └── README.md               # Project overview
 ```
@@ -29,52 +28,31 @@ EduScribe-AI/
 ```text
 backend/
 ├── api/
-│   ├── routers/
-│   │   ├── auth.py          # Google OAuth2 endpoints + JWT issuance
-│   │   ├── video.py         # Upload, YouTube, status, delete, storage, analytics
-│   │   ├── frames.py        # Frame list + manual vision pipeline trigger
-│   │   └── notes.py         # Smart Notes fetch, download, delete
-│   └── dependencies.py      # Auth/DB dependency injection
+│   └── routers/
+│       ├── auth.py          # Google OAuth2 + JWT issuance + /auth/exchange
+│       ├── video.py         # Upload, YouTube, list, delete, storage, analytics
+│       ├── frames.py        # Frame list + authenticated image serving
+│       ├── notes.py         # Notes fetch, download, search, delete
+│       ├── progress.py      # SSE real-time progress stream
+│       └── admin.py         # Admin-only statistics endpoints
 │
 ├── core/
-│   ├── config.py            # pydantic-settings — all env vars
-│   ├── database.py          # AsyncPG engine (pool_size=10, overflow=20, recycle=1800)
-│   └── security.py          # JWT create_access_token + get_current_user
+│   ├── config.py            # pydantic-settings: all env vars with defaults
+│   ├── database.py          # AsyncPG engine + AsyncSessionLocal
+│   ├── dependencies.py      # get_owned_video + shared dependencies
+│   └── security.py          # JWT create + validate + get_current_user
 │
 ├── models/
-│   ├── user.py              # User ORM (google_id, email, name, picture)
-│   ├── video.py             # Video ORM (status, progress, file_size_bytes, expires_at)
-│   ├── transcript.py        # Transcript ORM (video_id FK, language, word_count, source)
-│   └── frame.py             # VideoFrame + FrameMetadata + OCRResult + FrameScore
+│   ├── user.py              # User (google_id, email, name, is_admin)
+│   ├── video.py             # Video + VideoStatus enum + SourceType
+│   ├── transcript.py        # Transcript (video_id FK, language, word_count)
+│   └── vision.py            # VideoFrame, FrameMetadata, OCRResult, FrameScore
 │
 ├── schemas/
-│   ├── video.py             # VideoCreate, VideoResponse, VideoDetail Pydantic models
-│   └── frame.py             # VideoFrameResponse Pydantic models
+│   ├── video.py             # YoutubeRequest, VideoUpdateRetention, VideoResponse
+│   └── content.py           # LectureState, LectureInput, ServiceStatus
 │
 ├── services/
-│   ├── audio.py             # FFmpeg extraction (--threads 4, loudnorm, afftdn)
-│   ├── whisper_service.py   # faster-whisper INT8 + VAD + model unload
-│   ├── youtube_service.py   # yt-dlp + youtube-transcript-api (two-tier bypass)
-│   ├── storage_service.py   # Async file save/delete helpers
-│   ├── merge_service.py     # Smart Notes Markdown generator
-│   │
-│   └── vision/
-│       ├── __init__.py
-│       ├── pipeline.py          # 9-stage orchestrator
-│       │
-│       ├── extraction/
-│       │   ├── scene_detector.py    # PySceneDetect, 640px downscale, fallback
-│       │   └── frame_extractor.py   # Best-of-2 adaptive, web-relative paths
-│       │
-│       ├── filtering/
-│       │   ├── duplicate_detector.py # dHash, deque(maxlen=50) O(N)
-│       │   └── blur_detector.py      # Laplacian CV_16S, adaptive threshold
-│       │
-│       ├── ocr/
-│       │   ├── paddleocr_service.py  # Lazy-load, asyncio lock, edge pre-filter, resize
-│       │   └── cache.py              # LRUCache(maxsize=500)
-│       │
-│       └── scoring/
 │           ├── ranking_service.py    # Per-scene top_n via itertools.groupby
 │           ├── importance_scorer.py  # Composite score: blur + similarity + OCR
 │           └── feature_extractor.py # Feature vector builder

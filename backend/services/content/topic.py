@@ -6,12 +6,12 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
-class NotesService(BaseContentService):
-    async def generate_notes(self, context: LectureContext) -> Dict[str, Any]:
-        """Generates detailed, structured notes from the transcript."""
-        logger.info("Generating detailed notes...")
+class TopicService(BaseContentService):
+    async def extract_topics(self, context: LectureContext) -> Dict[str, Any]:
+        """Extracts topics from the transcript."""
+        logger.info("Extracting topics...")
         
-        empty_result = {"summary": "Failed to generate notes.", "topics": []}
+        empty_result = {"summary": "Failed to extract topics.", "topics": []}
         
         if not self.llm_manager:
             return empty_result
@@ -26,7 +26,7 @@ class NotesService(BaseContentService):
                 
         messages = self._render_messages(
             system_msg="You are an expert AI tutor that strictly outputs valid JSON.",
-            template_name="detailed_notes",
+            template_name="topic_extraction",
             transcript_text=transcript_text
         )
         
@@ -44,5 +44,5 @@ class NotesService(BaseContentService):
             return parsed.model_dump()
             
         except Exception as exc:
-            logger.error("NotesService: generation failed: %s", exc)
+            logger.error("TopicService: extraction failed: %s", exc)
             return empty_result

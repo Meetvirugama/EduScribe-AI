@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
-class RevisionService(BaseContentService):
+class RevisionGenerator(BaseContentService):
     """Generates condensed revision sheets for exam preparation."""
 
     async def generate_revision_sheet(self, context: LectureContext) -> Dict[str, Any]:

@@ -2,48 +2,37 @@ import asyncio
 import logging
 import traceback
 import os
+import json
 from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import AsyncSessionLocal
 from core.utils import parse_video_id
+from core.config import settings
 from models.video import Video, VideoStatus, SourceType
 from models.transcript import Transcript, TranscriptSource
+from models.vision import VideoFrame, OCRResult, FrameScore
+
 from services.youtube import youtube_service
 from services.audio import audio_service, whisper_service
 from services.vision.pipeline import vision_pipeline
+
+from services.merge.builder import merge_builder, save_merged_lecture, render_merged_lecture_md
 from services.content.pipeline import ContentPipeline
 from services.llm.llm_manager import LLMManager
-from services.rag.pipeline import vector_store
-from services.content.merge import merge_service
-from services.rag.structure_detector import structure_detector
-from services.rag.context_optimizer import context_optimizer
-from services.quality.evaluator import quality_evaluator
-from services.content.formula import FormulaService
-from services.content.interview import InterviewService
-from services.content.revision import RevisionService
-import json
-from models.vision import VideoFrame, OCRResult, FrameScore
 
 logger = logging.getLogger(__name__)
 
 
 async def _set_video_error(video_id, error_message: str) -> None:
-    """
-    Open a fresh DB session and mark the video as FAILED.
-
-    ISSUE-14: This function opens its own session instead of reusing the
-    pipeline's session (which has already exited its `async with` block by
-    the time the outer except clause runs).
-    """
     try:
         async with AsyncSessionLocal() as db:
             res = await db.execute(select(Video).where(Video.id == video_id))
             video = res.scalar_one_or_none()
             if video:
                 video.status = VideoStatus.FAILED
-                video.error_message = str(error_message)[:2000]  # cap length
+                video.error_message = str(error_message)[:2000]
                 await db.commit()
     except Exception as db_err:
         logger.error("Could not persist error state for video %s: %s", video_id, db_err)
@@ -52,25 +41,15 @@ async def _set_video_error(video_id, error_message: str) -> None:
 async def process_video_pipeline_async(video_id_str: str):
     """
     Background orchestrator that runs the entire pipeline for a video.
-
-    Pipeline steps:
+    
+    Refactored Pipeline steps:
       1. YouTube Download (if applicable)
       2. Audio Extraction (WAV)
       3. Whisper Transcription
       4. Vision Pipeline (frames + OCR + scoring)
-      5. Phase 1: Topics & Notes generation
-      6. Phase 2: Concepts, Objectives, Prerequisites, Difficulty (PARALLEL — PERF-01)
-      7. Phase 3–4: Definitions, Step-by-step, Applications, Examples, Misconceptions (PARALLEL)
-      8. Phase 5: Assessments, Learning Support, Learning Path, Glossary (PARALLEL)
-      9. Phase 7: QA Fact Verification + Mind Map (PARALLEL)
-     10. Markdown Generation (merge service)
-     11. Vector Embeddings for Search
-     12. Complete
-
-    ISSUE-14: Error handler opens a fresh DB session — the main session has
-              already exited its context manager by the time except runs.
-    PERF-01:  Independent LLM calls within each phase run concurrently via
-              asyncio.gather, reducing total latency from ~75s to ~20s.
+      5. Merge Pipeline (Transcript + Vision -> MergedLecture JSON)
+      6. Content Pipeline (MergedLecture -> LearningContext JSON)
+      7. Complete (Artifacts generated on-demand later via /generate)
     """
     video_id = parse_video_id(video_id_str)
 
@@ -92,11 +71,10 @@ async def process_video_pipeline_async(video_id_str: str):
                 logger.error("Video %s not found in database. Aborting pipeline.", video_id_str)
                 return
 
-            # IMP-07: record when processing starts
             video.processing_started_at = datetime.now(tz=timezone.utc)
             await db.commit()
 
-            # ── STEP 1: YouTube Download (if applicable) ──────────────────────
+            # ── STEP 1: YouTube Download ──────────────────────
             if video.source_type == SourceType.YOUTUBE:
                 await update_status(db, VideoStatus.UPLOADING, "Downloading YouTube Video", 10)
                 yt_info = await youtube_service.download_video(video.youtube_url, video_id_str)
@@ -114,11 +92,10 @@ async def process_video_pipeline_async(video_id_str: str):
             await update_status(db, VideoStatus.EXTRACTING_AUDIO, "Extracting Audio (WAV)", 20)
             audio_path = await audio_service.extract_audio(video.video_path, video_id_str)
 
-            # ── STEP 3: Transcribe Audio (Whisper) ────────────────────────────
+            # ── STEP 3: Transcribe Audio ────────────────────────────
             await update_status(db, VideoStatus.TRANSCRIBING, "Transcribing Audio (faster-whisper)", 40)
             transcript_res = await whisper_service.transcribe(audio_path, video_id_str)
 
-            # Save Transcript to DB
             transcript = Transcript(
                 video_id=video_id,
                 transcript_path=transcript_res["json_path"],
@@ -129,7 +106,6 @@ async def process_video_pipeline_async(video_id_str: str):
             db.add(transcript)
             await db.commit()
 
-            # Cleanup audio file to save disk space
             if os.path.exists(audio_path):
                 os.remove(audio_path)
 
@@ -138,8 +114,8 @@ async def process_video_pipeline_async(video_id_str: str):
             vision_stats = await vision_pipeline.run(video_id_str, video.video_path)
             logger.info("Vision Pipeline Stats: %s", vision_stats)
 
-            # ── Load Transcript + Frames for Intelligence Phases ──────────────
-            await update_status(db, VideoStatus.DETECTING_TOPICS, "Loading transcript and frames", 70)
+            # ── STEP 5: Merge Pipeline ──────────────
+            await update_status(db, VideoStatus.CHUNKING, "Aligning transcript and vision", 70)
 
             try:
                 with open(transcript.transcript_path, "r", encoding="utf-8") as f:
@@ -148,9 +124,8 @@ async def process_video_pipeline_async(video_id_str: str):
                 logger.error("Failed to read transcript for video %s: %s", video_id_str, e)
                 transcript_segments = []
 
-            # Fetch selected keyframes with OCR
             f_result = await db.execute(
-                select(VideoFrame, OCRResult)
+                select(VideoFrame, OCRResult, FrameScore)
                 .join(FrameScore, FrameScore.frame_id == VideoFrame.id)
                 .join(OCRResult, OCRResult.frame_id == VideoFrame.id, isouter=True)
                 .where(
@@ -160,152 +135,59 @@ async def process_video_pipeline_async(video_id_str: str):
                 .order_by(VideoFrame.timestamp_ms.asc())
             )
             rows = f_result.all()
+            
             frames_data = [
                 {
                     "path": frame.frame_path,
                     "time_sec": frame.timestamp_ms / 1000.0,
                     "ocr": ocr.clean_text if ocr and ocr.clean_text else None,
+                    "scene_number": frame.scene_number,
+                    "visual_importance_score": score.visual_importance_score if score else 0.0,
+                    "transcript_similarity": score.transcript_similarity if score else 0.0,
                 }
-                for frame, ocr in rows
+                for frame, ocr, score in rows
             ]
 
-            # ── STEP 4.5: Detect Lecture Structure (Issue #10) ───────────────
-            await update_status(db, VideoStatus.DETECTING_TOPICS, "Detecting lecture structure", 68)
-            try:
-                lecture_structure = await structure_detector.detect(
-                    transcript_segments,
-                    frames_data=frames_data,
-                    llm_manager=LLMManager(),
-                )
-                detected_topics = lecture_structure.as_topics()
-                logger.info(
-                    "StructureDetector: %d sections detected for video %s",
-                    len(lecture_structure.sections), video_id_str,
-                )
-            except Exception as e:
-                logger.warning("Structure detection failed for %s: %s — continuing without it", video_id_str, e)
-                lecture_structure = None
-                detected_topics = None
-
-            # ── STEP 5: Run Modular Content Pipeline ──────────────────────────
-            await update_status(db, VideoStatus.DETECTING_TOPICS, "Running Modular Content Pipeline", 72)
+            # Build and save MergedLecture (Source of Truth)
+            merged_lecture = merge_builder.build(
+                video_id=video_id_str,
+                transcript_segments=transcript_segments,
+                frames_data=frames_data,
+                metadata={"title": video.title, "duration": video.duration_seconds}
+            )
             
-            transcript_text = " ".join([seg.get("text", "") for seg in transcript_segments])
+            output_dir = os.path.join(settings.OUTPUT_DIR, video_id_str)
+            save_merged_lecture(merged_lecture, output_dir)
+            
+            # Optional: generate MD for debugging (not used by system)
+            render_merged_lecture_md(merged_lecture, output_dir)
+
+            # ── STEP 6: Content Pipeline (Knowledge Extraction) ──────────────────────────
+            await update_status(db, VideoStatus.DETECTING_TOPICS, "Extracting Knowledge", 80)
             
             llm_manager = LLMManager()
             content_pipeline = ContentPipeline(llm_manager)
-            pipeline_results = await content_pipeline.generate_full_content(
-                transcript=transcript_text,
-                segments=transcript_segments
-            )
-            
-            # Map pipeline results to variables expected by merge_service
-            topics_data = pipeline_results.get("notes", {})
-            concepts_data = pipeline_results.get("concepts", {})
-            
-            # These are generated by the new modular services
-            assessments_data = {
-                "quiz": pipeline_results.get("quiz", {}).get("quiz", []),
-                "flashcards": pipeline_results.get("flashcards", {}).get("flashcards", [])
-            }
-            mind_map_data = pipeline_results.get("mindmap", {})
+            learning_context = await content_pipeline.build_learning_context(merged_lecture)
 
-            # ── STEP 8: Modular Specialized Services ─────────────
-            await update_status(db, VideoStatus.GENERATING_NOTES, "Generating Assessments (Phase 5)", 85)
-            (
-                formula_data,
-                interview_data,
-                revision_data,
-            ) = await asyncio.gather(
-                FormulaService(llm_manager).generate_formula_sheet(transcript_segments, frames_data),
-                InterviewService(llm_manager).generate_interview_questions(transcript_segments),
-                RevisionService(llm_manager).generate_revision_sheet(transcript_segments),
-            )
-            
-            # Set unimplemented features to None
-            objectives_data = None
-            prerequisites_data = None
-            difficulty_data = None
-            definitions_data = None
-            step_by_step_data = None
-            applications_data = None
-            examples_data = None
-            misconceptions_data = None
-            support_data = None
-            learning_path_data = None
-            glossary_data = None
-            qa_data = None
+            # Save LearningContext to disk
+            learning_context_path = os.path.join(output_dir, "learning_context.json")
+            with open(learning_context_path, "w", encoding="utf-8") as f:
+                # Store the state dict containing all extracted data
+                import dataclasses
+                # Convert Pydantic models to dicts for JSON serialization
+                def pydantic_encoder(obj):
+                    if hasattr(obj, "model_dump"):
+                        return obj.model_dump()
+                    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-            # ── STEP 10: Generate Final Markdown ──────────────────────────────
-            await update_status(db, VideoStatus.EXPORTING, "Compiling Markdown", 92)
-            merged_md_path = await merge_service.generate_merged_markdown(
-                video_id=video_id_str,
-                topics_data=topics_data,
-                assessments_data=assessments_data,
-                examples_data=examples_data,
-                support_data=support_data,
-                glossary_data=glossary_data,
-                qa_data=qa_data,
-                mind_map_data=mind_map_data,
-                concepts_data=concepts_data,
-                objectives_data=objectives_data,
-                prerequisites_data=prerequisites_data,
-                difficulty_data=difficulty_data,
-                definitions_data=definitions_data,
-                step_by_step_data=step_by_step_data,
-                applications_data=applications_data,
-                misconceptions_data=misconceptions_data,
-                learning_path_data=learning_path_data,
-                formula_data=formula_data,
-                interview_data=interview_data,
-                revision_data=revision_data,
-            )
+                json.dump(dataclasses.asdict(learning_context.state), f, indent=2, default=pydantic_encoder)
 
-            if not merged_md_path:
-                logger.warning("Failed to generate merged markdown for video %s", video_id_str)
-
-            # ── STEP 10.5: Quality Evaluation (Issue #8) ──────────────────────
-            quality_score = None
-            if merged_md_path and os.path.exists(merged_md_path):
-                try:
-                    with open(merged_md_path, "r", encoding="utf-8") as _f:
-                        notes_text = _f.read()
-                    quality_report = quality_evaluator.evaluate(
-                        notes_text=notes_text,
-                        transcript_segments=transcript_segments,
-                        topics_data=topics_data,
-                    )
-                    quality_score = quality_report.overall_score
-                    if quality_report.warnings:
-                        for w in quality_report.warnings:
-                            logger.warning("[QA] video=%s: %s", video_id_str, w)
-                except Exception as e:
-                    logger.warning("Quality evaluation failed for %s: %s", video_id_str, e)
-
-            # ── STEP 11: Build RAG Vector Index (Issue #1-4: full pipeline) ───
-            await update_status(db, VideoStatus.EXPORTING, "Building RAG Vector Index", 97)
-            try:
-                embedded_count = await vector_store.build_index(
-                    video_id_str,
-                    transcript_segments=transcript_segments,
-                    frames_data=frames_data,
-                    topics=detected_topics,  # enables topic-based chunking
-                )
-                logger.info(
-                    "RAG index built with %d chunks for video %s",
-                    embedded_count, video_id_str,
-                )
-            except Exception as e:
-                logger.error("RAG index build failed for %s: %s", video_id_str, e)
-                # Non-fatal: notes are already generated, search just won't work
-
-            # ── STEP 12: Compute processing time (IMP-07) ─────────────────────
+            # ── STEP 7: Complete ──────────────────────────────────────────────
             processing_time = None
             if video.processing_started_at:
                 elapsed = datetime.now(tz=timezone.utc) - video.processing_started_at.replace(tzinfo=timezone.utc)
                 processing_time = int(elapsed.total_seconds())
 
-            # ── STEP 13: Complete ──────────────────────────────────────────────
             res = await db.execute(select(Video).where(Video.id == video_id))
             video = res.scalar_one_or_none()
             if video:
@@ -316,19 +198,8 @@ async def process_video_pipeline_async(video_id_str: str):
                     video.processing_time_seconds = processing_time
                 await db.commit()
 
-            logger.info(
-                "Pipeline completed for video %s in %ss",
-                video_id_str,
-                processing_time or "N/A",
-            )
+            logger.info("Pipeline completed for video %s in %ss", video_id_str, processing_time or "N/A")
 
     except Exception as e:
-        # ISSUE-14: Open a fresh session — the `async with AsyncSessionLocal()`
-        # block above has already exited when we reach this except clause.
-        logger.error(
-            "Pipeline failed for video %s: %s\n%s",
-            video_id_str,
-            str(e),
-            traceback.format_exc(),
-        )
+        logger.error("Pipeline failed for video %s: %s\n%s", video_id_str, str(e), traceback.format_exc())
         await _set_video_error(video_id, str(e))

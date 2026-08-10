@@ -1,201 +1,234 @@
 # Configuration Reference
 
-EduScribe AI is configured via environment variables in `backend/.env`. All settings are loaded by `core/config.py` using `pydantic-settings`.
+All configuration is loaded from `backend/.env` by `core/config.py` using `pydantic-settings`. Copy `backend/.env.example` to `backend/.env` and fill in your values.
 
 ---
 
-## Full `.env` Reference
+## Minimal Required Variables
+
+These variables **must** be set — the application will not start without them:
 
 ```env
-# ─────────────────────────────────────
-# Database
-# ─────────────────────────────────────
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/eduscribe
+JWT_SECRET=your-random-64-char-jwt-signing-key
+GOOGLE_CLIENT_ID=your-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
+```
 
-# PostgreSQL async connection string (asyncpg driver)
-DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/eduscribe
+Plus at least one LLM provider key (see LLM Keys section below).
 
-# ─────────────────────────────────────
-# Security
-# ─────────────────────────────────────
+---
 
-# JWT signing secret — use a random 64-char string in production
-SECRET_KEY=change-this-to-a-random-64-char-string
+## Full Reference
 
-# JWT algorithm (HS256 is the current default)
-ALGORITHM=HS256
+### Database
 
-# JWT token expiry in minutes (default: 1440 = 24 hours)
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | *(required)* | PostgreSQL async connection string. Must use `postgresql+asyncpg://` scheme. `sslmode` parameter is automatically stripped. |
 
-# ─────────────────────────────────────
-# Google OAuth2
-# ─────────────────────────────────────
+**Example:**
+```env
+# Local Docker
+DATABASE_URL=postgresql+asyncpg://admin:password@localhost:5432/eduscribe
 
-GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-# Where the frontend is running (used for post-login redirect)
-FRONTEND_URL=http://localhost:5173
-
-# Where the backend is running (used to construct OAuth callback URL)
-BACKEND_URL=http://localhost:5001
-
-# ─────────────────────────────────────
-# Storage
-# ─────────────────────────────────────
-
-# Root of all file storage (relative to backend working directory)
-STORAGE_DIR=../storage
-UPLOAD_DIR=../storage/uploads
-TEMP_DIR=../storage/temp
-TRANSCRIPT_DIR=../storage/transcripts
-FRAMES_DIR=../storage/frames
-OUTPUT_DIR=../storage/outputs
-
-# ─────────────────────────────────────
-# Upload Limits
-# ─────────────────────────────────────
-
-MAX_VIDEO_SIZE_MB=1024
-
-# ─────────────────────────────────────
-# faster-whisper
-# ─────────────────────────────────────
-
-# Model size: tiny | base | small | medium | large-v3 | large-v3-turbo
-# Default: base (best CPU tradeoff)
-WHISPER_MODEL=base
-
-# Device: cpu | cuda
-# For GPU: requires CUDA 11.x + cuDNN 8.x
-WHISPER_DEVICE=cpu
-
-# ─────────────────────────────────────
-# Vision Pipeline
-# ─────────────────────────────────────
-
-# PySceneDetect: content change threshold (lower = more sensitive)
-# 27.0 recommended for lecture recordings
-SCENE_DETECT_THRESHOLD=27.0
-
-# PySceneDetect: minimum scene length in frames
-SCENE_MIN_LEN_FRAMES=15
-
-# Laplacian variance blur cutoff (adaptive threshold overrides this at runtime)
-BLUR_THRESHOLD=100.0
-
-# Hamming distance threshold for dHash duplicate detection
-PHASH_THRESHOLD=5
-
-# PaddleOCR confidence filter (0.0–1.0)
-OCR_MIN_CONFIDENCE=0.70
-
-# PaddleOCR language
-OCR_LANG=en
-
-# Minimum RapidFuzz similarity to record a transcript match
-TRANSCRIPT_MATCH_MIN_SCORE=10.0
-
-# ─────────────────────────────────────
-# Retention
-# ─────────────────────────────────────
-
-# Default retention days if user doesn't specify (7, 14, or 30)
-DEFAULT_RETENTION_DAYS=7
+# Neon serverless
+DATABASE_URL=postgresql+asyncpg://user:pass@ep-xxx.us-east-1.aws.neon.tech/eduscribe
 ```
 
 ---
 
-## Settings Object (`core/config.py`)
+### Authentication
 
-```python
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    DATABASE_URL: str
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
-    FRONTEND_URL: str = "http://localhost:5173"
-    BACKEND_URL: str = "http://localhost:5001"
-
-    WHISPER_MODEL: str = "base"
-    WHISPER_DEVICE: str = "cpu"
-
-    SCENE_DETECT_THRESHOLD: float = 27.0
-    BLUR_THRESHOLD: float = 100.0
-    PHASH_THRESHOLD: int = 5
-    OCR_MIN_CONFIDENCE: float = 0.70
-    MAX_VIDEO_SIZE_MB: int = 1024
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
-```
+| Variable | Default | Description |
+|---|---|---|
+| `JWT_SECRET` | *(required)* | JWT signing key. Generate with: `python -c "import secrets; print(secrets.token_urlsafe(64))"` |
+| `JWT_ALGORITHM` | `HS256` | JWT signing algorithm |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` | Token lifetime in minutes (default = 24 hours) |
+| `GOOGLE_CLIENT_ID` | *(required)* | From Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | *(required)* | From Google Cloud Console |
 
 ---
 
-## Whisper Model Selection Guide
+### URLs
 
-| Model | Size | CPU Speed (1hr audio) | Accuracy | VRAM (GPU) |
-|---|---|---|---|---|
-| `tiny` | 39M params | ~1–2 min | Good | 0.5 GB |
-| `base` | 74M params | ~3–4 min ✅ default | Very good | 1 GB |
-| `small` | 244M params | ~8–10 min | Great | 2 GB |
-| `medium` | 769M params | ~20–25 min | Excellent | 5 GB |
-| `large-v3` | 1.5B params | ~60–90 min | Best | 10 GB |
-| `large-v3-turbo` | distilled | ~15–20 min | Near-best | 6 GB |
-
-For production with GPU: `large-v3-turbo` with `compute_type="int8_float16"` gives the best quality/cost ratio.
+| Variable | Default | Description |
+|---|---|---|
+| `BASE_URL` | `http://localhost:5001` | Backend URL (used to build OAuth callback URI) |
+| `FRONTEND_URL` | `http://localhost:5173` | Frontend URL (used for post-login redirect) |
+| `ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated CORS allowed origins |
 
 ---
 
-## Vision Threshold Tuning
+### Storage
 
-### `SCENE_DETECT_THRESHOLD`
+All paths are relative to the backend working directory.
 
-| Value | Effect |
+| Variable | Default | Description |
+|---|---|---|
+| `UPLOAD_DIR` | `storage/uploads` | Incoming video files (deleted after pipeline) |
+| `OUTPUT_DIR` | `storage/outputs` | Merged Markdown notes |
+| `TEMP_DIR` | `storage/temp` | Temporary WAV audio files |
+| `TRANSCRIPT_DIR` | `storage/transcripts` | Transcript JSON + TXT files |
+| `FRAMES_DIR` | `storage/frames` | Extracted JPEG keyframes |
+| `EMBEDDING_DIR` | `storage/embeddings` | RAG vector index per video |
+| `METRICS_DIR` | `storage/metrics` | Quality evaluation metrics |
+
+All directories are **created automatically** on backend startup.
+
+---
+
+### Redis (ARQ Job Queue)
+
+| Variable | Default | Description |
+|---|---|---|
+| `REDIS_URL` | `None` | Redis connection string. Required to run the ARQ worker. Example: `redis://localhost:6379/0` |
+
+> **Note:** If `REDIS_URL` is not set, the ARQ worker cannot start. The API can still run, but video processing jobs will not execute.
+
+---
+
+### Retention Policy
+
+| Variable | Default | Description |
+|---|---|---|
+| `DEFAULT_RETENTION_DAYS` | `7` | Default retention for new videos |
+| `MAX_RETENTION_DAYS` | `30` | Maximum retention a user can request (matches frontend "30 Days (Maximum)") |
+
+---
+
+### Upload Limits
+
+| Variable | Default | Description |
+|---|---|---|
+| `MAX_VIDEO_SIZE_MB` | `1024` | Maximum upload file size in megabytes |
+| `SUPPORTED_VIDEO_FORMATS` | `mp4,mkv,mov,avi` | Accepted video extensions |
+| `SUPPORTED_AUDIO_FORMATS` | `mp3,wav,m4a` | Accepted audio extensions |
+| `MAX_VIDEO_DURATION_SECONDS` | `7200` | Max video length (2 hours) |
+| `MAX_UPLOADS_PER_HOUR` | `5` | Per-user rate limit for file uploads |
+| `MAX_YOUTUBE_PER_HOUR` | `10` | Per-user rate limit for YouTube ingestion |
+
+---
+
+### Whisper
+
+| Variable | Default | Description |
+|---|---|---|
+| `WHISPER_MODEL` | `base` | Model size: `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo` |
+| `WHISPER_DEVICE` | `cpu` | `cpu` or `cuda` (requires CUDA 11.x + cuDNN 8.x) |
+
+**Model selection guide:**
+
+| Model | Parameters | CPU Time (1hr audio) | VRAM (GPU) |
+|---|---|---|---|
+| `tiny` | 39M | ~1–2 min | 0.5 GB |
+| `base` | 74M | ~3–4 min ✅ default | 1 GB |
+| `small` | 244M | ~8–10 min | 2 GB |
+| `medium` | 769M | ~20–25 min | 5 GB |
+| `large-v3` | 1.5B | ~60–90 min | 10 GB |
+| `large-v3-turbo` | distilled | ~15–20 min | 6 GB |
+
+For GPU production: `large-v3-turbo` with `WHISPER_DEVICE=cuda` gives the best quality/cost ratio.
+
+---
+
+### Vision Pipeline Tuning
+
+| Variable | Default | Description |
+|---|---|---|
+| `SCENE_DETECT_THRESHOLD` | `27.0` | PySceneDetect sensitivity (lower = more scenes detected) |
+| `SCENE_MIN_LEN_FRAMES` | `15` | Minimum frames per detected scene |
+| `BLUR_THRESHOLD` | `30.0` | Laplacian variance minimum (adaptive threshold overrides this per-video) |
+| `PHASH_THRESHOLD` | `5` | dHash Hamming distance threshold for duplicate detection |
+| `OCR_MIN_CONFIDENCE` | `0.70` | Minimum PaddleOCR confidence to accept a text detection |
+| `TRANSCRIPT_MATCH_MIN_SCORE` | `10.0` | Minimum RapidFuzz score to record a frame-transcript match |
+
+**Threshold guidance:**
+
+| `SCENE_DETECT_THRESHOLD` | Effect |
 |---|---|
-| 15–20 | Very sensitive — catches minor camera moves, produces many small scenes |
-| **27.0** | ✅ Recommended — good balance for slide-based lectures |
+| 15–20 | Very sensitive — many small scenes; use for fast-cut video |
+| **27.0** | ✅ Recommended — balanced for slide-based lectures |
 | 35–50 | Lenient — may miss subtle slide transitions |
 
-### `BLUR_THRESHOLD`
-
-The adaptive threshold (`max(BLUR_THRESHOLD, median_score * 0.5)`) overrides this at runtime for each video. Lower this value if too many frames are being discarded for dark/low-contrast content.
-
-| Value | Effect |
-|---|---|
-| 30–50 | Keep most frames (use for webcam/whiteboard content) |
-| **100.0** | ✅ Default (adaptive threshold adjusts automatically) |
-| 150–200 | Strict (only very sharp frames kept) |
-
-### `PHASH_THRESHOLD` (dHash Hamming distance)
-
-| Value | Effect |
+| `PHASH_THRESHOLD` | Effect |
 |---|---|
 | 2–3 | Strict — only near-identical frames removed |
 | **5** | ✅ Default — ~8% pixel difference tolerance |
-| 8–10 | Lenient — use for heavily compressed or low-quality streams |
+| 8–10 | Lenient — use for compressed or low-quality streams |
+
+---
+
+### RAG Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `CHUNK_SIZE` | `1000` | Target chunk size in characters |
+| `CHUNK_OVERLAP` | `200` | Overlap between adjacent chunks |
+| `TOP_K_RESULTS` | `5` | Number of chunks to retrieve before re-ranking |
+| `CHUNK_STRATEGY` | `timestamp` | Chunking strategy: `token`, `semantic`, `timestamp`, `topic` |
+| `MMR_LAMBDA` | `0.7` | MMR relevance weight (0 = max diversity, 1 = max relevance) |
+| `HYBRID_BM25_ALPHA` | `0.5` | BM25 weight in hybrid retrieval (0 = dense only, 1 = BM25 only) |
+| `EMBED_MODEL_VERSION` | `v1` | Bump to force re-embedding of all videos |
+| `RERANK_TOP_N` | `3` | Final results returned after MMR re-ranking |
+
+---
+
+### LLM API Keys
+
+Multiple keys per provider are supported (comma-separated). The key manager round-robins across them.
+
+```env
+# Google Gemini (https://aistudio.google.com)
+GEMINI_API_KEYS=your-key-1,your-key-2
+
+# Groq (https://console.groq.com)
+GROQ_API_KEYS=gsk_key1,gsk_key2,gsk_key3
+
+# OpenRouter (https://openrouter.ai)
+OPENROUTER_API_KEYS=sk-or-v1-key1,sk-or-v1-key2
+
+# Cohere (https://dashboard.cohere.com)
+COHERE_API_KEYS=your-cohere-key-1
+
+# Cloudflare AI (https://dash.cloudflare.com)
+# Cloudflare requires Account ID paired with API Key — use numbered format:
+CLOUDFLARE_ACCOUNT_ID_1=your-account-id-1
+CLOUDFLARE_API_KEY_1=your-api-key-1
+CLOUDFLARE_ACCOUNT_ID_2=your-account-id-2
+CLOUDFLARE_API_KEY_2=your-api-key-2
+
+# HuggingFace (https://huggingface.co/settings/tokens)
+HUGGINGFACE_API_KEYS=hf_key1,hf_key2
+
+# Jina AI — used for RAG embeddings (https://jina.ai/api-key)
+JINA_API_KEY=jina_your-key
+```
+
+---
+
+### Quality Evaluation
+
+| Variable | Default | Description |
+|---|---|---|
+| `MIN_QUALITY_SCORE` | `0.5` | Minimum composite quality score — below this triggers a warning log |
 
 ---
 
 ## Docker Compose Environment
 
-When using Docker Compose, environment variables can be set in `docker-compose.yml` or via a `.env` file at the project root:
+When running with Docker Compose, set these in a `.env` file at the project root (or in `docker-compose.yml`). Use **service names** as hostnames:
 
-```yaml
-services:
-  backend:
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/eduscribe
-      - SECRET_KEY=your-secret-key
-      - GOOGLE_CLIENT_ID=your-client-id
-      - GOOGLE_CLIENT_SECRET=your-client-secret
-      - FRONTEND_URL=http://localhost:5173
+```env
+DATABASE_URL=postgresql+asyncpg://admin:password@postgres:5432/eduscribe
+REDIS_URL=redis://redis:6379/0
+BASE_URL=http://localhost:5001
+FRONTEND_URL=http://localhost:5173
 ```
 
-Note: When running in Docker, use the **service name** (`postgres`) as the DB host, not `localhost`.
+The PostgreSQL container credentials are also controlled by env vars:
+```env
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=your-strong-password   # set in .env, never commit
+POSTGRES_DB=eduscribe
+```

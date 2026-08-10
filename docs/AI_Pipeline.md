@@ -1,11 +1,8 @@
-# AI Pipeline
+# AI Pipeline — Vision & Audio Models
 
-EduScribe AI uses a combination of specialized AI models and classic computer vision algorithms to process multimedia content. Every model runs locally — no cloud API calls for core processing.
+EduScribe AI uses a combination of specialised AI models and computer vision algorithms to process multimedia content. The models described here run locally — no cloud API calls for audio or vision processing.
 
-## 🧠 Core AI Models
-
-![Vision Pipeline](images/vision_pipeline.png)
-*Figure 3. AI Models and Pipeline Flow.*
+> **LLM content generation** (quiz, flashcards, concept extraction, etc.) is covered in [LLM & Content Generation](LLM_Content_Generation.md).
 
 ---
 

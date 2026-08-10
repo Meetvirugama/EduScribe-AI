@@ -1,97 +1,80 @@
 import asyncio
 import logging
 from typing import Dict, Any, List
+
 from .context import LectureContext
 from ..llm.llm_manager import LLMManager
+from schemas.content import LectureInput, ServiceStatus
 
-from .notes import NotesService
+from services.merge.models import MergedLecture, MergedSection
+
+from .topic import TopicService
 from .concept import ConceptService
-from .quiz import QuizService
-from .flashcard import FlashcardService
-from .mindmap import MindmapService
-from .interview import InterviewService
-from .revision import RevisionService
-
-# CRITICAL-006 / HIGH-001: FormulaService is intentionally NOT imported here.
-# It previously ran in Level-1 but its result was discarded (hardcoded {} in the
-# return dict). The orchestrator (STEP 8) calls FormulaService directly and uses
-# that output. Running it here too was pure wasted LLM spend. Removed.
+from .definition import DefinitionService
+from .example import ExampleService
+from .key_point import KeyPointService
+from .relationship import RelationshipService
 
 logger = logging.getLogger(__name__)
 
 class ContentPipeline:
     """
-    Orchestrates the execution of domain-specific content services.
-    Uses asyncio.gather() to run independent generations concurrently.
-
-    CRITICAL-006 fix: All service results are now captured and returned.
-    HIGH-001 fix: Removed redundant formula/interview/revision calls from
-    this pipeline (those are already run by orchestrator STEP 8, whose results
-    are actually used). Only the unique work this pipeline contributes is kept:
-    notes, concepts, quiz, flashcards, and mindmap.
+    Orchestrates the extraction of knowledge from a MergedLecture.
+    It builds a complete LearningContext.
+    
+    Architecture rule: 
+    This pipeline DOES NOT generate artifacts (quiz, flashcards, etc).
+    It only builds the structured source of truth (LearningContext).
     """
     def __init__(self, llm_manager: LLMManager):
         self.llm_manager = llm_manager
-        self.notes_service = NotesService(llm_manager)
+        
+        # Extraction Services
+        self.topic_service = TopicService(llm_manager)
         self.concept_service = ConceptService(llm_manager)
-        self.quiz_service = QuizService(llm_manager)
-        self.flashcard_service = FlashcardService(llm_manager)
-        self.mindmap_service = MindmapService(llm_manager)
+        self.definition_service = DefinitionService(llm_manager)
+        self.example_service = ExampleService(llm_manager)
+        self.key_point_service = KeyPointService(llm_manager)
+        self.relationship_service = RelationshipService(llm_manager)
 
-    async def generate_full_content(self, transcript: str, metadata: Dict[str, Any] = None, segments: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def build_learning_context(self, merged_lecture: MergedLecture) -> LectureContext:
         """
-        Executes the full pipeline using a dependency graph and retry logic.
-        Returns actual LLM-generated results for all service types.
+        Extracts foundational knowledge from the MergedLecture sequentially section by section,
+        and aggregates into a single LearningContext.
         """
-        logger.info("Starting DAG-based content pipeline...")
-        from schemas.content import LectureInput
-        lecture_input = LectureInput(transcript=transcript, metadata=metadata or {}, segments=segments or [])
+        logger.info(f"Starting content extraction pipeline for video {merged_lecture.video_id}")
+        
+        lecture_input = LectureInput(
+            transcript=merged_lecture.full_transcript_text,
+            metadata=merged_lecture.metadata,
+            segments=merged_lecture.all_transcript_segments,
+            frames=[
+                {
+                    "path": f.frame_path, 
+                    "time_sec": f.timestamp_sec, 
+                    "ocr": f.ocr_text, 
+                    "scene_number": f.scene_number
+                } 
+                for f in merged_lecture.all_frames
+            ]
+        )
         context = LectureContext(input=lecture_input)
-        from schemas.content import ServiceStatus
-
-        # Level 1: Independent prerequisites — run concurrently
-        notes_result, concept_result = await asyncio.gather(
-            self.notes_service.execute_with_retry("notes", context, self.notes_service.generate_notes, context),
+        
+        # Level 1: Foundational extractions (run concurrently)
+        await asyncio.gather(
+            self.topic_service.execute_with_retry("topic", context, self.topic_service.extract_topics, context),
             self.concept_service.execute_with_retry("concept", context, self.concept_service.extract_concepts, context),
+            self.definition_service.execute_with_retry("definition", context, self.definition_service.extract_definitions, context),
+            self.example_service.execute_with_retry("example", context, self.example_service.extract_examples, context),
+            self.key_point_service.execute_with_retry("key_point", context, self.key_point_service.extract_key_points, context),
         )
 
-        # Level 2: Services that depend on concept extraction
-        quiz_result = None
-        flashcard_result = None
-        mindmap_result = None
-
+        # Level 2: Dependent extractions (Relationships need Concepts)
         if context.status.get("concept") == ServiceStatus.COMPLETED:
-            level_2_coros = [
-                self.flashcard_service.execute_with_retry("flashcard", context, self.flashcard_service.generate_flashcards, context),
-                self.mindmap_service.execute_with_retry("mindmap", context, self.mindmap_service.generate_mindmap, context),
-            ]
-
-            # Quiz additionally depends on notes being available
-            if context.status.get("notes") == ServiceStatus.COMPLETED:
-                level_2_coros.append(
-                    self.quiz_service.execute_with_retry("quiz", context, self.quiz_service.generate_quiz, context)
-                )
-
-            level_2_results = await asyncio.gather(*level_2_coros)
-            flashcard_result = level_2_results[0]
-            mindmap_result = level_2_results[1]
-            if len(level_2_results) > 2:
-                quiz_result = level_2_results[2]
+            await self.relationship_service.execute_with_retry(
+                "relationship", context, self.relationship_service.extract_relationships, context
+            )
         else:
-            logger.warning("Skipping Level 2 tasks because concept extraction failed.")
+            logger.warning("Skipping Relationship extraction because concept extraction failed.")
 
-        return {
-            "concepts": context.concepts,
-            "notes": context.topics,
-            # CRITICAL-006: Return actual service results, not hardcoded {}
-            "quiz": quiz_result or {},
-            "flashcards": flashcard_result or {},
-            "mindmap": mindmap_result or {},
-            # formula/interview/revision are handled exclusively by orchestrator STEP 8
-            # to avoid running them twice (HIGH-001). Set to sentinel so callers know.
-            "formula": None,
-            "interview": None,
-            "revision": None,
-            "status": {k: v.value for k, v in context.status.items()},
-            "errors": context.errors,
-        }
+        return context

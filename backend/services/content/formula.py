@@ -19,7 +19,7 @@ from ..llm.model_selector import TaskType
 logger = logging.getLogger(__name__)
 
 
-class FormulaService(BaseContentService):
+class FormulaSheetGenerator(BaseContentService):
     """
     Generates formula sheets by extracting mathematical expressions
     from both the transcript and OCR-extracted slide text.

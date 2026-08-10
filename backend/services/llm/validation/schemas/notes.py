@@ -59,7 +59,6 @@ class TopicNote(BaseModel):
     title: str = Field(min_length=1)
     start_time: str = "00:00:00"
     end_time: str = "00:00:00"
-    notes_markdown: str = Field(min_length=10)
     key_takeaways: List[str] = Field(default_factory=list)
     citations: List[Citation] = Field(default_factory=list)
 

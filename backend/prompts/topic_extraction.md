@@ -14,7 +14,6 @@ You must output ONLY valid JSON matching this exact structure:
             "title": "Main Topic Heading",
             "start_time": "00:00:00",
             "end_time": "00:00:00",
-            "notes_markdown": "Detailed explanatory markdown text for this topic. Include headings, lists, and emphasis where appropriate.",
             "key_takeaways": ["Takeaway 1", "Takeaway 2"],
             "citations": [
                 {

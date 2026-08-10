@@ -1,119 +1,164 @@
 # Processing Pipeline
 
-The Processing Pipeline is the central nervous system of EduScribe AI. When a video is ingested, it flows through multiple sequential stages to produce transcripts, key frames, and smart merged notes.
+When a video is submitted, it flows through a multi-stage pipeline orchestrated by `pipeline/orchestrator.py` and executed inside an ARQ worker process.
 
-## 🔄 End-to-End Workflow
+---
 
-![Processing Pipeline](images/processing_pipeline.png)
-*Figure 2. End-to-End Video Processing Pipeline.*
+## End-to-End Flow
 
 ```mermaid
 graph TD
-    A[Raw Video Upload / YouTube URL] --> B[Video Ingestion]
-    B -->|asyncio.to_thread| C[Async File Save + DB Record]
-    C --> D[Background Pipeline Dispatched]
+    A["POST /videos/upload OR /videos/youtube"] --> B["API: Create Video DB record (status=UPLOADING)"]
+    B --> C["enqueue_video_job → Redis"]
+    C --> D["ARQ Worker dequeues job"]
 
-    D --> E{YouTube Captions Available?}
-    E -->|Yes| F[youtube-transcript-api JSON]
-    E -->|No| G[FFmpeg Audio Extraction]
-    G -->|--threads 4, 16kHz mono| H[faster-whisper INT8 + VAD]
-    H --> I[Timestamped Transcript JSON + TXT]
-    F --> I
+    D --> E{"Source type?"}
+    E -->|YouTube| F["yt-dlp: Download video+audio MP4"]
+    E -->|Upload| G["File already on disk"]
 
-    I --> J[Vision Pipeline]
+    F & G --> H["FFmpeg: Extract 16kHz mono WAV"]
 
-    subgraph Vision Pipeline
-        J1[PySceneDetect: Scene Boundaries]
-        J2[OpenCV: Best-of-2 Frame Sampling]
-        J3[dHash: Duplicate Removal - deque O N]
-        J4[Laplacian: Adaptive Blur Filter]
-        J5[PaddleOCR: Text Extraction - LRU Cache]
-        J6[RapidFuzz: Transcript Matching]
-        J7[Score + Select 1 Best per Scene]
-        J8[Bulk DB Insert]
-        J9[Cleanup Unselected Frames]
+    H --> I{"YouTube captions available?"}
+    I -->|Yes| J["youtube-transcript-api: Fetch JSON captions"]
+    I -->|No| K["faster-whisper INT8: Transcribe WAV"]
 
-        J1 --> J2 --> J3 --> J4 --> J5 --> J6 --> J7 --> J8 --> J9
+    J & K --> L["Save timestamped JSON + TXT transcript"]
+
+    L --> M["Vision Pipeline"]
+
+    subgraph "Vision Pipeline (9 Stages)"
+        M1["PySceneDetect: Scene boundaries"]
+        M2["OpenCV: Best-of-2 frame extraction"]
+        M3["dHash: Duplicate frame removal"]
+        M4["Laplacian: Adaptive blur filter"]
+        M5["Edge density: Pre-filter for OCR"]
+        M6["PaddleOCR: Text extraction"]
+        M7["RapidFuzz: Frame ↔ transcript match"]
+        M8["Composite score + per-scene selection"]
+        M9["Bulk DB insert + unselected frame cleanup"]
+        M1 --> M2 --> M3 --> M4 --> M5 --> M6 --> M7 --> M8 --> M9
     end
 
-    J --> J1
-    J9 --> K[Merge Pipeline]
-    K --> L[Smart Notes Markdown]
-    L --> M[DB: status=COMPLETED]
-    M --> N[APScheduler: Nightly Delete at expires_at]
+    M --> M1
+    M9 --> N["LLM Content Pipeline"]
+
+    subgraph "LLM Content Pipeline (parallel phases)"
+        N1["Phase 1: Topics + Notes"]
+        N2["Phase 2: Concepts, Objectives, Prerequisites (parallel)"]
+        N3["Phase 3: Definitions, Examples, Misconceptions (parallel)"]
+        N4["Phase 4: Quiz, Flashcards, Mind Map (parallel)"]
+        N5["Phase 5: Formula Sheet, Interview Prep, Revision Plan (parallel)"]
+        N6["Phase 6: QA Fact Check + Quality Eval"]
+        N1 --> N2 --> N3 --> N4 --> N5 --> N6
+    end
+
+    N --> N1
+    N6 --> O["Merge Service → merged_transcript.md"]
+    O --> P["RAG: Chunk + Embed + Index"]
+    P --> Q["DB: status=COMPLETED, progress=100%"]
+    Q --> R["APScheduler: Nightly delete at expires_at"]
 ```
 
 ---
 
-## Pipeline Stages
+## Stage Details
 
-### 1. Ingestion & Async File Save
+### Stage 1 — Content Ingestion
 
-Whether the source is a direct file upload or a YouTube link:
+| Path | Mechanism |
+|---|---|
+| YouTube URL | yt-dlp downloads `bestvideo+bestaudio/mp4` (audio+video stream so OpenCV can open the file) |
+| File upload | File already written to `storage/uploads/` by the API upload endpoint |
 
-- **File upload:** `POST /videos/upload` (multipart/form-data). File is written asynchronously via `asyncio.to_thread()` to avoid blocking the FastAPI event loop during large uploads. File size is captured via `os.path.getsize()` and stored as `file_size_bytes`.
-- **YouTube URL:** `POST /videos/youtube`. Metadata fetched immediately via yt-dlp (no download). Download deferred to background pipeline only if captions are unavailable.
-
-A `Video` DB record is created immediately with `status=UPLOADING`, and the client receives a `202 Accepted` response with the video ID.
+The API creates the `Video` DB record immediately with `status=UPLOADING` and returns `202 Accepted` with the `video_id`. The heavy work begins only after the ARQ worker picks up the job.
 
 ---
 
-### 2. Audio Extraction (FFmpeg)
+### Stage 2 — Audio Extraction (FFmpeg)
 
 ```
-Input: video file (any format)
-Output: /storage/temp/{video_id}.wav
-Format: PCM 16-bit, 16,000 Hz, Mono, --threads 4
+Input:   storage/uploads/{video_id}.mp4 (any format)
+Output:  storage/temp/{video_id}.wav
+Format:  PCM 16-bit, 16,000 Hz, Mono
 Filters: loudnorm (EBU R128), afftdn (noise reduction)
+Flags:   --threads 4  (~50% faster filter graph)
 ```
 
-The `--threads 4` flag parallelizes the FFmpeg filter graph, cutting extraction time by ~50% for long videos.
+---
+
+### Stage 3 — Transcription
+
+**Path A — YouTube native captions (preferred):**
+`youtube-transcript-api` fetches captions (manual EN preferred, auto-generated EN fallback). If found, Whisper is **skipped entirely** — saves 3–4 minutes per video.
+
+**Path B — faster-whisper:**
+```python
+WhisperModel("base", device="cpu", compute_type="int8")
+model.transcribe(wav_path, vad_filter=True, beam_size=5)
+```
+- INT8 quantization: 4–8× faster than openai-whisper on CPU
+- VAD filter: skips silence (~20% additional speed gain)
+- Model is unloaded after transcription to free ~75 MB for OCR
+
+Output: `storage/transcripts/{video_id}.json` (timestamped segments) and `.txt`.
 
 ---
 
-### 3. Transcription
+### Stage 4 — Vision Pipeline (9 Sub-Stages)
 
-**Path A — YouTube captions (priority):**  
-`youtube-transcript-api` fetches native captions (manual EN → auto-generated EN). If found, Whisper transcription is **skipped entirely**. Captions arrive in <2s.
-
-**Path B — faster-whisper:**  
-INT8 quantized CTranslate2 model with VAD filter. Processes ~1 hour of audio in 3–4 minutes on CPU. Model is unloaded after transcription to free RAM.
-
-Output: timestamped JSON + TXT files in `/storage/transcripts/`.
-
----
-
-### 4. Vision Pipeline (9 stages)
-
-| Stage | Algorithm | Key Optimization |
+| Stage | Algorithm | Key Detail |
 |---|---|---|
-| Scene Detection | PySceneDetect ContentDetector | 640px adaptive downscale (6x CPU reduction) |
-| Frame Extraction | OpenCV best-of-2 | asyncio.to_thread, blur cached at 320px |
-| Duplicate Removal | dHash + Hamming | deque(maxlen=50) O(N) |
-| Blur Filtering | Laplacian CV_16S | Adaptive threshold, score reused from extraction |
-| OCR | PaddleOCR | Edge pre-filter (skip 40%), LRU cache 500 entries |
-| Transcript Match | RapidFuzz token_set_ratio | Per-frame similarity score |
-| Scoring & Selection | Composite score | **1 best frame per scene** (groupby fix) |
-| DB Persist | Bulk insert | No N+1 |
-| File Cleanup | os.remove() | Web-relative path → absolute path resolution |
+| Scene detection | PySceneDetect `ContentDetector` | `threshold=27.0`, 640px adaptive downscale (6× CPU reduction) |
+| Frame extraction | OpenCV best-of-2 | Mid-point + 66%, keep sharper; blur computed at 320px |
+| Duplicate removal | dHash Hamming distance | `deque(maxlen=50)` → O(N), not O(N²) |
+| Blur filter | Laplacian variance (`CV_16S`) | Adaptive threshold: `max(global_min, median_score × 0.5)` |
+| OCR pre-filter | Edge density check | Skips ~40% of frames with no detectable text |
+| OCR | PaddleOCR | Async lock, LRU cache 500 entries, resize to ≤1280px |
+| Transcript match | RapidFuzz `token_set_ratio` | Links each frame to the active transcript segment |
+| Scoring + selection | Composite score | 1 best frame per scene; `blur + similarity + OCR count + confidence` |
+| DB persist + cleanup | Bulk insert | Unselected frame files deleted from disk |
 
 ---
 
-### 5. Merge Pipeline (Smart Notes)
+### Stage 5 — LLM Content Generation
 
-The `MergeService` produces a Markdown document combining:
-- Full timestamped transcript
-- Selected frame images (web-relative URLs)
-- OCR-extracted text at the correct timestamps
+The `ContentPipeline` runs domain services concurrently using `asyncio.gather`:
 
-**Alignment:** For each selected frame, the service finds the transcript segment whose time range encompasses `frame.timestamp_ms / 1000.0`, injecting the frame and OCR text inline.
+```
+Phase 1 (sequential prerequisite):
+  NotesService   → Topics + formatted notes
+  ConceptService → Key concepts extracted from transcript
 
-**Output format:**
+Phase 2 (parallel, depends on Phase 1):
+  QuizService        → Quiz questions
+  FlashcardService   → Flashcard pairs
+  MindmapService     → Mind map JSON
+
+Phase 3 (handled by orchestrator directly):
+  FormulaService     → Formula sheet
+  InterviewService   → Interview Q&A
+  RevisionService    → Revision plan
+```
+
+The `LLMManager` routes each request through:
+1. **Model Selector** — picks the best model for the task type (e.g., `QUIZ`, `CONCEPT`, `SUMMARY`)
+2. **Key Manager** — round-robin across multiple API keys per provider
+3. **Quota Tracker** — skips exhausted providers
+4. **Retry Manager** — exponential back-off (3 retries)
+5. **Fallback Manager** — falls back through provider chain if all retries fail
+6. **Response Validator** — validates structured JSON output against schema
+
+---
+
+### Stage 6 — Merge Service
+
+`MergeService` (`services/content/merge.py`) builds a single Markdown document:
+
 ```markdown
 **[02:45]** The gradient descent algorithm updates weights iteratively.
 
 ### 📸 Visual Reference at 02:46
-![Frame at 02:46](http://localhost:5001/storage/frames/...)
+![Frame at 02:46](http://localhost:5001/frames/video/{id}/image/{frame_id})
 
 > **Extracted Text:**
 > Gradient Descent: θ = θ - α∇J(θ)
@@ -121,47 +166,51 @@ The `MergeService` produces a Markdown document combining:
 ---
 ```
 
-Notes are saved to `/storage/outputs/{video_id}/notes.md` and served via:
-- `GET /notes/{video_id}` — JSON
-- `GET /notes/{video_id}/download` — `.md` file download
+For each selected frame, the merge service locates the transcript segment active at `frame.timestamp_ms / 1000.0` and injects the frame and OCR text inline.
+
+Saved to: `storage/outputs/{video_id}/merged_transcript.md`
 
 ---
 
-### 6. Completion & Retention
+### Stage 7 — RAG Embedding
 
-On pipeline success:
-- `videos.status = COMPLETED`
-- `videos.progress_percent = 100`
-- Original video file in `/storage/uploads/` is **deleted** (only transcripts, frames, and notes are retained)
-- Audio WAV in `/storage/temp/` is **deleted** in the pipeline `finally` block (always, even on failure)
+`vector_store.index(video_id, transcript_text)` in `services/rag/pipeline.py`:
 
-On pipeline failure:
-- `videos.status = FAILED`
-- Partial artifacts are cleaned up
+1. **Chunker** — splits transcript into overlapping chunks (strategy: `timestamp` | `token` | `semantic` | `topic`, default `timestamp`, size `CHUNK_SIZE=1000`)
+2. **Structure Detector** — classifies chunks by content type (equation, code, definition, etc.)
+3. **Embedding** — `LLMManager.embed()` → Jina AI embedding model
+4. **Store** — saved to `storage/embeddings/{video_id}/`
 
-**Retention lifecycle:** The `expires_at` field is set at video creation:
-```python
-expires_at = datetime.utcnow() + timedelta(days=retention_days)  # 7, 14, or 30
-```
-
-A nightly APScheduler job at 02:00 cascades-deletes all videos where `expires_at < utcnow()`.
+Enables: `GET /notes/{video_id}/search?query=gradient+descent`
 
 ---
 
-## Progress Update Flow
+## Progress Update Sequence
 
-Each pipeline stage calls `update_progress()` which opens a **fresh DB session** (separate from the pipeline session) to ensure progress commits are not rolled back if the pipeline errors:
+Each stage calls `update_status()` which opens a **fresh DB session** (separate from the pipeline session to prevent rollback-on-error swallowing progress writes):
 
 ```
-status: UPLOADING   →  0%  (file received)
-status: PROCESSING  → 10%  (pipeline started)
-                    → 20%  (audio extracted)
-                    → 40%  (transcription done)
-                    → 50%  (scenes detected)
-                    → 60%  (frames extracted + filtered)
-                    → 75%  (OCR + scoring done)
-                    → 90%  (notes merged)
-status: COMPLETED   → 100%
+UPLOADING       →   0%   File received
+                →  10%   Pipeline started
+                →  20%   Audio extracted
+                →  35%   Transcription complete
+                →  50%   Scenes detected
+                →  60%   Frames extracted + filtered
+                →  75%   OCR + scoring done
+                →  80%   LLM content generated
+                →  90%   Notes merged
+                →  95%   RAG indexed
+COMPLETED       → 100%
 ```
 
-The Dashboard polls `GET /videos/{id}` every 3 seconds when any video is in `PROCESSING` state, and every 30 seconds otherwise.
+The frontend SSE stream at `GET /videos/{id}/progress/stream` pushes a JSON event every 2 seconds. Stream closes automatically when status is `COMPLETED` or `FAILED`.
+
+---
+
+## Retention Lifecycle
+
+`expires_at = created_at + timedelta(days=retention_days)`
+
+- Valid values: 1–30 days (default 7)
+- `MAX_RETENTION_DAYS = 30` (matches frontend "30 Days (Maximum)" option)
+- APScheduler nightly job at 02:00 UTC cascade-deletes all expired videos

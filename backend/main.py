@@ -27,9 +27,9 @@ from apscheduler.triggers.cron import CronTrigger
 
 from api.routers import video, auth
 from api.routers import frames as frames_router
-from api.routers import notes as notes_router
 from api.routers import admin as admin_router
 from api.routers import progress as progress_router
+from api.routers import generate as generate_router
 from core.config import settings
 
 # ---------------------------------------------------------------------------
@@ -216,9 +216,9 @@ app.add_middleware(
 app.include_router(video.router)
 app.include_router(auth.router)
 app.include_router(frames_router.router)
-app.include_router(notes_router.router)
 app.include_router(admin_router.router)
 app.include_router(progress_router.router)
+app.include_router(generate_router.router)
 
 
 # ---------------------------------------------------------------------------

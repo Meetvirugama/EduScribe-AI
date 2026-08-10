@@ -18,8 +18,8 @@ from ..llm.model_selector import TaskType
 logger = logging.getLogger(__name__)
 
 
-class InterviewService(BaseContentService):
-    """Generates interview and viva questions from lecture concepts."""
+class InterviewGenerator(BaseContentService):
+    """Generates technical and conceptual interview questions."""
 
     async def generate_interview_questions(self, context: LectureContext) -> Dict[str, Any]:
         """

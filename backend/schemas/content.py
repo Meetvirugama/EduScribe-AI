@@ -61,6 +61,45 @@ class Summary(BaseModel):
     source: List[SourceReference] = Field(default_factory=list)
 
 
+class FormulaItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str
+    expression: str
+    variables: Optional[Dict[str, str]] = None
+    explanation: Optional[str] = None
+    topic: Optional[str] = None
+    timestamp: Optional[float] = None
+    source: List[SourceReference] = Field(default_factory=list)
+
+
+class Example(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: str
+    problem: str
+    explanation: Optional[str] = None
+    solution: Optional[str] = None
+    topic: Optional[str] = None
+    timestamp: Optional[float] = None
+    source: List[SourceReference] = Field(default_factory=list)
+
+
+class KeyPoint(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    text: str
+    importance: Optional[str] = None
+    category: Optional[str] = None
+    topic: Optional[str] = None
+    timestamp: Optional[float] = None
+    source: List[SourceReference] = Field(default_factory=list)
+
+
+class Relationship(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    from_concept: str
+    relationship_type: str
+    to_concept: str
+
+
 @dataclass(frozen=True)
 class LectureInput:
     """Immutable input data for the pipeline."""
@@ -78,6 +117,11 @@ class LectureState:
     concepts: List[Concept] = field(default_factory=list)
     definitions: List[Definition] = field(default_factory=list)
     summaries: List[Summary] = field(default_factory=list)
+    formulas_extracted: List[FormulaItem] = field(default_factory=list)
+    examples: List[Example] = field(default_factory=list)
+    key_points: List[KeyPoint] = field(default_factory=list)
+    relationships: List[Relationship] = field(default_factory=list)
+    important_frames: List[Dict] = field(default_factory=list)
 
     # CRITICAL-006: These fields were missing, causing pipeline.py to always
     # return {} for quiz/flashcards/mindmap/interview/revision/formula even

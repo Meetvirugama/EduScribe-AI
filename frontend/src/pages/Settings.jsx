@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
+import { User, HardDrive, Clock, LogOut, Shield } from 'lucide-react';
+import './Settings.css';
 
-const sortByExpiration = (videos) => {
-  return [...videos].sort((a, b) => {
-    const dateA = new Date(a.created_at).getTime() + (a.retention_days * 86400000);
-    const dateB = new Date(b.created_at).getTime() + (b.retention_days * 86400000);
-    return dateA - dateB;
+const sortByExpiration = (videos) =>
+  [...videos].sort((a, b) => {
+    const da = new Date(a.created_at).getTime() + a.retention_days * 86400000;
+    const db = new Date(b.created_at).getTime() + b.retention_days * 86400000;
+    return da - db;
   });
+
+const formatBytes = (bytes) => {
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 export default function Settings() {
@@ -18,142 +27,165 @@ export default function Settings() {
 
   useEffect(() => {
     if (!token) return;
-
-    apiFetch('/auth/me', {}, token)
-    .then(res => res.json())
-    .then(data => setProfile(data))
-    .catch(console.error);
-
-    apiFetch('/videos/storage', {}, token)
-    .then(res => res.json())
-    .then(data => setStorage(data))
-    .catch(console.error);
-
-    apiFetch('/videos', {}, token)
-    .then(res => res.json())
-    .then(data => {
-      setVideos(sortByExpiration(data));
-    })
-    .catch(console.error);
+    apiFetch('/auth/me', {}, token).then(r => r.json()).then(setProfile).catch(console.error);
+    apiFetch('/videos/storage', {}, token).then(r => r.json()).then(setStorage).catch(console.error);
+    apiFetch('/videos', {}, token).then(r => r.json()).then(data => setVideos(sortByExpiration(data))).catch(console.error);
   }, [token]);
 
-  const formatBytes = (bytes) => {
-    if (bytes === 0 || !bytes) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const handleRetentionChange = async (videoId, newDays) => {
+    try {
+      const res = await apiFetch(`/videos/${videoId}/retention`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ retention_days: newDays }),
+      }, token);
+      if (res.ok) {
+        const updated = await res.json();
+        setVideos(prev => sortByExpiration(prev.map(v => v.id === updated.id ? updated : v)));
+      }
+    } catch (err) { console.error(err); }
   };
 
-  return (
-    <div style={{ padding: '2rem', color: 'white' }}>
-      <h1 style={{ marginBottom: '2rem' }}>Settings & Analytics</h1>
+  const storagePercent = storage
+    ? Math.min(Math.round((storage.total_used_bytes / (10 * 1024 * 1024 * 1024)) * 100), 100)
+    : 0;
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* User Profile */}
-          <div style={{ background: '#1F2937', padding: '1.5rem', borderRadius: '12px', border: '1px solid #374151' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#9CA3AF' }}>User Profile</h3>
+  return (
+    <div className="settings-container">
+      <header className="settings-header">
+        <h1>Settings &amp; Analytics</h1>
+        <p className="settings-subtitle">Manage your profile, storage, and data retention</p>
+      </header>
+
+      <div className="settings-grid">
+        {/* ── Left Column ── */}
+        <div className="settings-left">
+
+          {/* Profile Card */}
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div className="settings-card-icon settings-card-icon--blue">
+                <User size={18} />
+              </div>
+              <h2>User Profile</h2>
+            </div>
             {profile ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                {profile.picture ? (
-                  <img src={profile.picture} alt="Avatar" style={{ width: '64px', height: '64px', borderRadius: '50%' }} />
-                ) : (
-                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#4B5563' }}></div>
-                )}
-                <div>
-                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>{profile.name}</h4>
-                  <p style={{ margin: 0, color: '#9CA3AF' }}>{profile.email}</p>
+              <div className="settings-profile-body">
+                <div className="settings-avatar-wrap">
+                  {profile.picture
+                    ? <img src={profile.picture} alt="Avatar" className="settings-avatar" />
+                    : <div className="settings-avatar-placeholder">{(profile.name || '?')[0].toUpperCase()}</div>
+                  }
+                  <div className="settings-profile-badge">
+                    <Shield size={10} /> Verified
+                  </div>
+                </div>
+                <div className="settings-profile-info">
+                  <h3>{profile.name}</h3>
+                  <p>{profile.email}</p>
+                  <p className="settings-profile-joined">
+                    Joined {profile.join_date ? new Date(profile.join_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—'}
+                  </p>
                 </div>
               </div>
-            ) : <p>Loading profile...</p>}
-            <button onClick={logout} style={{ marginTop: '1.5rem', background: '#EF4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer' }}>
-              Sign Out
+            ) : (
+              <p className="settings-loading-text">Loading profile…</p>
+            )}
+            <button
+              id="sign-out-btn"
+              onClick={logout}
+              className="settings-signout-btn"
+            >
+              <LogOut size={16} /> Sign Out
             </button>
           </div>
 
-          {/* Storage Dashboard */}
-          <div style={{ background: '#1F2937', padding: '1.5rem', borderRadius: '12px', border: '1px solid #374151' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#9CA3AF' }}>Storage Consumption</h3>
+          {/* Storage Card */}
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div className="settings-card-icon settings-card-icon--green">
+                <HardDrive size={18} />
+              </div>
+              <h2>Storage Consumption</h2>
+            </div>
             {storage ? (
-              <div>
-                <p style={{ margin: '0.5rem 0', fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>{formatBytes(storage.total_used_bytes)}</p>
-                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#D1D5DB', paddingBottom: '0.5rem', borderBottom: '1px solid #374151' }}>
-                    <span>Videos & Audio</span>
-                    <strong style={{ color: 'white' }}>{formatBytes(storage.videos_bytes)}</strong>
+              <div className="settings-storage-body">
+                <div className="settings-storage-total">
+                  <span>{formatBytes(storage.total_used_bytes)}</span>
+                  <span className="settings-storage-limit">/ 10 GB</span>
+                </div>
+                <div className="settings-storage-bar-bg">
+                  <div
+                    className="settings-storage-bar-fill"
+                    style={{ width: `${storagePercent}%` }}
+                  />
+                </div>
+                <p className="settings-storage-percent">{storagePercent}% used</p>
+                <div className="settings-storage-breakdown">
+                  <div className="settings-storage-row">
+                    <span>Videos &amp; Audio</span>
+                    <strong>{formatBytes(storage.videos_bytes)}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#D1D5DB' }}>
-                    <span>Transcripts</span>
-                    <strong style={{ color: 'white' }}>{formatBytes(storage.transcripts_bytes)}</strong>
+                  <div className="settings-storage-row">
+                    <span>Transcripts &amp; Notes</span>
+                    <strong>{formatBytes(storage.transcripts_bytes)}</strong>
                   </div>
                 </div>
               </div>
-            ) : <p>Loading storage...</p>}
+            ) : (
+              <p className="settings-loading-text">Loading storage…</p>
+            )}
           </div>
         </div>
 
-        {/* Retention Center */}
-        <div style={{ background: '#1F2937', padding: '1.5rem', borderRadius: '12px', border: '1px solid #374151', overflowY: 'auto', maxHeight: 'calc(100vh - 8rem)' }}>
-          <h3 style={{ margin: '0 0 1.5rem 0', color: '#9CA3AF' }}>Retention Center</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {videos.length > 0 ? videos.map(v => {
-              const expiresDate = new Date(new Date(v.created_at).getTime() + (v.retention_days * 86400000));
-              // eslint-disable-next-line react-hooks/purity
-              const daysLeft = Math.ceil((expiresDate.getTime() - Date.now()) / 86400000);
-              const isUrgent = daysLeft <= 2;
-              
-              return (
-                <div key={v.id} style={{ padding: '1rem', background: '#111827', borderRadius: '8px', borderLeft: `4px solid ${isUrgent ? '#EF4444' : '#10B981'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 0.5rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>{v.title}</h4>
-                    <span style={{ fontSize: '0.85rem', color: '#9CA3AF', background: '#374151', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
-                      {v.source_type}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ margin: '0 0 0.25rem 0', color: isUrgent ? '#EF4444' : '#E5E7EB', fontWeight: 'bold' }}>
-                        Expires In: {daysLeft} Days
-                      </p>
-                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#9CA3AF' }}>
-                        {expiresDate.toLocaleDateString()}
-                      </p>
+        {/* ── Right Column — Retention Center ── */}
+        <div className="settings-card settings-retention-card">
+          <div className="settings-card-header">
+            <div className="settings-card-icon settings-card-icon--amber">
+              <Clock size={18} />
+            </div>
+            <h2>Retention Center</h2>
+          </div>
+
+          <div className="settings-retention-list">
+            {videos.length === 0 ? (
+              <p className="settings-loading-text">No content in retention.</p>
+            ) : (
+              videos.map(v => {
+                const expiresAt = new Date(new Date(v.created_at).getTime() + v.retention_days * 86400000);
+                const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86400000);
+                const isUrgent = daysLeft <= 2;
+                const accentColor = isUrgent ? '#EF4444' : '#10B981';
+
+                return (
+                  <div
+                    key={v.id}
+                    className="settings-retention-item"
+                    style={{ borderLeftColor: accentColor }}
+                  >
+                    <div className="settings-retention-info">
+                      <p className="settings-retention-title">{v.title}</p>
+                      <span className="settings-retention-source">{v.source_type}</span>
                     </div>
-                    <select
-                      value={v.retention_days}
-                      onChange={async (e) => {
-                        const newDays = parseInt(e.target.value);
-                        try {
-                          const res = await apiFetch(`/videos/${v.id}/retention`, {
-                            method: 'PATCH',
-                            headers: { 
-                              'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ retention_days: newDays })
-                          }, token);
-                          if (res.ok) {
-                             const updatedVideo = await res.json();
-                             setVideos(prev => {
-                               const newVideos = prev.map(vid => vid.id === updatedVideo.id ? updatedVideo : vid);
-                               return sortByExpiration(newVideos);
-                             });
-                          }
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      style={{ background: '#374151', color: 'white', border: '1px solid #4B5563', borderRadius: '4px', padding: '0.5rem', cursor: 'pointer', outline: 'none' }}
-                    >
-                      <option value={7}>7 Days</option>
-                      <option value={14}>14 Days</option>
-                      <option value={30}>30 Days</option>
-                    </select>
+                    <div className="settings-retention-controls">
+                      <div className="settings-retention-expiry" style={{ color: isUrgent ? '#EF4444' : '#E5E7EB' }}>
+                        <strong>{daysLeft > 0 ? `${daysLeft}d left` : 'Expired'}</strong>
+                        <span>{expiresAt.toLocaleDateString()}</span>
+                      </div>
+                      <select
+                        id={`retention-select-${v.id}`}
+                        value={v.retention_days}
+                        onChange={e => handleRetentionChange(v.id, parseInt(e.target.value))}
+                        className="settings-retention-select"
+                      >
+                        <option value={7}>7 Days</option>
+                        <option value={14}>14 Days</option>
+                        <option value={30}>30 Days</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
-              );
-            }) : (
-               <p style={{ color: '#9CA3AF' }}>No content in retention.</p>
+                );
+              })
             )}
           </div>
         </div>

@@ -5,12 +5,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class FlashcardService(BaseContentService):
+class FlashcardGenerator(BaseContentService):
     async def generate_flashcards(self, context: LectureContext) -> dict:
-        """Generates flashcards for key terms and definitions."""
+        """Generates spaced repetition flashcards."""
         logger.info("Generating flashcards...")
         messages = self._render_messages(
-            system_msg="You are an expert AI tutor.",
+            system_msg="You are an expert at creating concise, effective flashcards.",
             template_name="flashcards",
             context=context
         )

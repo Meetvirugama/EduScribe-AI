@@ -6,10 +6,15 @@ from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
-class MindmapService(BaseContentService):
-    async def generate_mindmap(self, context: LectureContext) -> Dict[str, Any]:
-        """Generates a mermaid.js mindmap of the lecture."""
+class MindmapGenerator(BaseContentService):
+    async def generate_mindmap(self, context: LectureContext) -> dict:
+        """Generates Mermaid.js mind map code."""
         logger.info("Generating mind map...")
+        messages = self._render_messages(
+            system_msg="You are an expert at creating Mermaid.js diagrams.",
+            template_name="mindmap",
+            context=context
+        )
         
         empty_result = {"topic": "", "format": "mermaid", "content": ""}
         

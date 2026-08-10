@@ -6,6 +6,10 @@ export function useProgressStream(videoId, token) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Reset state when video changes or processing completes/fails
+    setProgress(null);
+    setError(null);
+
     if (!videoId || !token) return;
 
     // Use SSE for real-time progress updates

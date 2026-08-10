@@ -214,8 +214,13 @@ async def google_callback(
     return RedirectResponse(f"{frontend_callback}?code={exchange_code}")
 
 
+from pydantic import BaseModel
+
+class ExchangeRequest(BaseModel):
+    code: str
+
 @router.post("/exchange")
-async def exchange_code(code: str):
+async def exchange_code(request: ExchangeRequest):
     """
     Exchange the short-lived one-time code (from the OAuth callback) for a JWT.
 
@@ -226,7 +231,7 @@ async def exchange_code(code: str):
     Returns:
         {"access_token": "<jwt>", "token_type": "bearer"}
     """
-    jwt_token = _pop_code(code)
+    jwt_token = _pop_code(request.code)
     if not jwt_token:
         raise HTTPException(
             status_code=400,
@@ -234,6 +239,7 @@ async def exchange_code(code: str):
         )
 
     return {"access_token": jwt_token, "token_type": "bearer"}
+
 
 
 @router.get("/me")

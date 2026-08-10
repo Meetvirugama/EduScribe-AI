@@ -87,23 +87,22 @@ If you see only 1 frame in the gallery, check that the latest code is deployed.
 
 ### Frame images return 404
 
-**Symptom:** Frame thumbnails fail to load in the gallery; browser shows `GET /storage/frames/... 404`.
+**Symptom:** Frame thumbnails fail to load; browser shows `GET .../image/... 404`.
 
-**Cause 1 — Wrong frame path in DB:** Old versions stored absolute OS paths (e.g. `/Users/meet/Desktop/.../storage/frames/...`). Current code stores web-relative paths (`storage/frames/{video_id}/scene_xxxx.jpg`).
+**Cause 1 — Using the old static URL format:** Frame images are served through the authenticated `frames.py` router, not as static files. The correct URL is:
+```
+GET /frames/video/{video_id}/image/{frame_id}
+Authorization: Bearer <token>
+```
+Direct filesystem URLs like `/storage/frames/...` will return 404.
 
-**Fix:** Check a frame record in the DB:
+**Cause 2 — Wrong frame path in DB:** Old versions stored absolute OS paths. Current code stores web-relative paths (`storage/frames/{video_id}/scene_xxxx.jpg`). Check:
 ```sql
 SELECT frame_path FROM video_frames LIMIT 5;
-```
-Paths must start with `storage/`, not `/Users/` or `/home/`.
-
-**Cause 2 — StaticFiles not mounted:** Ensure `main.py` has:
-```python
-from fastapi.staticfiles import StaticFiles
-app.mount("/storage", StaticFiles(directory="storage"), name="storage")
+-- Should start with 'storage/', not '/Users/' or '/home/'
 ```
 
-**Cause 3 — Files deleted:** Unselected frames are deleted during cleanup. Only `is_selected=True` frames are retained on disk.
+**Cause 3 — Unselected frame files deleted:** Only `is_selected=True` frames are retained on disk.
 
 ---
 
@@ -248,12 +247,58 @@ If the transcript JSON is malformed or has no `segments` array, the component sh
 
 ---
 
+---
+
+## ARQ Worker
+
+### Videos are submitted but never processed
+
+**Symptom:** Video status stays at `UPLOADING` indefinitely.
+
+**Cause:** The ARQ worker process is not running. The API server enqueues jobs but nothing dequeues them.
+
+**Fix:**
+```bash
+# Local dev — run in a separate terminal
+cd backend && source venv/bin/activate && arq worker.WorkerSettings
+
+# Docker
+docker compose up worker
+
+# Verify Redis is reachable
+redis-cli -u $REDIS_URL ping  # Should return PONG
+```
+
+---
+
+### ARQ worker crashes on startup
+
+**Symptom:** `arq worker.WorkerSettings` exits immediately.
+
+**Common causes:**
+1. `REDIS_URL` not set in `.env`
+2. Redis not running or wrong port
+3. Import error in `worker.py` or `pipeline/orchestrator.py`
+
+```bash
+# Check Redis
+redis-cli ping
+
+# Test import
+cd backend && python3 -c "from worker import WorkerSettings; print('OK')"
+```
+
+---
+
 ## Common Error Codes
 
 | HTTP Status | Common Cause | Fix |
 |---|---|---|
+| `400 Bad Request` | Invalid YouTube URL, unsupported format | Check URL hostnames; see API docs |
 | `401 Unauthorized` | JWT expired or missing | Re-login at `/auth/google/login` |
-| `403 Forbidden` | Accessing another user's video | Verify `user_id` in JWT matches resource |
-| `413 Request Entity Too Large` | File >1GB | Reduce file size or increase `MAX_VIDEO_SIZE_MB` |
-| `422 Unprocessable Entity` | Invalid request body | Check API schema in `/docs` |
-| `500 Internal Server Error` | Pipeline exception | Check backend logs for traceback |
+| `403 Forbidden` | Accessing another user's video | Verify JWT matches resource owner |
+| `413 Request Entity Too Large` | File exceeds `MAX_VIDEO_SIZE_MB` | Reduce file size or increase limit |
+| `422 Unprocessable Entity` | Invalid request body | Check schema at `/docs` |
+| `429 Too Many Requests` | Rate limit exceeded | Wait and retry; 5 uploads/hr or 10 YouTube/hr |
+| `500 Internal Server Error` | Pipeline exception | Check backend logs for `request_id` traceback |
+| `502 Bad Gateway` | Google OAuth or yt-dlp error | Check provider status; update yt-dlp |

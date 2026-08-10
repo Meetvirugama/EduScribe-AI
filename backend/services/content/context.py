@@ -42,6 +42,36 @@ class LectureContext:
     @definitions.setter
     def definitions(self, val: List[Dict[str, Any]]): self.state.definitions = val
 
+    @property
+    def formulas_extracted(self): return self.state.formulas_extracted
+    
+    @formulas_extracted.setter
+    def formulas_extracted(self, val): self.state.formulas_extracted = val
+    
+    @property
+    def examples(self): return self.state.examples
+    
+    @examples.setter
+    def examples(self, val): self.state.examples = val
+    
+    @property
+    def key_points(self): return self.state.key_points
+    
+    @key_points.setter
+    def key_points(self, val): self.state.key_points = val
+    
+    @property
+    def relationships(self): return self.state.relationships
+    
+    @relationships.setter
+    def relationships(self, val): self.state.relationships = val
+
+    @property
+    def important_frames(self): return self.state.important_frames
+
+    @important_frames.setter
+    def important_frames(self, val): self.state.important_frames = val
+
     # CRITICAL-006: Proxy properties for the extended LectureState fields
     @property
     def quiz(self): return self.state.quiz

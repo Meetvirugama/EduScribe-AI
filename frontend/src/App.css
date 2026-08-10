@@ -1,100 +1,178 @@
+/* ── App Layout ─────────────────────────────────────── */
+
 .app-container {
   display: flex;
   height: 100vh;
 }
 
+/* ── Sidebar ────────────────────────────────────────── */
 .sidebar {
-  width: 250px;
+  width: 240px;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
-  padding: 24px;
+  padding: 20px 20px 16px;
   border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sidebar-logo-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.sidebar-logo h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #818cf8, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 16px;
+  padding: 12px;
+  overflow-y: auto;
 }
 
 .sidebar-nav ul {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px 12px;
   color: var(--text-secondary);
   text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.2s;
+  border-radius: 10px;
+  transition: all 0.2s ease;
   background: transparent;
   border: none;
-  font-size: 16px;
+  font-size: 0.9rem;
+  font-family: inherit;
   cursor: pointer;
+  width: 100%;
+  text-align: left;
 }
 
-.nav-link:hover, .nav-link.active {
-  background-color: rgba(255, 255, 255, 0.05);
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
+.nav-link.active {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+/* ── Sidebar Footer ─────────────────────────────────── */
 .sidebar-footer {
-  padding: 16px;
+  padding: 12px;
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.main-content {
-  flex: 1;
-  padding: 32px;
-  overflow-y: auto;
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  overflow: hidden;
 }
 
-.login-page {
-  height: 100vh;
+.sidebar-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(99,102,241,0.3);
+  flex-shrink: 0;
+  display: block;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+}
+
+.sidebar-user-avatar--placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.login-card {
-  background-color: var(--bg-secondary);
-  padding: 40px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  text-align: center;
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.login-card h1 {
-  margin-bottom: 8px;
+.sidebar-user-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.login-card p {
+.sidebar-user-email {
+  margin: 0;
+  font-size: 0.68rem;
   color: var(--text-secondary);
-  margin-bottom: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.dashboard-page h1 {
-  margin-bottom: 24px;
+.sidebar-logout-btn {
+  color: #9CA3AF;
 }
 
-.card {
-  background-color: var(--bg-secondary);
-  padding: 24px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+.sidebar-logout-btn:hover {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.08);
 }
 
-.card h2 {
-  margin-bottom: 16px;
-  font-size: 18px;
+/* ── Main Content ───────────────────────────────────── */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* ── Auth Callback ──────────────────────────────────── */
+.auth-callback {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 1rem;
 }

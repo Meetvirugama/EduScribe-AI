@@ -1,58 +1,30 @@
 # Backend Architecture
 
-The EduScribe AI backend is designed for high concurrency and asynchronous task execution, ensuring that long-running AI models do not block incoming API requests.
+The backend is an async FastAPI application. Video processing runs in a separate **ARQ worker** process that reads jobs from a Redis queue — the API server is never blocked by AI workloads.
+
+---
 
 ## Core Technologies
 
 | Library | Version | Role |
 |---|---|---|
-| FastAPI | 0.110 | REST API framework |
-| uvicorn + uvloop | latest | ASGI server with C-based event loop (~2x throughput) |
-| SQLAlchemy | 2.0 (async) | ORM with AsyncPG driver |
+| FastAPI | 0.110+ | REST API framework |
+| uvicorn + uvloop | latest | ASGI server with C-based event loop |
+| SQLAlchemy | 2.0 (async) | ORM with asyncpg driver |
 | Alembic | latest | Database migrations |
 | APScheduler | 3.10+ | Nightly cleanup cron |
+| ARQ | 0.25+ | Async Redis job queue |
+| litellm | 1.30+ | Unified LLM provider interface |
 | faster-whisper | 1.0+ | Speech-to-text (INT8 CTranslate2) |
 | PaddleOCR | latest | Frame text extraction |
-| PySceneDetect | latest | Scene boundary detection |
-| imagehash | latest | Perceptual duplicate detection |
-| RapidFuzz | latest | Transcript fuzzy matching |
+| PySceneDetect | 0.6+ | Scene boundary detection |
+| imagehash | 4.3+ | Perceptual duplicate detection |
+| RapidFuzz | 3.0+ | Transcript fuzzy matching |
 | ffmpeg-python | latest | Audio extraction wrapper |
 | cachetools | 5.5+ | LRU cache for OCR results |
+| tenacity | 8.2+ | Retry with back-off |
+| sse-starlette | 1.6+ | Server-Sent Events |
 | python-jose / PyJWT | latest | JWT generation and validation |
-
----
-
-## Backend Workflow
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant API as FastAPI Router
-    participant DB as PostgreSQL
-    participant BG as Background Pipeline
-
-    C->>API: POST /videos/upload (multipart/form-data)
-    API->>DB: INSERT video record (status=UPLOADING)
-    API-->>C: 202 Accepted {video_id}
-    API->>BG: dispatch process_video_pipeline_async(video_id)
-
-    Note over BG: Runs in separate thread pool
-    BG->>DB: UPDATE status=PROCESSING
-    BG->>BG: FFmpeg audio extraction (--threads 4)
-    BG->>DB: UPDATE progress=20%
-    BG->>BG: faster-whisper transcription (INT8, VAD)
-    BG->>DB: UPDATE progress=40%
-    BG->>BG: Vision pipeline (scenes → frames → OCR → score)
-    BG->>DB: UPDATE progress=80%
-    BG->>BG: Merge pipeline → Smart Notes Markdown
-    BG->>DB: UPDATE status=COMPLETED progress=100%
-
-    loop Every 3s (adaptive polling)
-        C->>API: GET /videos/{id}
-        API->>DB: SELECT progress_percent, current_step
-        API-->>C: Status update
-    end
-```
 
 ---
 
@@ -62,55 +34,92 @@ sequenceDiagram
 backend/
 ├── api/
 │   └── routers/
-│       ├── auth.py          # Google OAuth2 + JWT
-│       ├── video.py         # Upload, YouTube, status, delete, storage
-│       ├── frames.py        # Frame fetch + manual trigger
-│       └── notes.py         # Notes fetch + download
+│       ├── auth.py          # Google OAuth2 + JWT + /auth/exchange
+│       ├── video.py         # Upload, YouTube ingest, list, delete, storage
+│       ├── frames.py        # Frame retrieval + authenticated image serving
+│       ├── notes.py         # Notes fetch, download, search, delete
+│       ├── progress.py      # SSE real-time progress stream
+│       └── admin.py         # Admin-only stats endpoints
 ├── core/
-│   ├── config.py            # Settings (env vars via pydantic-settings)
-│   ├── database.py          # AsyncPG engine (pool_size=10, overflow=20)
-│   └── security.py          # JWT create + validate
+│   ├── config.py            # pydantic-settings (all env vars)
+│   ├── database.py          # AsyncPG engine + AsyncSessionLocal
+│   ├── dependencies.py      # Shared dependencies (get_owned_video, etc.)
+│   └── security.py          # JWT create + validate + get_current_user
 ├── models/
 │   ├── user.py              # User ORM model
-│   ├── video.py             # Video + file_size_bytes
+│   ├── video.py             # Video + VideoStatus enum + SourceType
 │   ├── transcript.py        # Transcript ORM model
-│   └── frame.py             # VideoFrame + FrameScore + OCRResult
+│   └── vision.py            # VideoFrame, FrameMetadata, OCRResult, FrameScore
 ├── schemas/
-│   ├── video.py             # VideoCreate, VideoResponse Pydantic models
-│   └── frame.py             # FrameResponse Pydantic models
+│   ├── video.py             # YoutubeRequest, VideoUpdateRetention, VideoResponse
+│   ├── content.py           # LectureState, LectureInput, ServiceStatus
+│   └── (others)
 ├── services/
-│   ├── audio.py             # FFmpeg extraction (--threads 4)
-│   ├── whisper_service.py   # faster-whisper, INT8, VAD, model unload
-│   ├── youtube_service.py   # yt-dlp + youtube-transcript-api
-│   ├── storage_service.py   # File save/delete helpers
-│   ├── merge_service.py     # Smart Notes Markdown generator
-│   └── vision/
-│       ├── pipeline.py          # 9-stage orchestrator
-│       ├── extraction/
-│       │   ├── scene_detector.py    # PySceneDetect, adaptive downscale
-│       │   └── frame_extractor.py   # Best-of-2, web-relative paths
-│       ├── filtering/
-│       │   ├── duplicate_detector.py # dHash, deque(maxlen=50)
-│       │   └── blur_detector.py      # Laplacian, adaptive threshold
-│       ├── ocr/
-│       │   ├── paddleocr_service.py  # Lazy-load, locked, edge pre-filter
-│       │   └── cache.py              # LRUCache(maxsize=500)
-│       └── scoring/
-│           ├── ranking_service.py    # per-scene top_n groupby
-│           ├── importance_scorer.py  # Composite score calculator
-│           └── feature_extractor.py # Feature vector builder
+│   ├── youtube.py           # YouTubeService: validate_url, fetch_metadata, download_video
+│   ├── storage.py           # File save/delete helpers
+│   ├── audio/
+│   │   ├── service.py       # FFmpeg audio extraction
+│   │   └── (whisper_service.py, etc.)
+│   ├── content/
+│   │   ├── pipeline.py      # ContentPipeline: concurrent DAG execution
+│   │   ├── context.py       # LectureContext proxy + LectureState
+│   │   ├── base.py          # BaseContentService + execute_with_retry
+│   │   ├── notes.py         # NotesService
+│   │   ├── concept.py       # ConceptService
+│   │   ├── quiz.py          # QuizService
+│   │   ├── flashcard.py     # FlashcardService
+│   │   ├── mindmap.py       # MindmapService
+│   │   ├── formula.py       # FormulaService
+│   │   ├── interview.py     # InterviewService
+│   │   ├── revision.py      # RevisionService
+│   │   ├── merge.py         # MergeService: transcript + frames → Markdown
+│   │   └── prompts.py       # PromptManager: Jinja2 template rendering
+│   ├── llm/
+│   │   ├── llm_manager.py   # Central orchestrator (generate + embed)
+│   │   ├── model_selector.py# TaskType → model config
+│   │   ├── key_manager.py   # Multi-key round-robin per provider
+│   │   ├── quota_tracker.py # Per-provider quota tracking
+│   │   ├── retry_manager.py # Exponential back-off retry
+│   │   ├── fallback_manager.py # Provider fallback chain
+│   │   ├── embedding_manager.py # Embedding via Jina AI
+│   │   └── validation/      # JSON extraction + Pydantic schema validation
+│   ├── rag/
+│   │   ├── pipeline.py      # vector_store.index() + .search()
+│   │   ├── chunker.py       # 4 chunking strategies
+│   │   ├── structure_detector.py # Chunk type classification
+│   │   ├── embedding_store.py    # Read/write embedding vectors
+│   │   ├── retriever.py     # Hybrid BM25 + dense + MMR re-rank
+│   │   └── context_optimizer.py # Fit retrieved chunks to context window
+│   ├── vision/
+│   │   ├── pipeline.py      # 9-stage vision orchestrator
+│   │   ├── extraction/      # scene_detector.py, frame_extractor.py
+│   │   ├── filtering/       # duplicate_detector.py, blur_detector.py
+│   │   ├── ocr/             # paddleocr_service.py + LRU cache
+│   │   ├── scoring/         # importance_scorer.py, ranking_service.py
+│   │   └── transcript/      # Transcript-frame alignment
+│   ├── quality/
+│   │   └── evaluator.py     # Quality score evaluation
+│   └── monitoring/          # Metrics collection
+├── pipeline/
+│   └── orchestrator.py      # End-to-end pipeline (called by ARQ worker)
+├── prompts/
+│   ├── concept_extraction.md
+│   ├── flashcards.md
+│   ├── formula_sheet.md
+│   └── (one per content service)
 ├── migrations/
-│   └── versions/
-│       └── 63c689249d08_add_db_indexes_and_file_size_bytes.py
-├── main.py                  # App startup, APScheduler nightly cron
+│   └── versions/            # Alembic migration scripts
+├── main.py                  # App factory, CORS, router registration, APScheduler
+├── worker.py                # ARQ WorkerSettings + process_video_job
 └── requirements.txt
 ```
 
 ---
 
-## Key Design Decisions
+## Key Design Patterns
 
 ### Non-blocking File Upload
+
 ```python
 # File write is offloaded to a thread — does not block the event loop
 file_path = await asyncio.to_thread(
@@ -119,17 +128,51 @@ file_path = await asyncio.to_thread(
 file_size_bytes = os.path.getsize(file_path)
 ```
 
-### Progress Updates — Session Isolation
-Each `update_progress()` call opens a **fresh DB session** instead of reusing the pipeline session. This ensures progress writes are committed immediately and are not rolled back if the pipeline fails:
+### Job Enqueueing (API → ARQ)
 
 ```python
-async def update_progress(video_id, percent, step, eta=None):
-    async with AsyncSessionLocal() as db:  # Fresh session per update
-        await db.execute(update(Video).where(...).values(...))
+# In video.py router — after creating the DB record:
+from worker import enqueue_video_job
+await enqueue_video_job(str(video.id), redis_url=settings.REDIS_URL)
+```
+
+The ARQ worker picks up the job, calls `process_video_job(ctx, video_id)`, which delegates to `process_video_pipeline_async(video_id)`.
+
+### Progress Updates — Session Isolation
+
+Each `update_status()` call opens a **fresh DB session** to ensure progress writes commit immediately and are not rolled back if the pipeline errors:
+
+```python
+async def update_status(video_id, status, current_step, progress):
+    async with AsyncSessionLocal() as db:   # Fresh session — not the pipeline session
+        ...
         await db.commit()
 ```
 
+### SSE Progress Stream — Connection Safety
+
+```python
+# progress.py: fresh session per poll iteration
+# prevents holding the Depends-injected session open for the entire stream lifetime
+async with AsyncSessionLocal() as poll_db:
+    res = await poll_db.execute(select(Video).where(Video.id == video_id))
+    current = res.scalar_one_or_none()
+```
+
+### Shared Ownership Dependency
+
+All endpoints that access a video by ID use `get_owned_video` from `core/dependencies.py`:
+
+```python
+@router.get("/{video_id}")
+async def get_notes(video: Video = Depends(get_owned_video)):
+    ...
+```
+
+This centralises the ownership check (video belongs to `current_user`) and eliminates repeated inline queries.
+
 ### Storage Query — SQL Aggregate
+
 ```python
 # O(1) SQL aggregate instead of O(N) disk stat calls
 result = await db.execute(
@@ -137,15 +180,12 @@ result = await db.execute(
     .where(Video.user_id == str(current_user.id))
 )
 used_bytes = result.scalar()
+# ~500ms (200 disk stats) → <5ms (1 SQL query)
 ```
 
-Response time: ~500ms (200 disk stats) → **<5ms** (1 SQL).
-
 ### Nightly Cleanup (APScheduler)
-```python
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 
+```python
 scheduler = AsyncIOScheduler()
 scheduler.add_job(
     cleanup_expired_videos,
@@ -154,40 +194,19 @@ scheduler.add_job(
 )
 ```
 
-Cleanup cascade per video: transcript file → frames directory → temp/upload files → DB record (via SQLAlchemy `cascade="all, delete-orphan"`).
+Cleanup per video: transcript file → video file → frames directory → embedding directory → outputs directory → DB record (SQLAlchemy cascade).
 
 ---
 
-## API Endpoints Reference
+## Security Measures
 
-### Authentication
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `/auth/google/login` | GET | None | Redirect to Google OAuth consent |
-| `/auth/google/callback` | GET | None | Exchange code → issue JWT |
-| `/auth/me` | GET | Bearer | Current user profile |
-
-### Videos
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `POST /videos/upload` | POST | Bearer | Upload file (async write) |
-| `POST /videos/youtube` | POST | Bearer | YouTube URL ingestion |
-| `GET /videos/` | GET | Bearer | All videos for user |
-| `GET /videos/{id}` | GET | Bearer | Video detail + progress |
-| `GET /videos/analytics` | GET | Bearer | Count, duration, word count |
-| `GET /videos/storage` | GET | Bearer | Storage used (SQL aggregate) |
-| `PATCH /videos/{id}/retention` | PATCH | Bearer | Update retention days |
-| `DELETE /videos/{id}` | DELETE | Bearer | Cascade delete all artifacts |
-
-### Frames
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `GET /frames/video/{video_id}` | GET | Bearer | All frames with OCR + scores |
-| `POST /frames/video/{video_id}/extract` | POST | Bearer | Manually re-run vision pipeline |
-
-### Notes
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `GET /notes/{video_id}` | GET | Bearer | Smart Notes JSON content |
-| `GET /notes/{video_id}/download` | GET | Bearer | Download as `.md` file |
-| `DELETE /notes/{video_id}` | DELETE | Bearer | Delete notes file |
+| Area | Implementation |
+|---|---|
+| Auth | JWT Bearer on all protected routes; `is_admin` check for admin endpoints |
+| CORS | Origins from `ALLOWED_ORIGINS` env var; explicit methods/headers (no wildcard) |
+| Error handling | Global handler logs full traceback + `request_id`; generic 500 body to client |
+| Exception detail | Raw exception text never forwarded to client (scrubbed in auth + notes routers) |
+| Ownership | `get_owned_video` dependency — 403 if video belongs to another user |
+| Frame access | Frames served through authenticated router, not as publicly accessible static files |
+| Filename sanitization | `video.title` sanitized before use in `Content-Disposition` header |
+| Postgres password | Docker Compose reads from env var; no hardcoded credentials |

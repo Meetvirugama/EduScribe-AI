@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class QuizService(BaseContentService):
+class QuizGenerator(BaseContentService):
     async def generate_quiz(self, context: LectureContext) -> dict:
         """Generates challenging quiz questions based on the transcript and context."""
         logger.info("Generating quiz questions...")
