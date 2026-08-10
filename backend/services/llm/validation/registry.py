@@ -38,6 +38,7 @@ from .schemas.notes import (
     LearningPathOutput,
     GlossaryOutput,
     QAOutput,
+    RevisionSheetOutput,
 )
 
 
@@ -85,11 +86,14 @@ class SchemaRegistry:
         TaskType.REAL_WORLD_APPLICATIONS:           ApplicationsOutput,
         TaskType.INDUSTRY_USE_CASES:                ApplicationsOutput,
 
-        # ── Phase 5 — Assessment & support schemas ────────────────────────────
+        # ── Phase 5 – Assessment & support schemas ────────────────────────────
         TaskType.LEARNING_OBJECTIVE_DETECTION:      LearningObjectivesOutput,
 
-        # ── Phase 7 — QA & verification schemas ──────────────────────────────
-        TaskType.FACT_CHECKING:                     QAOutput,
+        # ── Phase 6 – Note Organization ────────────────────────────
+        TaskType.REVISION_GENERATION:               RevisionSheetOutput,
+
+        # ── Phase 7 – QA & verification schemas ──────────────────────────────
+        TaskType.FACT_VERIFICATION:                     QAOutput,
     }
 
     @classmethod

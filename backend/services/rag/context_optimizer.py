@@ -108,7 +108,7 @@ class ContextCompressor:
         return selected
 
 
-class ContextBuilder:
+class ContextOptimizer:
     """
     Assembles a safe, token-bounded prompt context string from retrieved chunks.
 
@@ -197,4 +197,4 @@ class ContextBuilder:
 
 
 # Module-level singletons
-context_optimizer = ContextBuilder()
+context_optimizer = ContextOptimizer()

@@ -73,13 +73,19 @@ class TopicsAndNotesOutput(BaseLLMOutput):
 # Phase 2 — Concepts & Keywords  (extract_concepts_and_keywords)
 # ---------------------------------------------------------------------------
 
+class SourceReferenceItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    chunk_id: str
+    timestamp_start: Optional[float] = None
+    timestamp_end: Optional[float] = None
+
 class ConceptItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     name: str
     category: str = ""
     importance: ImportanceLevel = ImportanceLevel.MEDIUM
     brief_description: str = ""
-
+    sources: List[SourceReferenceItem] = Field(default_factory=list)
 
 class ConceptsOutput(BaseLLMOutput):
     concepts: List[ConceptItem] = Field(default_factory=list)
@@ -221,9 +227,25 @@ class AssessmentQuestion(BaseModel):
     question_type: str = "mcq"             # mcq | true_false | fill_blank | hots
     options: Optional[List[str]] = None
     correct_answer: str
-    explanation: str = ""
-    difficulty: int = Field(default=3, ge=1, le=5)
+    explanation: str
 
+# ---------------------------------------------------------------------------
+# Phase 7 — Revision Sheet
+# ---------------------------------------------------------------------------
+
+class KeyDefinition(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+    term: str
+    definition: str
+
+class RevisionSheetOutput(BaseLLMOutput):
+    title: str = Field(min_length=1)
+    quick_facts: List[str] = Field(default_factory=list)
+    must_know_points: List[str] = Field(default_factory=list)
+    key_definitions: List[KeyDefinition] = Field(default_factory=list)
+    important_formulas: List[str] = Field(default_factory=list)
+    priority_topics: List[str] = Field(default_factory=list)
+    last_minute_tips: List[str] = Field(default_factory=list)
 
 class AssessmentsOutput(BaseLLMOutput):
     quiz_questions: List[AssessmentQuestion] = Field(default_factory=list)
@@ -284,3 +306,63 @@ class QAOutput(BaseLLMOutput):
     qa_warnings: List[QAWarning] = Field(default_factory=list)
     overall_accuracy_score: float = Field(default=1.0, ge=0.0, le=1.0)
     verified_facts: List[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — Formulas (FormulaService)
+# ---------------------------------------------------------------------------
+
+class FormulaItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str = ""
+    expression: str
+    variables: Dict[str, str] = Field(default_factory=dict)
+    context: str = ""
+    source: str = "transcript"  # transcript, ocr, both
+    timestamp: Optional[str] = None
+
+
+class FormulasOutput(BaseLLMOutput):
+    formulas: List[FormulaItem] = Field(default_factory=list)
+    notation_guide: Dict[str, str] = Field(default_factory=dict)
+    topic_groups: Dict[str, List[str]] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 — Interview & Viva (InterviewService)
+# ---------------------------------------------------------------------------
+
+class TechnicalQuestion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    question: str
+    expected_answer_points: List[str] = Field(default_factory=list)
+    difficulty: str = "medium"
+    topic: str = ""
+
+class ConceptualQuestion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    question: str
+    expected_answer_points: List[str] = Field(default_factory=list)
+    difficulty: str = "medium"
+    topic: str = ""
+
+class ScenarioQuestion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    scenario: str
+    question: str
+    evaluation_criteria: List[str] = Field(default_factory=list)
+    difficulty: str = "medium"
+    topic: str = ""
+
+class VivaQuestion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    question: str
+    follow_up: str = ""
+    topic: str = ""
+
+class InterviewOutput(BaseLLMOutput):
+    technical_questions: List[TechnicalQuestion] = Field(default_factory=list)
+    conceptual_questions: List[ConceptualQuestion] = Field(default_factory=list)
+    scenario_questions: List[ScenarioQuestion] = Field(default_factory=list)
+    viva_questions: List[VivaQuestion] = Field(default_factory=list)
+    difficulty_breakdown: Dict[str, int] = Field(default_factory=lambda: {"easy": 0, "medium": 0, "hard": 0})

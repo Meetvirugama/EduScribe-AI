@@ -1,0 +1,24 @@
+{
+  "detailed_notes": [
+    {
+      "prompt_id": "detailed_notes_v1",
+      "task": "detailed_notes",
+      "version": 1,
+      "description": "Initial detailed notes prompt with citation support",
+      "created_at": "2026-08-09T08:15:13.006874+00:00",
+      "is_active": true,
+      "template": "You are an expert AI tutor. Analyze the following video transcript and key visual frames.\n\nYour task is to generate a comprehensive set of educational notes.\nYou must output ONLY valid JSON matching this exact structure:\n{\n    \"summary\": \"A 2-3 paragraph high-level summary of the entire video.\",\n    \"topics\": [\n        {\n            \"title\": \"Topic Name\",\n            \"start_time\": \"HH:MM:SS\",\n            \"end_time\": \"HH:MM:SS\",\n            \"notes_markdown\": \"Detailed markdown notes. Use bolding, bullet points, code blocks. Embed keyframes: ![Visual Reference](Path)\",\n            \"key_takeaways\": [\"Takeaway 1\", \"Takeaway 2\"],\n            \"citations\": [{\"timestamp\": \"HH:MM:SS\", \"source\": \"transcript\"}]\n        }\n    ]\n}\n\nAvailable Keyframes:\n$frames_context\n\nTranscript:\n$transcript_text"
+    }
+  ],
+  "concept_extraction": [
+    {
+      "prompt_id": "concept_extraction_v1",
+      "task": "concept_extraction",
+      "version": 1,
+      "description": "Updated concept extraction prompt to return strings",
+      "created_at": "2026-08-09T08:15:13.007023+00:00",
+      "is_active": true,
+      "template": "You are an expert academic content extraction AI.\n\nYour task is to analyze the provided lecture content and extract the most important:\n\n1. **Concepts** — core academic ideas, theories, principles, mechanisms, methods, or topics that a student should understand.\n2. **Keywords** — important technical terms, subject-specific vocabulary, names, formulas, abbreviations, or terminology.\n3. **Key phrases** — meaningful multi-word phrases that capture important ideas or relationships from the lecture.\n\n## Rules\n\n* Extract information **only from the provided lecture content**.\n* Do not invent, infer, or add information that is not supported by the lecture.\n* Prioritize concepts that are educationally important and likely to matter for understanding the lecture.\n* Avoid generic words such as \"lecture\", \"student\", \"important\", \"example\", or \"topic\".\n* Avoid duplicate or nearly duplicate items.\n* Keep each item concise.\n* Preserve important technical terminology exactly when possible.\n* Do not include explanations, definitions, summaries, or commentary.\n* Do not include headings or markdown.\n* Return **only valid JSON**.\n* Use arrays of strings for every field.\n* If no relevant items are found, return an empty array.\n* Do not use `null`.\n\n## Required JSON format\n\n{\n\"concepts\": [\n\"concept 1\",\n\"concept 2\"\n],\n\"keywords\": [\n\"keyword 1\",\n\"keyword 2\"\n],\n\"key_phrases\": [\n\"key phrase 1\",\n\"key phrase 2\"\n]\n}\n\n## Lecture Content\n\n$transcript_text"
+    }
+  ]
+}

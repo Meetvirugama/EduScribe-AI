@@ -220,18 +220,51 @@ $transcript_text""",
                 "Initial detailed notes prompt with citation support",
             ),
             "concept_extraction": (
-                """You are an expert AI tutor. Extract the most important academic concepts, technical terms, and keywords.
+                """You are an expert academic content extraction AI.
 
-Output ONLY valid JSON:
+Your task is to analyze the provided lecture content and extract the most important:
+
+1. **Concepts** — core academic ideas, theories, principles, mechanisms, methods, or topics that a student should understand.
+2. **Keywords** — important technical terms, subject-specific vocabulary, names, formulas, abbreviations, or terminology.
+3. **Key phrases** — meaningful multi-word phrases that capture important ideas or relationships from the lecture.
+
+## Rules
+
+* Extract information **only from the provided lecture content**.
+* Do not invent, infer, or add information that is not supported by the lecture.
+* Prioritize concepts that are educationally important and likely to matter for understanding the lecture.
+* Avoid generic words such as "lecture", "student", "important", "example", or "topic".
+* Avoid duplicate or nearly duplicate items.
+* Keep each item concise.
+* Preserve important technical terminology exactly when possible.
+* Do not include explanations, definitions, summaries, or commentary.
+* Do not include headings or markdown.
+* Return **only valid JSON**.
+* Use arrays of strings for every field.
+* If no relevant items are found, return an empty array.
+* Do not use `null`.
+
+## Required JSON format
+
 {
-    "concepts": [{"name": "...", "category": "...", "importance": "high|medium|low", "brief_description": "..."}],
-    "keywords": ["keyword1", "keyword2"],
-    "key_phrases": ["phrase 1", "phrase 2"]
+"concepts": [
+"concept 1",
+"concept 2"
+],
+"keywords": [
+"keyword 1",
+"keyword 2"
+],
+"key_phrases": [
+"key phrase 1",
+"key phrase 2"
+]
 }
 
-Transcript:
+## Lecture Content
+
 $transcript_text""",
-                "Initial concept extraction prompt",
+                "Updated concept extraction prompt to return strings",
             ),
         }
 

@@ -1,6 +1,9 @@
+import logging
 from typing import Any, Dict
 from abc import ABC, abstractmethod
 from ..key_manager import KeyManager
+
+logger = logging.getLogger(__name__)
 
 class BaseProviderAdapter(ABC):
     """
@@ -22,6 +25,8 @@ class CloudflareAdapter(BaseProviderAdapter):
         account_id = self.key_manager.get_active_account_id(provider, api_key)
         if account_id:
             kwargs["api_base"] = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/"
+        else:
+            logger.warning("CloudflareAdapter: No account_id found for API key in KeyManager. Relying on LiteLLM default environment variables.")
         return kwargs
 
 
@@ -40,5 +45,5 @@ class ProviderAdapterFactory:
         }
         
     def get_adapter(self, provider: str) -> BaseProviderAdapter:
-        provider = provider.lower()
+        provider = provider.strip().lower() if provider else "default"
         return self._adapters.get(provider, self._adapters["default"])

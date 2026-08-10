@@ -108,6 +108,7 @@ class TaskType(Enum):
     SECTION_SUMMARIZATION       = "section_summarization"      # T56
     BULLET_POINT_EXTRACTION     = "bullet_point_extraction"    # T57
     HIGHLIGHT_EXTRACTION        = "highlight_extraction"       # T58
+    REVISION_GENERATION         = "revision_generation"        # T59
     TAG_GENERATION              = "tag_generation"             # T59
     VISUAL_DIAGRAM_DESCRIPTION  = "visual_diagram_description" # T60
     OCR_CORRECTION              = "ocr_correction"             # T61 (legacy alias)
@@ -630,6 +631,14 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         primary=_FAST_PRIMARY,
         secondary=_FAST_SECONDARY,
         emergency=_FAST_EMERGENCY,
+        temperature=0.3,
+        max_tokens=2048,
+    ),
+    TaskType.REVISION_GENERATION: ModelConfig(
+        # Complex Reasoning — generate high-quality concise revision material
+        primary=_COMPLEX_PRIMARY,
+        secondary=_COMPLEX_SECONDARY,
+        emergency=_COMPLEX_EMERGENCY,
         temperature=0.3,
         max_tokens=2048,
     ),

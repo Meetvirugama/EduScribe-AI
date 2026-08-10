@@ -1,21 +1,49 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
+from schemas.content import Concept, Topic, Definition, LectureInput, LectureState
 
 @dataclass
 class LectureContext:
     """
-    Shared state object representing a lecture throughout the generation pipeline.
-    Prevents passing the entire raw transcript to every service, and allows for 
-    reusing intermediate results like topics and definitions.
+    Deprecated: Transitioning to separate LectureInput and LectureState.
+    This class combines them for backward compatibility.
     """
-    transcript: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    input: LectureInput
+    state: LectureState = field(default_factory=LectureState)
+
+    # Backward compatibility properties
+    @property
+    def transcript(self) -> str: return self.input.transcript
     
-    # Intermediate results that can be reused
-    topics: List[Dict[str, Any]] = field(default_factory=list)
-    concepts: List[Dict[str, Any]] = field(default_factory=list)
-    definitions: List[Dict[str, Any]] = field(default_factory=list)
+    @property
+    def segments(self) -> List[Dict[str, Any]]: return self.input.segments
     
-    # Additional context
-    difficulty: int = 3
-    frames: List[Dict[str, Any]] = field(default_factory=list)
+    @property
+    def metadata(self) -> Dict[str, Any]: return self.input.metadata
+    
+    @property
+    def frames(self) -> List[Dict[str, Any]]: return self.input.frames
+
+    @property
+    def concepts(self) -> List[Concept]: return self.state.concepts
+    
+    @concepts.setter
+    def concepts(self, val: List[Concept]): self.state.concepts = val
+    
+    @property
+    def topics(self) -> List[Dict[str, Any]]: return self.state.topics
+    
+    @topics.setter
+    def topics(self, val: List[Dict[str, Any]]): self.state.topics = val
+    
+    @property
+    def definitions(self) -> List[Dict[str, Any]]: return self.state.definitions
+    
+    @definitions.setter
+    def definitions(self, val: List[Dict[str, Any]]): self.state.definitions = val
+    
+    @property
+    def status(self) -> Dict[str, Any]: return self.state.status
+    
+    @property
+    def errors(self) -> Dict[str, str]: return self.state.errors

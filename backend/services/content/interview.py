@@ -1,5 +1,5 @@
 """
-services/content/interview_service.py — Interview & Viva Question Generator
+services/content/interview.py — Interview & Viva Question Generator
 
 Generates structured interview questions, viva voce questions, and exam
 preparation materials from the lecture content.
@@ -9,103 +9,85 @@ Issue Resolved: #12 (notes generation not modular — missing interview generato
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
+
+from .base import BaseContentService
+from .context import LectureContext
+from ..llm.model_selector import TaskType
 
 logger = logging.getLogger(__name__)
 
 
-class InterviewService:
+class InterviewService(BaseContentService):
     """Generates interview and viva questions from lecture concepts."""
 
-    def __init__(self, llm_manager=None) -> None:
-        self.llm_manager = llm_manager
-
-    async def generate_interview_questions(
-        self,
-        transcript_segments: List[Dict[str, Any]],
-        concepts_data: Dict[str, Any] = None,
-        difficulty: str = "mixed",
-    ) -> Dict[str, Any]:
+    async def generate_interview_questions(self, context: LectureContext) -> Dict[str, Any]:
         """
         Generate interview/viva questions.
-
-        Returns:
-            {
-              "technical_questions": [...],
-              "conceptual_questions": [...],
-              "scenario_questions": [...],
-              "viva_questions": [...],
-              "difficulty_breakdown": {"easy": N, "medium": N, "hard": N}
-            }
         """
+        logger.info("Generating interview questions...")
+        
+        empty_result = {
+            "technical_questions": [], 
+            "conceptual_questions": [], 
+            "scenario_questions": [],
+            "viva_questions": [],
+            "difficulty_breakdown": {"easy": 0, "medium": 0, "hard": 0}
+        }
+        
         if not self.llm_manager:
-            return {"technical_questions": [], "conceptual_questions": [], "viva_questions": []}
+            return empty_result
 
-        transcript_text = " ".join(s.get("text", "") for s in transcript_segments)
-        concepts_context = ""
-        if concepts_data:
-            concepts = concepts_data.get("concepts", [])[:10]
-            concepts_context = ", ".join(c.get("name", "") for c in concepts)
+        # Map numeric difficulty from context to a string descriptor if present
+        diff_level = getattr(context.input, "difficulty", 3)
+        difficulty_str = "mixed"
+        if diff_level <= 2:
+            difficulty_str = "easy"
+        elif diff_level >= 4:
+            difficulty_str = "hard"
+        else:
+            difficulty_str = "medium"
 
-        prompt = f"""You are an expert interview coach preparing students for technical interviews and viva voce exams.
+        # Build transcript context
+        transcript_text = " ".join(s.get("text", "") for s in context.segments)
+        if not transcript_text.strip():
+            transcript_text = getattr(context.input, "transcript", "")
+            if not transcript_text.strip():
+                logger.warning("No transcript provided for interview generation.")
+                transcript_text = "No transcript provided."
 
-Based on this lecture content, generate a comprehensive set of interview and viva questions.
-
-Key concepts covered: {concepts_context or "See transcript"}
-
-Output ONLY valid JSON:
-{{
-    "technical_questions": [
-        {{
-            "question": "Explain the concept of X and its implementation",
-            "expected_answer_points": ["Point 1", "Point 2"],
-            "difficulty": "easy|medium|hard",
-            "topic": "Related topic"
-        }}
-    ],
-    "conceptual_questions": [
-        {{
-            "question": "Why does X happen when Y occurs?",
-            "expected_answer_points": ["Point 1"],
-            "difficulty": "medium",
-            "topic": "Related topic"
-        }}
-    ],
-    "scenario_questions": [
-        {{
-            "scenario": "Given that... what would you do?",
-            "question": "How would you approach this?",
-            "evaluation_criteria": ["Criterion 1"],
-            "difficulty": "hard"
-        }}
-    ],
-    "viva_questions": [
-        {{
-            "question": "Define X in your own words",
-            "follow_up": "How does that relate to Y?",
-            "topic": "Related topic"
-        }}
-    ],
-    "difficulty_breakdown": {{"easy": 3, "medium": 5, "hard": 2}}
-}}
-
-Transcript:
-{transcript_text[:6000]}"""
+        # Build concepts context
+        # context.concepts is a List of Concept Pydantic objects
+        concepts = context.concepts[:15] if context.concepts else []
+        concepts_context = ", ".join(getattr(c, "name", str(c)) for c in concepts)
+        
+        messages = self._render_messages(
+            system_msg="You are an expert interview question generator. Output only valid JSON.",
+            template_name="interview",
+            transcript_text=transcript_text,
+            concepts_context=concepts_context or "See transcript",
+            difficulty=difficulty_str
+        )
 
         try:
-            from services.llm.model_selector import TaskType
-            messages = [
-                {"role": "system", "content": "You are an expert interview question generator. Output only valid JSON."},
-                {"role": "user", "content": prompt},
-            ]
-            response = await self.llm_manager.generate(TaskType.QUIZ_GENERATION, messages)
-            raw = getattr(response, "text", None) or str(response)
-
-            import re, json
-            match = re.search(r"\{.*\}", raw, re.DOTALL)
-            if match:
-                return json.loads(match.group())
+            # INTERVIEW_PERSPECTIVE is the correct TaskType as per model_selector.py
+            response = await self.llm_manager.generate(TaskType.INTERVIEW_PERSPECTIVE, messages)
+            
+            raw_dict = self._safe_dump(response, fallback=empty_result)
+            
+            # Optionally validate explicitly to ensure it matches the schema
+            from ..llm.validation.schemas.notes import InterviewOutput
+            parsed = InterviewOutput(**raw_dict)
+            
+            # Recalculate difficulty breakdown accurately
+            easy = sum(1 for q in parsed.technical_questions + parsed.conceptual_questions + parsed.scenario_questions if q.difficulty.lower() == "easy")
+            medium = sum(1 for q in parsed.technical_questions + parsed.conceptual_questions + parsed.scenario_questions if q.difficulty.lower() == "medium")
+            hard = sum(1 for q in parsed.technical_questions + parsed.conceptual_questions + parsed.scenario_questions if q.difficulty.lower() == "hard")
+            
+            parsed.difficulty_breakdown = {"easy": easy, "medium": medium, "hard": hard}
+            
+            return parsed.model_dump()
+            
         except Exception as exc:
             logger.error("InterviewService: generation failed: %s", exc)
-
-        return {"technical_questions": [], "conceptual_questions": [], "viva_questions": []}
+            return empty_result

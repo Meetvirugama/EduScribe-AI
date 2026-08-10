@@ -153,7 +153,7 @@ class MergeService:
 
         # ── Mind Map ────────────────────────────────────────────────────────────
         if mind_map_data:
-            mermaid_code = mind_map_data.get("mermaid_code", "")
+            mermaid_code = mind_map_data.get("content", "")
             if mermaid_code:
                 md_lines.append("## 🧠 Concept Mind Map\n")
                 md_lines.append("```mermaid")
@@ -198,13 +198,8 @@ class MergeService:
             if concepts:
                 md_lines.append("## 🔑 Key Concepts\n")
                 for c in concepts:
-                    name = c.get("name", "")
-                    category = c.get("category", "")
-                    importance = c.get("importance", "")
-                    desc = c.get("brief_description", "")
-                    if name:
-                        importance_icon = "🔴" if importance == "high" else ("🟡" if importance == "medium" else "🟢")
-                        md_lines.append(f"- {importance_icon} **{name}** `{category}` — {desc}")
+                    importance_icon = "🔴" if c.importance == "high" else ("🟡" if c.importance == "medium" else "🟢")
+                    md_lines.append(f"- {importance_icon} **{c.name}** `{c.category}` — {c.brief_description}")
                 if keywords:
                     md_lines.append(f"\n**Keywords:** {', '.join([f'`{k}`' for k in keywords])}\n")
                 md_lines.append("\n---\n")
