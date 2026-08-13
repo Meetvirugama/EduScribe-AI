@@ -19,6 +19,7 @@ import threading
 import logging
 
 from core.config import settings
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class WhisperService:
         if self.model is None:
             with self._model_lock:
                 if self.model is None:
+                    # pyrefly: ignore [missing-import]
                     from faster_whisper import WhisperModel
                     logger.info(
                         "Loading faster-whisper model '%s' on device='%s' with INT8 compute...",
@@ -71,7 +73,6 @@ class WhisperService:
                     self.model = None
                     gc.collect()
 
-    from tenacity import retry, stop_after_attempt, wait_exponential
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def transcribe(self, audio_path: str, video_id: str, language: str = None) -> dict:
