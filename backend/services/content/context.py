@@ -49,12 +49,6 @@ class LectureContext:
                     ): self.state.definitions = val
 
     @property
-    def formulas_extracted(self): return self.state.formulas_extracted
-
-    @formulas_extracted.setter
-    def formulas_extracted(self, val): self.state.formulas_extracted = val
-
-    @property
     def examples(self): return self.state.examples
 
     @examples.setter
@@ -71,12 +65,6 @@ class LectureContext:
 
     @relationships.setter
     def relationships(self, val): self.state.relationships = val
-
-    @property
-    def important_frames(self): return self.state.important_frames
-
-    @important_frames.setter
-    def important_frames(self, val): self.state.important_frames = val
 
     @property
     def status(self) -> Dict[str, Any]: return self.state.status
@@ -96,10 +84,3 @@ class LectureContext:
     @detailed_notes_md.setter
     def detailed_notes_md(self, val: str): self.state.detailed_notes_md = val
 
-    @property
-    def knowledge_compilation_doc(
-        self) -> str: return self.state.knowledge_compilation_doc
-
-    @knowledge_compilation_doc.setter
-    def knowledge_compilation_doc(
-        self, val: str): self.state.knowledge_compilation_doc = val

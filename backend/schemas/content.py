@@ -37,12 +37,6 @@ class SourceReference(BaseModel):
     timestamp_end: Optional[float] = None
 
 
-class GenerationMetadata(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    task_type: str
-    model_name: str
-    prompt_version: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Concept(BaseModel):
@@ -76,11 +70,6 @@ class Definition(BaseModel):
     confidence: float = Field(default=1.0)
     topic_association: Optional[str] = None
 
-
-class Summary(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    text: str
-    source: List[SourceReference] = Field(default_factory=list)
 
 
 class FormulaItem(BaseModel):
@@ -143,18 +132,12 @@ class LectureState:
     topics: List[Topic] = field(default_factory=list)
     concepts: List[Concept] = field(default_factory=list)
     definitions: List[Definition] = field(default_factory=list)
-    summaries: List[Summary] = field(default_factory=list)
-    formulas_extracted: List[FormulaItem] = field(default_factory=list)
     examples: List[Example] = field(default_factory=list)
     key_points: List[KeyPoint] = field(default_factory=list)
     relationships: List[Relationship] = field(default_factory=list)
-    important_frames: List[Dict] = field(default_factory=list)
 
     # Phase 1 output — Unified Markdown (transcript + vision merged)
     unified_md: str = ""
-
-    # Phase 3a output — Enriched Unified Markdown (unified_md + all extractions injected)
-    knowledge_compilation_doc: str = ""
 
     # Phase 3b output — Full Detailed Learning Note (generated from enriched chunks)
     detailed_notes_md: str = ""
@@ -168,9 +151,7 @@ class LectureState:
     # Status tracking per service/phase
     status: Dict[str, ServiceStatus] = field(default_factory=dict)
 
-    # Errors and metadata
     errors: Dict[str, str] = field(default_factory=dict)
-    metadata: Dict[str, GenerationMetadata] = field(default_factory=dict)
 
 class QualityIssue(BaseModel):
     model_config = ConfigDict(extra="ignore")

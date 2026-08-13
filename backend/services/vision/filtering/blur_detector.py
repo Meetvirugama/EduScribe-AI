@@ -4,6 +4,7 @@ Optimized for minimal CPU and memory footprint during long video processing.
 """
 import logging
 import statistics
+import os
 from typing import List, Dict, Any
 
 import cv2
@@ -36,7 +37,7 @@ def is_blurry(frame_path: str,
     """
     Determine if a frame file is blurry using high-efficiency decoding.
     """
-    if not __import__("os").path.exists(frame_path):
+    if not os.path.exists(frame_path):
         raise FileNotFoundError(f"Frame image not found: {frame_path}")
 
     # We use Pillow's .draft() instead of cv2.imread().
