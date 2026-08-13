@@ -147,56 +147,7 @@ async def list_frames(
     return [_build_frame_response_sync(f, metas.get(f.id), ocrs.get(f.id), scores.get(f.id)) for f in frames]
 
 
-@router.get(
-    "/frames/{frame_id}",
-    response_model=VideoFrameResponse,
-    summary="Get full details for a single frame.",
-    responses={404: {"description": "Frame not found."}},
-)
-async def get_frame(
-    frame_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> VideoFrameResponse:
-    """
-    Retrieve complete metadata, OCR results, and scoring for a specific frame.
 
-    ISSUE-12: Ownership check is now a single atomic JOIN query. This prevents
-    the IDOR window where a user could confirm a frame's existence before the
-    ownership check ran.
-    """
-    try:
-        frame_uuid = uuid.UUID(frame_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid frame ID format.",
-        )
-
-    # Single JOIN query — frame only returned if the parent video belongs to
-    # the requesting user. Prevents IDOR (ISSUE-12).
-    result = await db.execute(
-        select(VideoFrame)
-        .join(Video, Video.id == VideoFrame.video_id)
-        .where(
-            VideoFrame.id == frame_uuid,
-            Video.user_id == str(current_user.id),
-        )
-    )
-    frame = result.scalar_one_or_none()
-    if not frame:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Frame not found.",
-        )
-
-    meta_result  = await db.execute(select(FrameMetadata).where(FrameMetadata.frame_id == frame.id))
-    meta         = meta_result.scalar_one_or_none()
-    ocr_result   = await db.execute(select(OCRResult).where(OCRResult.frame_id == frame.id))
-    ocr          = ocr_result.scalar_one_or_none()
-    score_result = await db.execute(select(FrameScore).where(FrameScore.frame_id == frame.id))
-    score        = score_result.scalar_one_or_none()
-    return _build_frame_response_sync(frame, meta, ocr, score)
 
 @router.get(
     "/videos/{video_id}/frames/{frame_id}/image",
@@ -240,28 +191,4 @@ async def get_frame_image(
     return FileResponse(frame.frame_path)
 
 
-@router.delete(
-    "/videos/{video_id}/frames",
-    response_model=FrameDeleteResponse,
-    summary="Delete all extracted frames for a video.",
-    responses={404: {"description": "Video not found."}},
-)
-async def delete_frames(
-    video_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> FrameDeleteResponse:
-    """
-    Delete all frame metadata from the database and frame files from disk
-    for the given video.
-    """
-    await _resolve_video(video_id, current_user, db)
 
-    deleted = await vision_pipeline.delete_frames(video_id)
-    logger.info("Deleted %d frames for video %s by user %s", deleted, video_id, current_user.id)
-
-    return FrameDeleteResponse(
-        video_id=video_id,
-        frames_deleted=deleted,
-        message=f"Deleted {deleted} frame(s) and associated metadata.",
-    )

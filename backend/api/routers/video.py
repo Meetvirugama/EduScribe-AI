@@ -257,12 +257,6 @@ async def get_storage(
 # Single-video detail endpoints — use get_owned_video shared dependency (REF-02)
 # ---------------------------------------------------------------------------
 
-@router.get("/{video_id}", response_model=VideoResponse)
-async def get_video(
-    video: Video = Depends(get_owned_video),
-):
-    """Retrieve a single video's status and metadata."""
-    return video
 
 
 @router.get("/{video_id}/details")

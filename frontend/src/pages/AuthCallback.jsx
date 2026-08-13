@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE } from '../lib/api';
 
@@ -19,7 +19,6 @@ import { API_BASE } from '../lib/api';
  */
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
@@ -58,7 +57,7 @@ const AuthCallback = () => {
         navigate('/login?error=auth_failed', { replace: true });
       }
     })();
-  }, [location, login, navigate, searchParams]);
+  }, [login, navigate, searchParams]);
 
   return (
     <div className="auth-callback">

@@ -14,6 +14,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -214,7 +215,7 @@ async def google_callback(
     return RedirectResponse(f"{frontend_callback}?code={exchange_code}")
 
 
-from pydantic import BaseModel
+
 
 class ExchangeRequest(BaseModel):
     code: str
