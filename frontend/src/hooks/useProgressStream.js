@@ -24,7 +24,7 @@ export function useProgressStream(videoId, token) {
           eventSource.close();
         } else {
           setProgress(data);
-          if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          if (data.status === 'COMPLETED' || data.status === 'FAILED' || data.status === 'READY_FOR_SELECTION') {
             eventSource.close();
           }
         }

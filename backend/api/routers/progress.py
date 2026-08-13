@@ -34,7 +34,7 @@ router = APIRouter(prefix="/videos", tags=["Progress"])
 _POLL_INTERVAL = 2.0
 
 # Terminal states — stream closes when reached
-_TERMINAL_STATES = {VideoStatus.COMPLETED, VideoStatus.FAILED}
+_TERMINAL_STATES = {VideoStatus.READY_FOR_SELECTION, VideoStatus.COMPLETED, VideoStatus.FAILED}
 
 
 @router.get("/{video_id}/progress/stream")

@@ -1,44 +1,178 @@
 import logging
-from typing import Dict, Any
+import json
+import asyncio
+from typing import Dict, Any, List
 
 from .base import BaseContentService
 from .context import LectureContext
 from ..llm.model_selector import TaskType
+from .note_quality import NoteQualityEvaluator
+from .markdown_renderer import MarkdownRenderer
 
 logger = logging.getLogger(__name__)
 
 class DetailedNotesGenerator(BaseContentService):
     async def generate_detailed_notes(self, context: LectureContext) -> Dict[str, Any]:
-        """Generates detailed, structured notes using extracted topics."""
-        logger.info("Generating detailed notes artifact...")
+        """Generates detailed, structured notes using a multi-step compiler pipeline."""
+        logger.info("Generating detailed notes artifact via compiler pipeline...")
         
         empty_result = {"notes_markdown": "Failed to generate notes."}
         
         if not self.llm_manager:
             return empty_result
             
-        topics_context = ""
-        for topic in context.topics:
-            topics_context += f"- {topic.get('title', 'Unknown')}\n"
-                
-        if not topics_context:
+        if not context.topics:
             logger.warning("No topics available for detailed notes generation.")
-            topics_context = "No topics provided."
+            return empty_result
+
+        evaluator = NoteQualityEvaluator(self.llm_manager)
+        topic_markdowns = []
+
+        # Process each topic concurrently or sequentially.
+        # We will do it sequentially to preserve strict ordering and avoid rate limits.
+        for index, topic in enumerate(context.topics):
+            topic_title = topic.get("title", f"Topic {index+1}")
+            logger.info(f"Processing Topic: {topic_title}")
+
+            # 1. Context Packet Builder
+            context_packet = self._build_context_packet(topic_title, context)
+
+            # 2. LLM Topic Synthesis
+            topic_json = await self._synthesize_topic(topic_title, context_packet)
+
+            if not topic_json:
+                continue
+
+            # 3. Topic Validation (Critic)
+            quality_report = await evaluator.evaluate(topic_json, context_packet)
+
+            # 4. Targeted Repair (if score < 85)
+            if quality_report.score < 85 and quality_report.issues:
+                logger.info(f"Repairing topic {topic_title} (Score: {quality_report.score})")
+                topic_json = await self._repair_topic(topic_json, quality_report.issues, context_packet)
+
+            # 5. Render to Markdown
+            t_md = MarkdownRenderer.render_topic(topic_json)
+            topic_markdowns.append(t_md)
+
+        # 6. Final Assembly
+        final_markdown = MarkdownRenderer.compile_final_notes(
+            lecture_title=context.metadata.get("title", "Lecture Notes"),
+            topic_markdowns=topic_markdowns
+        )
+
+        return {"notes_markdown": final_markdown}
+
+    def _build_context_packet(self, topic_title: str, context: LectureContext) -> str:
+        """Assembles a highly specific context packet for a single topic."""
+        packet = []
+        packet.append(f"TOPIC: {topic_title}")
+        packet.append(f"TRANSCRIPT:\n{context.transcript}")
+
+        # In a fully fleshed out system, we would filter these by topic_association.
+        # For now, we provide the global context and ask the LLM to pull what's relevant to this topic.
+        if context.concepts:
+            packet.append("CONCEPTS:")
+            for c in context.concepts:
+                packet.append(f"- {c.get('name')}: {c.get('brief_description')}")
+                
+        if context.definitions:
+            packet.append("DEFINITIONS:")
+            for d in context.definitions:
+                packet.append(f"- {d.get('term')}: {d.get('definition')}")
+                
+        if context.examples:
+            packet.append("EXAMPLES:")
+            for e in context.examples:
+                packet.append(f"- {e.get('title')}: {e.get('problem')}")
+
+        if context.key_points:
+            packet.append("KEY POINTS:")
+            for k in context.key_points:
+                packet.append(f"- {k.get('text')}")
+
+        return "\n\n".join(packet)
+
+    async def _synthesize_topic(self, topic_title: str, context_packet: str) -> Dict[str, Any]:
+        """Generates the structured JSON note for a topic."""
+        system_msg = (
+            "You are an expert technical educator.\n"
+            "Generate a highly structured educational note for the specific TOPIC using ONLY the provided CONTEXT PACKET.\n"
+            "Format the output strictly as a JSON object with the following keys:\n"
+            "{\n"
+            '  "title": "Topic Name",\n'
+            '  "overview": "Brief summary",\n'
+            '  "core_idea": "Main concept",\n'
+            '  "steps": ["Step 1", "Step 2"],\n'
+            '  "important_terms": [{"term": "T", "meaning": "M"}],\n'
+            '  "formulas": [{"expression": "E", "explanation": "E"}],\n'
+            '  "examples": [{"problem": "P", "solution": "S"}],\n'
+            '  "relationships": ["Rel 1"],\n'
+            '  "misconceptions": ["Misc 1"],\n'
+            '  "key_takeaways": ["Takeaway 1"]\n'
+            "}\n"
+            "Omit keys or use empty lists if the context does not support them. Do not hallucinate."
+        )
+
+        messages = [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": context_packet}
+        ]
+
+        try:
+            # Bypass registry for strict internal JSON loop by using response_format
+            response = await self.llm_manager.generate(
+                task=TaskType.DETAILED_NOTES,
+                messages=messages,
+                response_format={"type": "json_object"}
+            )
             
-        messages = self._render_messages(
-            system_msg="You are an expert educational notes creator.",
-            template_name="detailed_notes_artifact",
-            topics_context=topics_context,
-            transcript_text=context.transcript
+            raw_text = getattr(response, "text", str(response))
+            import re
+            match = re.search(r'```(?:json)?(.*?)```', raw_text, re.DOTALL)
+            if match:
+                raw_text = match.group(1).strip()
+            
+            return json.loads(raw_text)
+            
+        except Exception as e:
+            logger.error(f"Failed to synthesize topic {topic_title}: {e}")
+            return {}
+
+    async def _repair_topic(self, topic_json: Dict[str, Any], issues: List[Any], context_packet: str) -> Dict[str, Any]:
+        """Repairs a topic note based on critic feedback."""
+        system_msg = (
+            "You are an expert Note Repair editor.\n"
+            "Fix the provided topic JSON based on the critic issues. Return ONLY the repaired JSON."
         )
         
+        issues_text = "\\n".join([f"- [{i.severity}] {i.type} in {i.section}: {i.problem} -> Fix: {i.fix}" for i in issues])
+        
+        prompt = (
+            f"=== CONTEXT ===\n{context_packet}\n\n"
+            f"=== ISSUES TO FIX ===\n{issues_text}\n\n"
+            f"=== CURRENT JSON ===\n{json.dumps(topic_json, indent=2)}\n\n"
+            "Return the corrected JSON."
+        )
+
+        messages = [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": prompt}
+        ]
+
         try:
-            # Re-using detailed notes task type
-            response = await self.llm_manager.generate(TaskType.DETAILED_NOTES, messages)
+            response = await self.llm_manager.generate(
+                task=TaskType.DETAILED_NOTES,
+                messages=messages,
+                response_format={"type": "json_object"}
+            )
+            raw_text = getattr(response, "text", str(response))
+            import re
+            match = re.search(r'```(?:json)?(.*?)```', raw_text, re.DOTALL)
+            if match:
+                raw_text = match.group(1).strip()
+            return json.loads(raw_text)
             
-            raw_dict = self._safe_dump(response, fallback=empty_result)
-            return raw_dict
-            
-        except Exception as exc:
-            logger.error("DetailedNotesGenerator: generation failed: %s", exc)
-            return empty_result
+        except Exception as e:
+            logger.error(f"Failed to repair topic: {e}")
+            return topic_json # Return original if repair fails

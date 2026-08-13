@@ -1,17 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, API_BASE } from '../lib/api';
 import {
   Video, Clock, Upload, Database, Languages, Zap, FileText,
   ChevronLeft, ScanText, PlayCircle, BookOpen, Search,
-  Download, Trash2, X, BookMarked,
+  Download, Trash2, X, BookMarked, Lightbulb, Map, FileSpreadsheet, MessagesSquare, CheckSquare, Presentation
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ConfirmModal from '../components/ConfirmModal';
 import './ProjectWorkspace.css';
+
+const ARTIFACT_TYPES = {
+  detailed_notes: { label: 'Detailed Notes', icon: BookOpen },
+  quiz: { label: 'Quiz', icon: CheckSquare },
+  flashcards: { label: 'Flashcards', icon: Presentation },
+  mindmap: { label: 'Mindmap', icon: Map },
+  formula_sheet: { label: 'Formula Sheet', icon: FileSpreadsheet },
+  interview: { label: 'Interview Prep', icon: MessagesSquare },
+  revision: { label: 'Revision Sheet', icon: Lightbulb },
+};
 
 /**
  * VirtualTranscript — renders only visible transcript segments (perf).
@@ -63,12 +73,25 @@ export default function ProjectWorkspace() {
   const [details, setDetails] = useState(null);
   const [transcript, setTranscript] = useState(null);
   const [frames, setFrames] = useState([]);
-  const [notesContent, setNotesContent] = useState(null);
-  const [activeTab, setActiveTab] = useState('notes');
+  
+  // Artifacts state
+  const [artifacts, setArtifacts] = useState([]);
+  const [activeTab, setActiveTab] = useState('detailed_notes'); // default artifact or transcript
+  
   const [error, setError] = useState(null);
-  const [deletingNotes, setDeletingNotes] = useState(false);
-  const [notesDeleted, setNotesDeleted] = useState(false);
-  const [showDeleteNotesModal, setShowDeleteNotesModal] = useState(false);
+  const [generatingArtifact, setGeneratingArtifact] = useState(false);
+
+  const fetchArtifacts = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/generate/${id}/artifacts`, {}, token);
+      if (res.ok) {
+        const data = await res.json();
+        setArtifacts(data.artifacts || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch artifacts', err);
+    }
+  }, [id, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -77,30 +100,51 @@ export default function ProjectWorkspace() {
       apiFetch(`/videos/${id}/details`, {}, token).then(r => r.json()),
       apiFetch(`/videos/${id}/transcript`, {}, token).then(r => r.ok ? r.json() : null),
       apiFetch(`/videos/${id}/frames?selected_only=false`, {}, token).then(r => r.ok ? r.json() : []),
-      apiFetch(`/notes/${id}`, {}, token).then(r => r.ok ? r.json() : null),
     ])
-      .then(([detailsData, transcriptData, framesData, notesData]) => {
+      .then(([detailsData, transcriptData, framesData]) => {
         setDetails(detailsData);
         setTranscript(transcriptData);
         setFrames(Array.isArray(framesData) ? framesData : []);
-        if (notesData?.content) setNotesContent(notesData.content);
       })
       .catch(err => { console.error(err); setError('Failed to load workspace data.'); });
-  }, [id, token]);
+      
+    fetchArtifacts();
+  }, [id, token, fetchArtifacts]);
 
-  const handleDownloadNotes = () => {
-    window.open(`${API_BASE}/notes/${id}/download?token=${token}`, '_blank');
-  };
+  // Polling for artifact generation progress
+  useEffect(() => {
+    const isGenerating = artifacts.some(a => a.status === 'PENDING' || a.status === 'GENERATING');
+    if (!isGenerating) return;
 
-  const handleDeleteNotes = async () => {
-    setShowDeleteNotesModal(false);
-    setDeletingNotes(true);
+    const timer = setInterval(() => {
+      fetchArtifacts();
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [artifacts, fetchArtifacts]);
+
+  const handleGenerate = async (artifactType) => {
+    setGeneratingArtifact(true);
     try {
-      const res = await apiFetch(`/notes/${id}`, { method: 'DELETE' }, token);
-      if (res.ok) { setNotesContent(null); setNotesDeleted(true); }
-      else alert('Failed to delete notes.');
-    } catch { alert('Network error.'); }
-    setDeletingNotes(false);
+      const res = await apiFetch(`/generate/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artifacts: [artifactType] })
+      }, token);
+      
+      if (res.ok) {
+        await fetchArtifacts();
+        setActiveTab(artifactType);
+      } else {
+        const err = await res.json();
+        alert(`Failed to generate: ${err.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error while generating artifact.');
+    } finally {
+      setGeneratingArtifact(false);
+    }
   };
 
   if (error) return <div className="pw-error-state">{error}</div>;
@@ -116,6 +160,12 @@ export default function ProjectWorkspace() {
   const { video, transcript_meta } = details;
   const rawTitle = (video.title || '').replace(/\.[^/.]+$/, '').replace(/[-_]\d{4}-\d{2}-\d{2}.*/, '').replace(/-/g, ' ');
   const displayTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+
+  // Helper to get active artifact data
+  const getActiveArtifact = () => {
+    return artifacts.find(a => a.artifact_type === activeTab);
+  };
+  const activeArtifact = getActiveArtifact();
 
   return (
     <div className="pw-container">
@@ -188,30 +238,12 @@ export default function ProjectWorkspace() {
                 <div className="pw-frames-icon"><ScanText size={20} /></div>
                 <h3>Key Frames Gallery</h3>
               </div>
-              <div className="pw-frames-actions">
-                <button
-                  id="extract-frames-btn"
-                  onClick={async () => {
-                    if (confirm('Extract AI key frames? This may take a minute.')) {
-                      try {
-                        const res = await apiFetch(`/videos/${id}/extract-frames`, { method: 'POST' }, token);
-                        if (res.ok) alert('Frame extraction started! Refresh in a few minutes.');
-                        else { const err = await res.json(); alert('Error: ' + (err.detail || 'Failed')); }
-                      } catch { alert('Network error.'); }
-                    }
-                  }}
-                  className="pw-btn-extract"
-                >
-                  Extract Frames
-                </button>
-                <span className="pw-frames-count">{frames.length} Found</span>
-              </div>
             </div>
 
             {frames.length === 0 ? (
               <div className="pw-no-frames">
                 <ScanText size={32} />
-                <p>No key frames analyzed yet. Click "Extract Frames" to start the AI vision pipeline!</p>
+                <p>No key frames analyzed for this video.</p>
               </div>
             ) : (
               <div className="pw-frames-gallery">
@@ -254,72 +286,77 @@ export default function ProjectWorkspace() {
         <div className="pw-right-col">
           {/* Tabs */}
           <div className="pw-transcript-header">
-            <div className="pw-tabs">
+            <div className="pw-tabs" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
               <button
-                id="tab-notes"
-                className={`pw-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
-                onClick={() => setActiveTab('notes')}
-              >
-                <BookOpen size={16} /> AI Notes
-              </button>
-              <button
-                id="tab-transcript"
                 className={`pw-tab-btn ${activeTab === 'transcript' ? 'active' : ''}`}
                 onClick={() => setActiveTab('transcript')}
               >
                 <Languages size={16} /> Transcript
               </button>
-
+              
+              {/* Artifact Tabs */}
+              {Object.entries(ARTIFACT_TYPES).map(([type, config]) => {
+                const Icon = config.icon;
+                const artifact = artifacts.find(a => a.artifact_type === type);
+                
+                return (
+                  <button
+                    key={type}
+                    className={`pw-tab-btn ${activeTab === type ? 'active' : ''}`}
+                    onClick={() => setActiveTab(type)}
+                  >
+                    <Icon size={16} /> {config.label}
+                    {artifact && (
+                      <span className={`status-indicator status-${artifact.status.toLowerCase()}`} title={artifact.status} />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Notes Action Bar */}
-          {activeTab === 'notes' && (notesContent || notesDeleted) && (
-            <div className="pw-notes-actions">
-              {notesContent && (
-                <>
-                  <button
-                    id="download-notes-btn"
-                    className="pw-notes-action-btn pw-notes-action-btn--download"
-                    onClick={handleDownloadNotes}
-                    title="Download notes as Markdown"
-                  >
-                    <Download size={15} /> Download
-                  </button>
-                  <button
-                    id="delete-notes-btn"
-                    className="pw-notes-action-btn pw-notes-action-btn--delete"
-                    onClick={() => setShowDeleteNotesModal(true)}
-                    disabled={deletingNotes}
-                    title="Delete generated notes"
-                  >
-                    <Trash2 size={15} /> {deletingNotes ? 'Deleting…' : 'Delete Notes'}
-                  </button>
-                </>
-              )}
-              {notesDeleted && (
-                <span className="pw-notes-deleted-msg">
-                  Notes deleted. They can be regenerated by reprocessing the video.
-                </span>
-              )}
-            </div>
-          )}
-
           <div className="pw-right-content">
-            {activeTab === 'transcript' && (
+            {activeTab === 'transcript' ? (
               transcript
                 ? <VirtualTranscript transcript={transcript} />
                 : <div className="pw-transcript-loading">
                     <BookMarked size={32} style={{ opacity: 0.3 }} />
                     <p>Transcript not available yet.</p>
                   </div>
-            )}
-
-
-
-            {activeTab === 'notes' && (
+            ) : (
+              // Artifact Viewer
               <div className="pw-markdown-container">
-                {notesContent && !notesDeleted ? (
+                {!activeArtifact ? (
+                  <div className="pw-empty-artifact">
+                    <div style={{ textAlign: 'center', margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <p>This artifact hasn't been generated yet.</p>
+                      <button 
+                        className="pw-btn-extract" 
+                        onClick={() => handleGenerate(activeTab)}
+                        disabled={generatingArtifact}
+                      >
+                        {generatingArtifact ? 'Starting...' : `Generate ${ARTIFACT_TYPES[activeTab].label}`}
+                      </button>
+                    </div>
+                  </div>
+                ) : activeArtifact.status === 'PENDING' || activeArtifact.status === 'GENERATING' ? (
+                  <div className="pw-transcript-loading" style={{ flexDirection: 'column', gap: '0.75rem' }}>
+                    <div className="pw-spinner" />
+                    <p>Generating {ARTIFACT_TYPES[activeTab].label}...</p>
+                  </div>
+                ) : activeArtifact.status === 'FAILED' ? (
+                  <div className="pw-transcript-loading" style={{ flexDirection: 'column', gap: '0.75rem' }}>
+                    <Trash2 size={32} style={{ opacity: 0.3 }} />
+                    <p>Failed to generate {ARTIFACT_TYPES[activeTab].label}.</p>
+                    <p style={{ fontSize: '0.8rem', color: '#ef4444' }}>{activeArtifact.error_message}</p>
+                    <button 
+                      className="pw-btn-extract" 
+                      onClick={() => handleGenerate(activeTab)}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -330,35 +367,14 @@ export default function ProjectWorkspace() {
                       },
                     }}
                   >
-                    {notesContent}
+                    {typeof activeArtifact.content === 'string' ? activeArtifact.content : JSON.stringify(activeArtifact.content, null, 2)}
                   </ReactMarkdown>
-                ) : notesDeleted ? (
-                  <div className="pw-transcript-loading" style={{ flexDirection: 'column', gap: '0.75rem' }}>
-                    <Trash2 size={32} style={{ opacity: 0.3 }} />
-                    <p>Notes were deleted.</p>
-                  </div>
-                ) : (
-                  <div className="pw-transcript-loading" style={{ flexDirection: 'column', gap: '0.75rem' }}>
-                    <BookOpen size={32} style={{ opacity: 0.3 }} />
-                    <p>AI Notes are pending generation…</p>
-                  </div>
                 )}
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {showDeleteNotesModal && (
-        <ConfirmModal
-          title="Delete AI Notes"
-          message="Are you sure you want to delete the generated notes? You can always regenerate them later."
-          confirmText="Delete Notes"
-          onConfirm={handleDeleteNotes}
-          onCancel={() => setShowDeleteNotesModal(false)}
-          isDestructive={true}
-        />
-      )}
     </div>
   );
 }

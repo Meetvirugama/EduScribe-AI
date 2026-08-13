@@ -57,66 +57,207 @@ class FormulaSheetGenerator(BaseContentService):
             return True
             
         return False
+        
+    def _chunk_segments(self, segments: List[Dict[str, Any]], video_id: str) -> List[Dict[str, Any]]:
+        chunks = []
+        if not segments:
+            return chunks
+            
+        current_text = []
+        current_start = None
+        current_end = 0.0
+        chunk_index = 0
+        
+        for seg in segments:
+            seg_start = seg.get("start", 0.0)
+            if current_start is None:
+                current_start = seg_start
+            
+            current_text.append(seg.get("text", ""))
+            
+            if "end" in seg:
+                current_end = seg["end"]
+            elif "duration" in seg:
+                current_end = seg_start + seg.get("duration", 0.0)
+            else:
+                current_end = seg_start
+            
+            # Group into timestamp ranges (approx 3 mins or 2000 chars)
+            if current_end - current_start >= 180.0 or sum(len(t) for t in current_text) > 2000:
+                chunks.append({
+                    "chunk_id": f"{video_id}_range_{chunk_index}",
+                    "start_time": round(current_start, 2),
+                    "end_time": round(current_end, 2),
+                    "text": " ".join(current_text)
+                })
+                chunk_index += 1
+                current_text = []
+                current_start = None
+                
+        if current_text:
+            chunks.append({
+                "chunk_id": f"{video_id}_range_{chunk_index}",
+                "start_time": round(current_start, 2) if current_start is not None else 0.0,
+                "end_time": round(current_end, 2),
+                "text": " ".join(current_text)
+            })
+            
+        return chunks
 
     async def generate_formula_sheet(self, context: LectureContext) -> Dict[str, Any]:
         """
         Generate a structured formula sheet from the LectureContext.
         """
+        import time
+        start_time = time.time()
+        
         logger.info("Generating formula sheet...")
         empty_result = {"formulas": [], "notation_guide": {}, "topic_groups": {}}
 
-        # Reconstruct transcript with timestamps to preserve source location
-        transcript_lines = []
-        for s in context.segments:
-            start_time = s.get("start")
-            text = s.get("text", "").strip()
-            if text:
-                ts = self._format_timestamp(start_time) if start_time is not None else "Unknown"
-                transcript_lines.append(f"[{ts}] {text}")
-        
-        transcript_context = "\n".join(transcript_lines)
-        if not transcript_context.strip():
-            transcript_context = "No transcript provided."
-
-        # Extract OCR text containing mathematical notation
-        ocr_formulas = []
-        for frame in context.frames:
-            ocr = frame.get("ocr", "")
-            if ocr and self._is_math_formula(ocr):
-                time_sec = frame.get("time_sec", 0)
-                ts = self._format_timestamp(time_sec)
-                ocr_formulas.append(f"[{ts}] (slide): {ocr}")
-
-        ocr_context = "\n".join(ocr_formulas[:20]) if ocr_formulas else "No formula slides detected."
-
-        messages = self._render_messages(
-            system_msg="You are a mathematical content extractor. Output only valid JSON.",
-            template_name="formula_sheet",
-            transcript_context=transcript_context,
-            ocr_context=ocr_context
-        )
-
         try:
-            response = await self.llm_manager.generate(TaskType.FORMULA_EXPLANATION, messages)
+            # 1. Chunk Transcript
+            video_id = context.metadata.get("video_id", "default_video")
+            chunks = self._chunk_segments(context.segments, video_id)
             
-            # _safe_dump handles both Pydantic Models and JSON fallback extraction
-            raw_dict = self._safe_dump(response, fallback=empty_result)
-            
-            # Validate with Pydantic if not already a FormulasOutput
+            if not chunks and context.transcript:
+                chunks.append({
+                    "chunk_id": f"{video_id}_0",
+                    "start_time": 0.0,
+                    "end_time": 0.0,
+                    "text": context.transcript
+                })
+
+            # 2. Extract OCR formulas and map to chunks
+            ocr_formulas_by_chunk = {c["chunk_id"]: [] for c in chunks}
+            for frame in context.frames:
+                ocr = frame.get("ocr", "")
+                if ocr and self._is_math_formula(ocr):
+                    time_sec = frame.get("time_sec", 0)
+                    # Find which chunk this belongs to
+                    assigned = False
+                    for c in chunks:
+                        if c["start_time"] <= time_sec <= c["end_time"]:
+                            ocr_formulas_by_chunk[c["chunk_id"]].append(ocr)
+                            assigned = True
+                            break
+                    if not assigned and chunks:
+                        ocr_formulas_by_chunk[chunks[0]["chunk_id"]].append(ocr)
+
+            # 3. Process each chunk sequentially to avoid Rate Limits on large videos
             from ..llm.validation.schemas.notes import FormulasOutput
-            parsed = FormulasOutput(**raw_dict)
             
-            # Ensure topic groups only reference valid formulas
-            formula_names = {f.name for f in parsed.formulas}
+            all_formulas = []
+            global_notation_guide = {}
+            global_topic_groups = {}
+            
+            final_provider = "unknown"
+            final_model = "unknown"
+            total_latency = 0.0
+            total_tokens = 0
+            
+            from ..llm.model_selector import TaskType
+            
+            for c in chunks:
+                chunk_id = c["chunk_id"]
+                chunks_context = f"[{chunk_id} | {c['start_time']} - {c['end_time']}] {c['text']}"
+                
+                ocr_formulas = ocr_formulas_by_chunk.get(chunk_id, [])
+                ocr_context = "\n".join([f"(slide): {f}" for f in ocr_formulas]) if ocr_formulas else "No formula slides detected in this chunk."
+                
+                messages = self._render_messages(
+                    system_msg="You are a mathematical content extractor. Output only valid JSON.",
+                    template_name="formula_sheet",
+                    chunks_context=chunks_context,
+                    ocr_context=ocr_context
+                )
+                
+                try:
+                    # Add tiny sleep to help with rate limits
+                    import asyncio
+                    await asyncio.sleep(0.5)
+                    
+                    response = await self.llm_manager.generate(TaskType.FORMULA_EXPLANATION, messages)
+                    
+                    if hasattr(response, "provider") and response.provider != "unknown":
+                        final_provider = response.provider
+                    if hasattr(response, "model") and response.model != "unknown":
+                        final_model = response.model
+                    if hasattr(response, "latency"):
+                        total_latency += response.latency
+                    if hasattr(response, "total_tokens"):
+                        total_tokens += response.total_tokens
+                        
+                    raw_dict = self._safe_dump(response, fallback={"formulas": [], "notation_guide": {}, "topic_groups": {}})
+                    parsed = FormulasOutput(**raw_dict)
+                    
+                    # Aggregate Formulas
+                    for f_item in parsed.formulas:
+                        # Enforce the source mapping
+                        if not f_item.sources:
+                            from ..llm.validation.schemas.notes import SourceReferenceItem
+                            f_item.sources = [SourceReferenceItem(
+                                chunk_id=chunk_id,
+                                timestamp_start=c['start_time'],
+                                timestamp_end=c['end_time']
+                            )]
+                        else:
+                            for src in f_item.sources:
+                                src.timestamp_start = c['start_time']
+                                src.timestamp_end = c['end_time']
+                        all_formulas.append(f_item)
+                    
+                    # Merge notation guide
+                    if parsed.notation_guide:
+                        for k, v in parsed.notation_guide.items():
+                            if k not in global_notation_guide:
+                                global_notation_guide[k] = v
+                    
+                    # Merge topic groups
+                    if parsed.topic_groups:
+                        for topic, f_list in parsed.topic_groups.items():
+                            if topic not in global_topic_groups:
+                                global_topic_groups[topic] = []
+                            global_topic_groups[topic].extend(f_list)
+                            
+                except Exception as inner_exc:
+                    logger.warning(f"Failed to extract formula for chunk {chunk_id}: {inner_exc}")
+            
+            # 4. Final Validation & Cleanup
+            formula_names = {f.name for f in all_formulas}
             valid_topic_groups = {}
-            for topic, f_list in parsed.topic_groups.items():
-                valid_f_list = [f_name for f_name in f_list if f_name in formula_names]
+            for topic, f_list in global_topic_groups.items():
+                valid_f_list = list(set([f_name for f_name in f_list if f_name in formula_names]))
                 if valid_f_list:
                     valid_topic_groups[topic] = valid_f_list
-            parsed.topic_groups = valid_topic_groups
+                    
+            final_parsed = FormulasOutput(
+                formulas=all_formulas,
+                notation_guide=global_notation_guide,
+                topic_groups=valid_topic_groups,
+                provider=final_provider,
+                model=final_model,
+                latency=round(total_latency, 2),
+                total_tokens=total_tokens
+            )
             
-            return parsed.model_dump()
+            execution_time = round(time.time() - start_time, 2)
+            return {
+                "status": "success",
+                "metadata": {
+                    "execution_time_sec": execution_time,
+                    "processed_chunks": len(chunks)
+                },
+                "data": final_parsed.model_dump(exclude_none=True)
+            }
             
         except Exception as exc:
             logger.error("FormulaService: generation failed: %s", exc)
-            return empty_result
+            execution_time = round(time.time() - start_time, 2) if 'start_time' in locals() else 0.0
+            return {
+                "status": "error",
+                "error": str(exc),
+                "metadata": {
+                    "execution_time_sec": execution_time
+                },
+                "data": empty_result
+            }

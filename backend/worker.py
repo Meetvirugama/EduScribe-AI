@@ -80,6 +80,124 @@ async def process_video_job(ctx: dict, video_id: str) -> dict:
         raise  # ARQ will retry based on WorkerSettings.retry_jobs and max_tries
 
 
+async def generate_artifact_job(ctx: dict, video_id: str, artifact_type: str) -> dict:
+    """
+    ARQ job that generates a specific artifact on demand.
+    """
+    job_id = ctx.get("job_id", "unknown")
+    attempt = ctx.get("job_try", 1)
+
+    logger.info(
+        "ARQ worker: starting generate_artifact_job | job_id=%s | video_id=%s | artifact_type=%s | attempt=%d",
+        job_id, video_id, artifact_type, attempt,
+    )
+
+    try:
+        from core.database import AsyncSessionLocal
+        from models.artifact import Artifact, ArtifactStatus
+        from sqlalchemy import select
+        
+        # 1. Mark artifact as GENERATING
+        async with AsyncSessionLocal() as db:
+            # We assume the artifact record was created by the API route as PENDING
+            result = await db.execute(
+                select(Artifact).where(Artifact.video_id == video_id, Artifact.artifact_type == artifact_type)
+            )
+            artifact = result.scalar_one_or_none()
+            if artifact:
+                artifact.status = ArtifactStatus.GENERATING
+                await db.commit()
+            else:
+                logger.warning(f"Artifact {artifact_type} for video {video_id} not found in DB.")
+
+        # 2. Reconstruct LectureContext
+        import os, json
+        from core.config import settings
+        from schemas.content import LectureInput, LectureState
+        from services.content.context import LectureContext
+        from services.merge.builder import load_merged_lecture
+
+        output_dir = os.path.join(settings.OUTPUT_DIR, str(video_id))
+        learning_context_path = os.path.join(output_dir, "learning_context.json")
+        
+        with open(learning_context_path, "r", encoding="utf-8") as f:
+            state_dict = json.load(f)
+        state = LectureState(**state_dict)
+        
+        merged_lecture_path = os.path.join(output_dir, "merged_lecture.json")
+        merged_lecture = load_merged_lecture(merged_lecture_path)
+        
+        lecture_input = LectureInput(
+            transcript=merged_lecture.full_transcript_text,
+            metadata=merged_lecture.metadata,
+            segments=merged_lecture.all_transcript_segments,
+            frames=[
+                {
+                    "path": f.frame_path, 
+                    "time_sec": f.timestamp_sec, 
+                    "ocr": f.ocr_text, 
+                    "scene_number": f.scene_number
+                } 
+                for f in merged_lecture.all_frames
+            ]
+        )
+        context = LectureContext(input=lecture_input, state=state)
+
+        # 3. Generate Artifact
+        from services.llm.llm_manager import LLMManager
+        from services.content.artifact_generator import ArtifactGenerator
+        
+        llm_manager = LLMManager()
+        generator = ArtifactGenerator(llm_manager)
+        
+        # Generate the specific artifact
+        results = await generator.generate(context, [artifact_type])
+        artifact_result = results.get(artifact_type)
+        
+        # 4. Save result back to DB
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Artifact).where(Artifact.video_id == video_id, Artifact.artifact_type == artifact_type)
+            )
+            artifact = result.scalar_one_or_none()
+            if artifact:
+                if artifact_result and artifact_result.get("data"):
+                    artifact.status = ArtifactStatus.COMPLETED
+                    artifact.content = artifact_result.get("data")
+                    artifact.quality = artifact_result.get("quality")
+                else:
+                    artifact.status = ArtifactStatus.FAILED
+                    artifact.error_message = "Generation returned empty data"
+                await db.commit()
+
+        logger.info("ARQ worker: job %s completed for artifact %s", job_id, artifact_type)
+        return {"status": "completed", "video_id": video_id, "artifact_type": artifact_type}
+        
+    except Exception as exc:
+        logger.error(
+            "ARQ worker: job %s failed for artifact %s (attempt %d): %s",
+            job_id, artifact_type, attempt, exc,
+        )
+        # Update DB to failed state
+        try:
+            from core.database import AsyncSessionLocal
+            from models.artifact import Artifact, ArtifactStatus
+            from sqlalchemy import select
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(Artifact).where(Artifact.video_id == video_id, Artifact.artifact_type == artifact_type)
+                )
+                artifact = result.scalar_one_or_none()
+                if artifact:
+                    artifact.status = ArtifactStatus.FAILED
+                    artifact.error_message = str(exc)
+                    await db.commit()
+        except Exception as db_exc:
+            logger.error("Failed to update artifact status to FAILED: %s", db_exc)
+            
+        raise  # ARQ will retry
+
+
 # ---------------------------------------------------------------------------
 # Startup / shutdown hooks
 # ---------------------------------------------------------------------------
@@ -106,7 +224,7 @@ class WorkerSettings:
     """
 
     # Job functions available to this worker
-    functions = [process_video_job]
+    functions = [process_video_job, generate_artifact_job]
 
     # Redis connection (reads from REDIS_URL env var)
     redis_settings_from_url = True
@@ -187,3 +305,44 @@ async def enqueue_video_job(video_id: str) -> str:
         from pipeline.orchestrator import process_video_pipeline_async
         asyncio.create_task(process_video_pipeline_async(video_id))
         return f"fallback_{video_id}"
+
+
+async def enqueue_artifact_job(video_id: str, artifact_type: str) -> str:
+    """
+    Enqueue an artifact generation job into the ARQ queue.
+    """
+    from core.config import settings
+    redis_url = settings.REDIS_URL
+
+    job_id_str = f"art_{video_id}_{artifact_type}"
+    
+    if not redis_url:
+        logger.warning(
+            "REDIS_URL not set — falling back to asyncio.create_task() for artifact %s.",
+            artifact_type,
+        )
+        # We need a context mock for direct task execution, but this is a fallback
+        asyncio.create_task(generate_artifact_job({"job_id": job_id_str}, video_id, artifact_type))
+        return job_id_str
+
+    try:
+        from arq.connections import ArqRedis, create_pool, RedisSettings  # type: ignore
+        pool: ArqRedis = await create_pool(RedisSettings.from_dsn(redis_url))
+        job = await pool.enqueue_job(
+            "generate_artifact_job",
+            video_id,
+            artifact_type,
+            _queue_name="eduscribe:pipeline",
+            _job_id=job_id_str,  # deduplication key
+        )
+        await pool.aclose()
+        job_id = job.job_id if job else f"dup_{job_id_str}"
+        logger.info("ARQ: enqueued job %s for artifact %s", job_id, artifact_type)
+        return job_id
+    except Exception as exc:
+        logger.error(
+            "ARQ enqueue failed (%s) — falling back to asyncio.create_task() for artifact %s",
+            exc, artifact_type,
+        )
+        asyncio.create_task(generate_artifact_job({"job_id": job_id_str}, video_id, artifact_type))
+        return f"fallback_{job_id_str}"

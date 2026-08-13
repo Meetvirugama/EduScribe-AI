@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 
 class ServiceStatus(str, Enum):
@@ -36,6 +37,8 @@ class Concept(BaseModel):
     importance: Optional[str] = None
     brief_description: Optional[str] = None
     source: List[SourceReference] = Field(default_factory=list)
+    confidence: float = Field(default=1.0)
+    topic_association: Optional[str] = None
 
 
 class Topic(BaseModel):
@@ -46,6 +49,7 @@ class Topic(BaseModel):
     notes_markdown: Optional[str] = None
     key_takeaways: List[str] = Field(default_factory=list)
     source: List[SourceReference] = Field(default_factory=list)
+    confidence: float = Field(default=1.0)
 
 
 class Definition(BaseModel):
@@ -53,6 +57,9 @@ class Definition(BaseModel):
     term: str
     definition: str
     source: List[SourceReference] = Field(default_factory=list)
+    importance: Optional[str] = None
+    confidence: float = Field(default=1.0)
+    topic_association: Optional[str] = None
 
 
 class Summary(BaseModel):
@@ -67,9 +74,11 @@ class FormulaItem(BaseModel):
     expression: str
     variables: Optional[Dict[str, str]] = None
     explanation: Optional[str] = None
-    topic: Optional[str] = None
+    topic_association: Optional[str] = None
     timestamp: Optional[float] = None
     source: List[SourceReference] = Field(default_factory=list)
+    importance: Optional[str] = None
+    confidence: float = Field(default=1.0)
 
 
 class Example(BaseModel):
@@ -78,9 +87,11 @@ class Example(BaseModel):
     problem: str
     explanation: Optional[str] = None
     solution: Optional[str] = None
-    topic: Optional[str] = None
+    topic_association: Optional[str] = None
     timestamp: Optional[float] = None
     source: List[SourceReference] = Field(default_factory=list)
+    importance: Optional[str] = None
+    confidence: float = Field(default=1.0)
 
 
 class KeyPoint(BaseModel):
@@ -88,9 +99,10 @@ class KeyPoint(BaseModel):
     text: str
     importance: Optional[str] = None
     category: Optional[str] = None
-    topic: Optional[str] = None
+    topic_association: Optional[str] = None
     timestamp: Optional[float] = None
     source: List[SourceReference] = Field(default_factory=list)
+    confidence: float = Field(default=1.0)
 
 
 class Relationship(BaseModel):
@@ -123,15 +135,20 @@ class LectureState:
     relationships: List[Relationship] = field(default_factory=list)
     important_frames: List[Dict] = field(default_factory=list)
 
-    # CRITICAL-006: These fields were missing, causing pipeline.py to always
-    # return {} for quiz/flashcards/mindmap/interview/revision/formula even
-    # though the LLM services ran and produced real output.
-    quiz: List[Any] = field(default_factory=list)
-    flashcards: List[Any] = field(default_factory=list)
-    mindmap: Dict[str, Any] = field(default_factory=dict)
-    interview: List[Any] = field(default_factory=list)
-    revision: Dict[str, Any] = field(default_factory=dict)
-    formula: Dict[str, Any] = field(default_factory=dict)
+    # Phase 1 output — Unified Markdown (transcript + vision merged)
+    unified_md: str = ""
+
+    # Phase 3a output — Enriched Unified Markdown (unified_md + all extractions injected)
+    knowledge_compilation_doc: str = ""
+
+    # Phase 3b output — Full Detailed Learning Note (generated from enriched chunks)
+    detailed_notes_md: str = ""
+
+    # Phase 3 redesign — ephemeral in-memory objects (not serialised by default)
+    # EvidenceStore built from transcript segments + OCR frames
+    evidence_store: Optional[Any] = field(default=None)
+    # KnowledgeGraph built from KnowledgeUnits + Relationships
+    knowledge_graph: Optional[Any] = field(default=None)
 
     # Status tracking per service/phase
     status: Dict[str, ServiceStatus] = field(default_factory=dict)
@@ -139,3 +156,17 @@ class LectureState:
     # Errors and metadata
     errors: Dict[str, str] = field(default_factory=dict)
     metadata: Dict[str, GenerationMetadata] = field(default_factory=dict)
+
+class QualityIssue(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    type: str
+    severity: str
+    section: str
+    problem: str
+    evidence: str
+    fix: str
+
+class QualityReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    score: int
+    issues: List[QualityIssue] = Field(default_factory=list)

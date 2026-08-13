@@ -1,0 +1,151 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 138.25,
+    "processed_chunks": 23
+  },
+  "data": {
+    "examples": [
+      {
+        "title": "Generative AI in Customer Support",
+        "problem": "Handling customer queries and complaints at scale is a challenge for companies.",
+        "explanation": "Generative AI can be used to create chatbots that handle customer support queries, reducing the need for human intervention. This is achieved by training models on large datasets of customer interactions, enabling them to understand and respond to a wide range of queries.",
+        "solution": "Companies can implement a first layer of chatbot support, reducing the number of human customer support staff needed and improving response times.",
+        "topic": "Generative AI Applications",
+        "timestamp": 430.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "title": "Generative AI in Content Creation",
+        "problem": "Content creation is time-consuming and requires human creativity.",
+        "explanation": "Generative AI models can be used to create text-based content like blogs and articles, as well as video-based content. These models are trained on vast amounts of data, enabling them to generate high-quality, human-like content.",
+        "solution": "Content creators can use generative AI tools to assist in content creation, reducing the time and effort required to produce high-quality content.",
+        "topic": "Generative AI Applications",
+        "timestamp": 560.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "title": "Generative AI in Education",
+        "problem": "Students often need personalized assistance when learning new topics.",
+        "explanation": "Generative AI can provide personalized tutoring by answering questions, providing practice problems, and offering explanations. Tools like ChatGPT can act as a personal tutor, available 24/7.",
+        "solution": "Educational institutions can integrate generative AI tools to supplement traditional teaching methods, providing students with additional support and resources.",
+        "topic": "Generative AI Applications",
+        "timestamp": 680.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "title": "Generative AI in Software Development",
+        "problem": "Writing code is a time-consuming and error-prone process.",
+        "explanation": "Generative AI models can assist in writing code by generating production-ready code snippets based on natural language prompts. These models can also help with debugging and optimization.",
+        "solution": "Developers can use generative AI tools to streamline the coding process, reducing the time and effort required to write and maintain code.",
+        "topic": "Generative AI Applications",
+        "timestamp": 810.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "title": "Foundation Models in Generative AI",
+        "problem": "How to organize and understand the vast landscape of generative AI?",
+        "explanation": "Foundation models are large-scale AI models trained on massive datasets. They are generalized models capable of performing multiple tasks, such as text generation, sentiment analysis, and question answering. These models serve as the backbone of generative AI.",
+        "solution": "By focusing on foundation models, one can simplify the understanding of generative AI, dividing it into two main perspectives: using foundation models (user perspective) and building foundation models (builder perspective).",
+        "topic": "Generative AI Concepts",
+        "timestamp": 1350.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          },
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "title": "Prompt Engineering",
+        "problem": "How to improve the output of a generative AI model?",
+        "explanation": "Prompt engineering involves crafting effective input prompts to guide the model's output. By refining the prompt, users can obtain more accurate and relevant responses from the model.",
+        "solution": "Users can enhance the quality of AI-generated content by mastering prompt engineering techniques, making the most of foundation models.",
+        "topic": "Generative AI Techniques",
+        "timestamp": 1600.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          },
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "title": "Fine-Tuning Foundation Models",
+        "problem": "How to adapt a general-purpose foundation model to a specific task?",
+        "explanation": "Fine-tuning involves adjusting a pre-trained foundation model to perform well on a specific task or domain. This is done by training the model on a smaller, task-specific dataset.",
+        "solution": "By fine-tuning foundation models, users and builders can create specialized models that excel at particular tasks, improving performance and relevance.",
+        "topic": "Generative AI Techniques",
+        "timestamp": 1720.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          },
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "title": "AI Agents",
+        "problem": "How to create AI systems that can perform tasks beyond just answering questions?",
+        "explanation": "AI agents are systems that use foundation models to not only answer queries but also perform actions, such as booking tickets or making reservations. These agents combine conversational abilities with task execution.",
+        "solution": "By developing AI agents, users can create more interactive and useful applications, enhancing the capabilities of generative AI systems.",
+        "topic": "Generative AI Applications",
+        "timestamp": 1860.0,
+        "source": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          },
+          {
+            "chunk_id": "pSVk-5WemQ0_range_17",
+            "timestamp_start": 2248.44,
+            "timestamp_end": 2369.84
+          }
+        ]
+      }
+    ]
+  }
+}

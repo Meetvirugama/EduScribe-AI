@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 4.29,
+    "processed_chunks": 2
+  },
+  "data": {
+    "provider": "groq",
+    "model": "groq/llama-3.3-70b-versatile",
+    "latency": 0.91,
+    "total_tokens": 1458,
+    "schema_version": "1.0",
+    "created_at": 1786556326.8038762,
+    "confidence": 1.0,
+    "formulas": [],
+    "notation_guide": {},
+    "topic_groups": {}
+  }
+}

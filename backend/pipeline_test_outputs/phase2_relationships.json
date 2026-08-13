@@ -1,0 +1,88 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 2.34,
+    "processed_chunks": 2
+  },
+  "data": {
+    "provider": "groq",
+    "model": "groq/llama-3.3-70b-versatile",
+    "latency": 1.31,
+    "total_tokens": 1736,
+    "schema_version": "1.0",
+    "created_at": 1786556330.647887,
+    "confidence": 1.0,
+    "relationships": [
+      {
+        "from_concept": "Agentic AI",
+        "relationship_type": "derived_from",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Agentic AI",
+        "relationship_type": "contains",
+        "to_concept": "AI Agents"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "part_of",
+        "to_concept": "Multi-Agent AI"
+      },
+      {
+        "from_concept": "Custom Chatbots",
+        "relationship_type": "example_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Framework Integration",
+        "relationship_type": "depends_on",
+        "to_concept": "LLM Models"
+      },
+      {
+        "from_concept": "Mock Interview Platform",
+        "relationship_type": "example_of",
+        "to_concept": "Agentic AI"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "contrasts_with",
+        "to_concept": "Agentic AI"
+      },
+      {
+        "from_concept": "LLM Models",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Agentic AI",
+        "relationship_type": "derived_from",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Agentic AI",
+        "relationship_type": "depends_on",
+        "to_concept": "LLM Models"
+      },
+      {
+        "from_concept": "LLM Models",
+        "relationship_type": "part_of",
+        "to_concept": "Agentic AI"
+      },
+      {
+        "from_concept": "Open-Source LLM Models",
+        "relationship_type": "example_of",
+        "to_concept": "LLM Models"
+      },
+      {
+        "from_concept": "Agentic AI",
+        "relationship_type": "similar_to",
+        "to_concept": "AI Agents"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "part_of",
+        "to_concept": "Agentic AI"
+      }
+    ]
+  }
+}

@@ -48,24 +48,15 @@ class InterviewGenerator(BaseContentService):
         else:
             difficulty_str = "medium"
 
-        # Build transcript context
-        transcript_text = " ".join(s.get("text", "") for s in context.segments)
-        if not transcript_text.strip():
-            transcript_text = getattr(context.input, "transcript", "")
-            if not transcript_text.strip():
-                logger.warning("No transcript provided for interview generation.")
-                transcript_text = "No transcript provided."
-
-        # Build concepts context
-        # context.concepts is a List of Concept Pydantic objects
-        concepts = context.concepts[:15] if context.concepts else []
-        concepts_context = ", ".join(getattr(c, "name", str(c)) for c in concepts)
+        learning_note = context.detailed_notes_md
+        if not learning_note.strip():
+            logger.warning("InterviewGenerator: detailed_notes_md is empty. Falling back to transcript.")
+            learning_note = context.transcript
         
         messages = self._render_messages(
             system_msg="You are an expert interview question generator. Output only valid JSON.",
             template_name="interview",
-            transcript_text=transcript_text,
-            concepts_context=concepts_context or "See transcript",
+            learning_note=learning_note,
             difficulty=difficulty_str
         )
 

@@ -1,0 +1,110 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 78.48,
+    "processed_chunks": 23
+  },
+  "data": {
+    "provider": "cohere",
+    "model": "cohere/command-a-plus-05-2026",
+    "latency": 51.91,
+    "total_tokens": 28937,
+    "schema_version": "1.0",
+    "created_at": 1786561371.694527,
+    "confidence": 1.0,
+    "formulas": [
+      {
+        "name": "Software development range",
+        "expression": "80-85",
+        "variables": {},
+        "context": "Indicates the percentage range for software development as mentioned in the transcript.",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "name": "Mastery usage percentage",
+        "expression": "100%",
+        "variables": {
+          "p": "Percentage of mastery usage"
+        },
+        "context": "Speaker states they are 100% using the technology",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "name": "Video production target",
+        "expression": "two to three videos a week",
+        "variables": {
+          "v_min": "Minimum videos per week",
+          "v_max": "Maximum videos per week"
+        },
+        "context": "Goal to produce 2-3 videos weekly as part of curriculum",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "name": "Curriculum timeline estimate",
+        "expression": "a year",
+        "variables": {
+          "T": "Estimated time to master curriculum"
+        },
+        "context": "Speaker estimates it would take a year to master the whole thing",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "name": "Financial impact potential",
+        "expression": "trillion dollars",
+        "variables": {
+          "M": "Potential monetary impact"
+        },
+        "context": "Speaker mentions ability to wipe out trillion dollars from stock market",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      }
+    ],
+    "notation_guide": {},
+    "topic_groups": {
+      "Software development": [
+        "Software development range"
+      ],
+      "Production Planning": [
+        "Video production target"
+      ],
+      "Timeline Estimation": [
+        "Curriculum timeline estimate"
+      ],
+      "Usage Metrics": [
+        "Mastery usage percentage"
+      ],
+      "Financial Impact": [
+        "Financial impact potential"
+      ]
+    }
+  }
+}

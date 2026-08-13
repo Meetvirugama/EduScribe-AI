@@ -1,0 +1,2324 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 205.28,
+    "processed_chunks": 23
+  },
+  "data": {
+    "provider": "cohere",
+    "model": "cohere/command-a-plus-05-2026",
+    "latency": 178.54,
+    "total_tokens": 65715,
+    "schema_version": "1.0",
+    "created_at": 1786561151.9525518,
+    "confidence": 1.0,
+    "key_points": [
+      {
+        "text": "Speaker introduces himself as Nitesh and welcomes viewers to his YouTube channel.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "",
+        "timestamp": 0.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Creating videos about real\u2011life AI is difficult because generative AI evolves extremely fast.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Challenges of AI content creation",
+        "timestamp": 5.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Constant emergence of new models, research papers, and tools makes it hard for a teacher to plan a stable curriculum.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Curriculum planning challenges",
+        "timestamp": 20.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Speaker spent months conducting in\u2011depth research, planning, and designing the generative AI curriculum.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Curriculum development effort",
+        "timestamp": 35.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Today\u2019s video is not an announcement but a journey sharing the speaker\u2019s thought process and the full curriculum he created.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Video purpose",
+        "timestamp": 50.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Viewers planning to learn generative AI are urged to watch the entire video for important information.",
+        "importance": "high",
+        "category": "warning",
+        "topic": "Viewer guidance",
+        "timestamp": 70.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Speaker aims to convince the audience why learning about generative AI is important today.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Motivation for learning",
+        "timestamp": 80.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Definition: Generative AI is a type of AI that creates new content\u2014such as text, images, music, and even code\u2014by learning patterns from data and mimicking human creativity.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI definition",
+        "timestamp": 90.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "Speaker will read the definition aloud and then discuss it further.",
+        "importance": "low",
+        "category": "procedure",
+        "topic": "Video flow",
+        "timestamp": 110.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_0",
+            "timestamp_start": 0.12,
+            "timestamp_end": 160.68
+          }
+        ]
+      },
+      {
+        "text": "AI research has been ongoing for about 60\u201170 years, involving generations of brilliant contributors.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "AI History",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Machine learning is identified as the most impactful AI technique compared to earlier approaches like Symbolic AI, fuzzy logic, evolutionary algorithms, NLP, and computer vision.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "AI Techniques",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Machine learning relies on mathematical calculations and statistics applied to large datasets to learn patterns and make predictions on new data.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Machine Learning Fundamentals",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Machine learning remains relevant today, evidenced by continued job market demand.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Career Relevance",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Common machine learning problem types include regression (predicting numeric values like stock prices), classification (categorizing items such as cat vs dog), and ranking/recommendation systems.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "ML Applications",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Machine learning is not suitable for problems that require human creativity.",
+        "importance": "medium",
+        "category": "warning",
+        "topic": "ML Limitations",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Earlier AI technologies included Symbolic AI (popular in the 1980s), fuzzy logic systems, evolutionary algorithms, natural language processing, and computer vision.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Historical AI Technologies",
+        "timestamp": 158.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_1",
+            "timestamp_start": 158.36,
+            "timestamp_end": 290.96
+          }
+        ]
+      },
+      {
+        "text": "Generative AI can create new text, code, images, and videos, which is its biggest specialty.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI capabilities",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_2",
+            "timestamp_start": 288.32,
+            "timestamp_end": 418.48
+          }
+        ]
+      },
+      {
+        "text": "Within two years of generative AI's introduction, the claim that AI cannot replace human creativity became false; generative AI now mimics human creativity.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "AI creativity",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_2",
+            "timestamp_start": 288.32,
+            "timestamp_end": 418.48
+          }
+        ]
+      },
+      {
+        "text": "AI landscape hierarchy: Symbolic AI/Expert Systems/Fuzzy Logic \u2192 Machine Learning \u2192 Deep Learning (neural networks) \u2192 Transformer architecture \u2192 Generative AI.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "AI taxonomy",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_2",
+            "timestamp_start": 288.32,
+            "timestamp_end": 418.48
+          }
+        ]
+      },
+      {
+        "text": "Understanding this hierarchy is essential for studying generative AI.",
+        "importance": "medium",
+        "category": "exam tip",
+        "topic": "Study guidance",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_2",
+            "timestamp_start": 288.32,
+            "timestamp_end": 418.48
+          }
+        ]
+      },
+      {
+        "text": "Generative AI is currently the most powerful development in AI.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "AI trends",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_2",
+            "timestamp_start": 288.32,
+            "timestamp_end": 418.48
+          }
+        ]
+      },
+      {
+        "text": "Generative AI has created the biggest impact in several areas; the speaker will discuss four key domains.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI Impact Areas",
+        "timestamp": 416.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "text": "Customer support was historically a costly function requiring many staff to handle increasing queries and complaints.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Customer Support Automation",
+        "timestamp": 425.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "text": "Generative AI introduced chatbots as a first\u2011level support layer, reducing the required human staff from about ten to two\u2011three agents.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Customer Support Automation",
+        "timestamp": 440.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "text": "Modern companies now deploy a chatbot as the first contact point, followed by a smaller human support team, improving efficiency and lowering costs.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Customer Support Automation",
+        "timestamp": 460.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "text": "Content creation was previously thought to be beyond AI\u2019s reach, but generative AI now assists in creating content.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Content Creation",
+        "timestamp": 480.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "text": "Generative AI is expected to heavily penetrate the content creation industry and can be applied in any form.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Content Creation",
+        "timestamp": 500.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_3",
+            "timestamp_start": 416.2,
+            "timestamp_end": 561.44
+          }
+        ]
+      },
+      {
+        "text": "Generative AI tools can produce content such as articles that are indistinguishable from human writing.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Content Creation",
+        "timestamp": 560.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "Content creation is a domain where AI penetration is already high and will continue to grow.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Generative AI Impact",
+        "timestamp": 570.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "Education is being transformed as AI can act as a personal tutor, answering questions and providing practice problems.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Education",
+        "timestamp": 580.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "Schools need to evolve and implement educational methods that incorporate AI tools.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Education",
+        "timestamp": 595.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "Generative AI can write production\u2011ready code, reducing the need for many programmers and accelerating software development.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Software Development",
+        "timestamp": 605.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "When stuck on curriculum planning or coding problems, the speaker can consult ChatGPT as a personal tutor.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Using AI Tools",
+        "timestamp": 620.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "The speaker is uncertain whether a Medium article was written by a human or by AI, highlighting the quality of AI\u2011generated content.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "Content Creation",
+        "timestamp": 630.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_4",
+            "timestamp_start": 559.0,
+            "timestamp_end": 685.36
+          }
+        ]
+      },
+      {
+        "text": "Two or three programmers can handle a task easily, indicating a manageable workload.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Programmer Capacity",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "Generative AI is identified as a major impact area.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "Before investing time in a technology, it must be evaluated for real\u2011world problem solving.",
+        "importance": "high",
+        "category": "warning",
+        "topic": "Technology Evaluation",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "The speaker will compare generative AI\u2019s success with that of the internet and blockchain/crypto.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Technology Comparison",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "The internet is considered a highly successful technology because it solves real\u2011world problems such as communication, banking, travel, and shopping.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Internet Success",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "Blockchain and crypto are technologies of the speaker\u2019s lifetime that have not yet reached their full potential.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Blockchain",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "A technology is deemed successful if it answers \"yes\" to the first evaluation question: Is it real\u2011world and does it solve a problem?",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Technology Evaluation",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "The speaker will present a series of evaluation questions to the audience to determine technology success.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Technology Evaluation",
+        "timestamp": 683.72,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_5",
+            "timestamp_start": 683.72,
+            "timestamp_end": 810.64
+          }
+        ]
+      },
+      {
+        "text": "The internet enables solving problems remotely from a phone at home.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Internet & Remote Access",
+        "timestamp": 808.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "Speaker notes a lack of clear real\u2011world problems solved by cryptocurrency.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Cryptocurrency",
+        "timestamp": 813.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "Generative AI solves the customer\u2011support problem faced by companies worldwide.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI Applications",
+        "timestamp": 828.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "Generative AI provides personal tutoring, addressing education challenges.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI in Education",
+        "timestamp": 838.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "Generative AI is useful on a daily basis and can be employed regularly.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Daily Use of Generative AI",
+        "timestamp": 883.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "China\u2019s new AI model DeepSeek R1 caused a massive impact on stock markets.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "AI Economic Impact",
+        "timestamp": 903.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "AI creates new technical jobs despite concerns about job displacement.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "AI and Employment",
+        "timestamp": 923.12,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_6",
+            "timestamp_start": 808.12,
+            "timestamp_end": 943.12
+          }
+        ]
+      },
+      {
+        "text": "AI engineers have emerged as a new job category.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "AI Careers",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "Demand for AI-related roles is growing daily and could become as popular as software development within five years.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Job Market Trends",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "Generative AI tools are easily accessible and can be used by non\u2011technical users, including parents, without writing code.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI Accessibility",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "Time is ticking; there is a good chance AI job roles will become as popular as software development in the next five years.",
+        "importance": "high",
+        "category": "warning",
+        "topic": "Career Planning",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "Generative AI has not yet reached its full potential; investing time and effort now is advisable for future benefits.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Investment in AI",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "When generative AI reaches its full potential, those working in AI will benefit significantly.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Future Impact",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "The speaker delayed posting videos about generative AI because of initial doubts about the technology, its novelty, and limited experience.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "Content Creation",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "Generative AI is emphasized as important for the future, and the speaker encourages audience engagement with the content.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Strategic Importance",
+        "timestamp": 940.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_7",
+            "timestamp_start": 940.56,
+            "timestamp_end": 1079.32
+          }
+        ]
+      },
+      {
+        "text": "Generative AI could be a powerful technology or just a hype bubble.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Generative AI perception",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Initial barrier to learning generative AI was limited time and other life responsibilities.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Learning barriers",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "After finding time, the speaker now teaches generative AI and creates mass video content.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "AI education & content creation",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Rapid daily emergence of new models, tools, papers, and terminology creates fear and overwhelm.",
+        "importance": "high",
+        "category": "warning",
+        "topic": "Fast\u2011pace AI development",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Information overload makes it difficult to find meaningful content and learn AI correctly.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Information management",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Doubts about generative AI have been resolved after sufficient learning; confidence to commit time again.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Learning confidence",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Tracking daily advancements and extracting meaning remains a challenging task.",
+        "importance": "high",
+        "category": "warning",
+        "topic": "Continuous learning challenge",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Constant discussion of new AI developments creates a FOMO environment.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Community influence",
+        "timestamp": 1077.04,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_8",
+            "timestamp_start": 1077.04,
+            "timestamp_end": 1204.84
+          }
+        ]
+      },
+      {
+        "text": "Teaching Generative AI effectively starts with designing a solid curriculum.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Curriculum Design",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "Without a central concept, creating a good curriculum for Generative AI is difficult.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Curriculum Design",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "A mental model is introduced to simplify information overload in Generative AI.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Generative AI",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "Foundation Models are identified as the central term for the Generative AI mental model.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "Foundation Models are large\u2011scale AI models trained on massive internet\u2011wide data.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "Training Foundation Models requires huge financial investment, extensive data, and many GPUs.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "Unlike specialized ML models, Foundation Models are generalized and can be applied broadly.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "The speaker leverages prior experience in machine learning and deep learning to build mental models.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Machine Learning",
+        "timestamp": 1202.76,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_9",
+            "timestamp_start": 1202.76,
+            "timestamp_end": 1354.88
+          }
+        ]
+      },
+      {
+        "text": "Task-specific models are designed for a single task (e.g., stock price prediction) and cannot generalize to other tasks like cricket score prediction.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models vs Task-Specific Models",
+        "timestamp": 1352.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "text": "Foundation models are generalized AI models with large architectures and many parameters, trained on massive data, enabling them to solve multiple tasks across domains.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 1352.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "text": "Large Language Models (LLMs) are a type of foundation model that can perform diverse tasks such as text generation, sentiment analysis, summarization, and question answering.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Large Language Models",
+        "timestamp": 1352.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "text": "During training, LLMs learn multiple capabilities by predicting the next word on internet-scale data, which also imparts skills like sentiment analysis and question answering.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "LLM Training",
+        "timestamp": 1352.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "text": "Foundation models are not limited to text; large multimodal models also exist that can process and generate content for text, images, videos, and audio.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Multimodal Models",
+        "timestamp": 1352.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "text": "Today's generative AI landscape is built on foundation models, which serve as the backbone for many applications.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "Generative AI Landscape",
+        "timestamp": 1352.56,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_10",
+            "timestamp_start": 1352.56,
+            "timestamp_end": 1477.64
+          }
+        ]
+      },
+      {
+        "text": "Generative AI can be divided into two parts: using foundation models and building foundation models.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI Architecture",
+        "timestamp": 1473.88,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          }
+        ]
+      },
+      {
+        "text": "The foundation model is the core component at the center of the entire generative AI system.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 1485.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          }
+        ]
+      },
+      {
+        "text": "Two perspectives exist: the user perspective (using foundation models) and the builder perspective (creating foundation models).",
+        "importance": "high",
+        "category": "fact",
+        "topic": "User vs Builder Perspectives",
+        "timestamp": 1495.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          }
+        ]
+      },
+      {
+        "text": "The mental model simplifies the understanding of generative AI by focusing on foundation models.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Mental Model Benefits",
+        "timestamp": 1505.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          }
+        ]
+      },
+      {
+        "text": "The speaker claims to be the first to introduce this mental model and associated terminology.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Authorship Claim",
+        "timestamp": 1515.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          }
+        ]
+      },
+      {
+        "text": "To apply the model, ask ChatGPT to define a new term (e.g., \"promoted engineering\") and then decide whether it belongs to the user side or the builder side.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Applying the Mental Model",
+        "timestamp": 1525.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_11",
+            "timestamp_start": 1473.88,
+            "timestamp_end": 1606.04
+          }
+        ]
+      },
+      {
+        "text": "Prompt engineering enables users to ask an LLM in English and refine prompts to obtain better answers.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Prompt Engineering",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Reinforcement Learning from Human Feedback (RLHF) is a technology that can complete an LLM, modify its behavior, and safeguard it from generating inappropriate content.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "RLHF",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Retrieval-Augmented Generation (RAG) allows an LLM to answer questions using private documents or data.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "RAG",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Pre-training involves training a foundation model on large, global datasets using substantial hardware resources.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Pre-training",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Quantization is the process of creating an optimized model that can run efficiently in different environments.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Quantization",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "AI Agents are software systems built with LLMs that can answer questions and perform tasks such as booking tickets.",
+        "importance": "high",
+        "category": "concept",
+        "topic": "AI Agents",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Vector databases are useful for implementing RAG and managing embeddings for private data retrieval.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Vector Databases",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Builder perspective vs. User perspective: LLM development steps (prompt engineering, RLHF, RAG, pre-training, quantization) are handled by builders, while end users interact with the final LLM or AI agents.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "Perspective",
+        "timestamp": 1603.8,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_12",
+            "timestamp_start": 1603.8,
+            "timestamp_end": 1728.96
+          }
+        ]
+      },
+      {
+        "text": "Fine\u2011tuning applies to both the building and the using side of LLMs.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "LLM fine\u2011tuning",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "The speaker created a curriculum that covers two perspectives: builders and users.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "curriculum design",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "Builder side curriculum must include fundamentals of machine learning and deep learning.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "deep learning fundamentals",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "Knowledge of a deep learning framework is required; PyTorch is preferred over TensorFlow.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "deep learning frameworks",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "The curriculum starts with transformer architecture because all modern foundation models are built on it.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "transformer architecture",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "Builders must understand encoder side, decoder side, embeddings, self\u2011attention layer, and normalization in language modeling.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "transformer components",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "The builder side is technical and most relevant for those already working in machine learning.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "audience relevance",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "Fundamentals should be covered early before moving to advanced topics.",
+        "importance": "medium",
+        "category": "rule",
+        "topic": "learning sequence",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_13",
+            "timestamp_start": 1727.2,
+            "timestamp_end": 1862.32
+          }
+        ]
+      },
+      {
+        "text": "Multiple types of transformers exist, including encoder\u2011only, decoder\u2011only, and encoder\u2011decoder architectures.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Transformers",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "A solid understanding of transformer architecture is required, including GPT and other famous transformer models.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Transformers",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "Pre\u2011training is the first phase for foundation models, where you define training objectives and tokenization strategy.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Foundation Model Training",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "Training can be performed on cloud resources or distributed across multiple machines; appropriate infrastructure choices are essential.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Training Infrastructure",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "Large\u2011scale model training presents many challenges; knowing these challenges and their solutions is critical.",
+        "importance": "medium",
+        "category": "warning",
+        "topic": "Training Challenges",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "After pre\u2011training, evaluation is performed to assess how well the model meets its objectives.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Evaluation",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "Optimization reduces the size of large foundation models for deployment on standard hardware, using techniques such as compression and model pruning.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Optimization",
+        "timestamp": 1859.24,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_14",
+            "timestamp_start": 1859.24,
+            "timestamp_end": 1984.76
+          }
+        ]
+      },
+      {
+        "text": "Knowledge distillation is included in the curriculum after quantization.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Curriculum Design",
+        "timestamp": 1982.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Making predictions consumes LLM time; optimization is used to reduce this overhead.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Optimization",
+        "timestamp": 1992.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "The curriculum consists of modules: optimization, fine\u2011tuning, evaluation, and deployment.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Curriculum Overview",
+        "timestamp": 2002.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Foundation models are trained on large datasets, resulting in generalized capabilities.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Foundation Models",
+        "timestamp": 2012.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Fine\u2011tuning adapts a generalized model to a specific task to improve performance.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Fine\u2011Tuning",
+        "timestamp": 2022.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Instruction tuning is a form of continuous pre\u2011training for domain\u2011specific adaptation.",
+        "importance": "medium",
+        "category": "rule",
+        "topic": "Instruction Tuning",
+        "timestamp": 2032.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "RLAF is a technique used in domain\u2011specific pre\u2011training.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "RLAF Technique",
+        "timestamp": 2042.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "PFT (Parameter Fine Tuning) is referenced as a relevant technique.",
+        "importance": "low",
+        "category": "fact",
+        "topic": "PFT Technique",
+        "timestamp": 2052.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Evaluation must be thorough before deployment; metrics are used to assess model performance.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Evaluation",
+        "timestamp": 2062.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Deep Seek LLM outperforms other models (R1, Cha, GPD) according to community votes.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "LLM Comparison",
+        "timestamp": 2072.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Decision\u2011making involves analyzing different metrics and model performance.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Decision Making",
+        "timestamp": 2082.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "Deployment is the final and critical step in the model lifecycle.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Deployment",
+        "timestamp": 2092.36,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_15",
+            "timestamp_start": 1982.36,
+            "timestamp_end": 2112.04
+          }
+        ]
+      },
+      {
+        "text": "To build a foundation model, start by using a ready-made foundation model.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Foundation Models",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "The curriculum includes a user side where learners focus on using foundation models rather than building them.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Curriculum Design",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "Building foundation models is more difficult than using them; the user side is easier and more fun.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Difficulty Comparison",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "First learning objective in LLM: create basic applications using foundation models.",
+        "importance": "high",
+        "category": "exam tip",
+        "topic": "LLM Basics",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "Foundation models can be closed source or open source; closed source models are accessed via APIs.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Model Availability",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "For closed source models, use tools like Hugging Face library to operate the LLM on your machine or run it locally with tools such as Ouma.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Tool Usage",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "Learn frameworks like LangChain to build LLM-based applications; Hugging Face Llama is an example.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "Frameworks",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "After basic usage, the important stage is improving LLM responses; three techniques are involved, starting with prompt engineering.",
+        "importance": "high",
+        "category": "rule",
+        "topic": "Prompt Engineering",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "If you fail, refer to the builder's perspective; all steps are listed.",
+        "importance": "low",
+        "category": "warning",
+        "topic": "Learning Guidance",
+        "timestamp": 2108.64,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_16",
+            "timestamp_start": 2108.64,
+            "timestamp_end": 2250.04
+          }
+        ]
+      },
+      {
+        "text": "Promotion engineering is the first method to improve the output of an LLM.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "LLM improvement techniques",
+        "timestamp": 2250.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_17",
+            "timestamp_start": 2248.44,
+            "timestamp_end": 2369.84
+          }
+        ]
+      },
+      {
+        "text": "RAG (Retrieval-Augmented Generation) lets an LLM access personal data and answer questions using private information.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "RAG",
+        "timestamp": 2255.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_17",
+            "timestamp_start": 2248.44,
+            "timestamp_end": 2369.84
+          }
+        ]
+      },
+      {
+        "text": "Fine-tuning can be done on the builder side or user side, at varying depths (shallow to deep layers), allowing customization of model behavior.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Fine-tuning",
+        "timestamp": 2260.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_17",
+            "timestamp_start": 2248.44,
+            "timestamp_end": 2369.84
+          }
+        ]
+      },
+      {
+        "text": "AI agents are an emerging field where LLMs power bots that perform tasks like booking hotels and giving travel recommendations, beyond simple chat.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "AI agents",
+        "timestamp": 2265.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_17",
+            "timestamp_start": 2248.44,
+            "timestamp_end": 2369.84
+          }
+        ]
+      },
+      {
+        "text": "Promotion, RAG, and fine-tuning are the three primary techniques discussed for enhancing LLM output.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "LLM improvement techniques",
+        "timestamp": 2270.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_17",
+            "timestamp_start": 2248.44,
+            "timestamp_end": 2369.84
+          }
+        ]
+      },
+      {
+        "text": "To build LLM applications, you need tools and a chatbot plus tools to create AI agents.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "LLM Application Development",
+        "timestamp": 2367.52,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "LLM Ops is an umbrella term covering evaluation, improvements, and technical handling of deployed LLM applications.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "LLM Operations",
+        "timestamp": 2375.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "Libraries are available to assist with LLM Ops tasks.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "LLM Operations Tools",
+        "timestamp": 2382.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "Multimodal inputs such as audio and video can be incorporated into LLM applications.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Multimodal LLM",
+        "timestamp": 2386.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "Diffusion-based models like Stable Diffusion are part of the broader AI ecosystem.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Diffusion Models",
+        "timestamp": 2391.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "The curriculum for learning LLM application development is divided into builder side and user side.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "LLM Curriculum",
+        "timestamp": 2396.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "The field of LLM applications and LLM Ops is rapidly growing.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "AI Industry Trends",
+        "timestamp": 2401.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "Understanding both builder and user perspectives is essential for developing effective LLM applications.",
+        "importance": "medium",
+        "category": "rule",
+        "topic": "LLM Development Best Practices",
+        "timestamp": 2406.0,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_18",
+            "timestamp_start": 2367.52,
+            "timestamp_end": 2521.68
+          }
+        ]
+      },
+      {
+        "text": "AI development has two sides: the builder side (creating foundation models/LLMs) and the user side (building applications).",
+        "importance": "high",
+        "category": "fact",
+        "topic": "AI Development Roles",
+        "timestamp": 2520.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "text": "Knowing both builder and user side skills allows professionals to demand higher salaries and become versatile AI engineers.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Career Advantages",
+        "timestamp": 2530.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "text": "The curriculum is divided into builder and user sides and will be covered in parallel to minimize overlap.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Curriculum Design",
+        "timestamp": 2540.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "text": "To become a research scientist focus on the builder side; to become an AI engineer focus on both builder and user sides simultaneously.",
+        "importance": "medium",
+        "category": "rule",
+        "topic": "Career Path Guidance",
+        "timestamp": 2550.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "text": "Anyone can create LLM\u2011based applications with even a little knowledge; software development shares about 80\u201185% of the process.",
+        "importance": "low",
+        "category": "fact",
+        "topic": "LLM Application Development",
+        "timestamp": 2560.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "text": "Understanding how foundation models are built improves performance on the user side and can lead to becoming a software developer.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Builder Knowledge Benefits",
+        "timestamp": 2570.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_19",
+            "timestamp_start": 2520.2,
+            "timestamp_end": 2670.8
+          }
+        ]
+      },
+      {
+        "text": "Speaker has studied architecture and has covered deep learning playlist including encoder\u2011only, decoder\u2011only transformers, and will teach decoder\u2011based transformers such as GPT.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Deep Learning & Transformers",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_20",
+            "timestamp_start": 2668.88,
+            "timestamp_end": 2834.72
+          }
+        ]
+      },
+      {
+        "text": "Plan to create a dedicated playlist with small, manageable modules instead of a single large playlist.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Content Strategy",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_20",
+            "timestamp_start": 2668.88,
+            "timestamp_end": 2834.72
+          }
+        ]
+      },
+      {
+        "text": "Will cover both builder and user sides of LLM applications, including pre\u2011training, fine\u2011tuning, RAG, and will release a basic LLM applications playlist by the end of the month.",
+        "importance": "high",
+        "category": "procedure",
+        "topic": "LLM Applications",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_20",
+            "timestamp_start": 2668.88,
+            "timestamp_end": 2834.72
+          }
+        ]
+      },
+      {
+        "text": "Explanation for not running paid courses: receives many requests, big ad tech companies approached for generative AI courses, but prefers free content and small\u2011chunk delivery.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Course Strategy",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_20",
+            "timestamp_start": 2668.88,
+            "timestamp_end": 2834.72
+          }
+        ]
+      },
+      {
+        "text": "Emphasis on small commitment and breaking material into tiny chunks to avoid overwhelming learners.",
+        "importance": "medium",
+        "category": "warning",
+        "topic": "Learning Design",
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_20",
+            "timestamp_start": 2668.88,
+            "timestamp_end": 2834.72
+          }
+        ]
+      },
+      {
+        "text": "The speaker is currently using the technology 100% and plans to create a paid course only after mastering it completely.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Course Development",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "Goal: to understand the technology inside out, teach others, and become an expert.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Learning Goals",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "YouTube is used to reach a wide audience, gather feedback, and improve content based on viewer responses.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "YouTube Outreach",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "The speaker has already published several YouTube videos and will release a major announcement and additional videos soon.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "Content Release",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "Planned video production schedule: 2\u20113 videos per week, with one large video covering multiple topics each week.",
+        "importance": "medium",
+        "category": "rule",
+        "topic": "Content Schedule",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "Rough timeline estimate: mastering the entire subject will take about one full year.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Learning Timeline",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "Speaker promises to remove free content after the paid course is released, indicating a future shift to paid-only material.",
+        "importance": "medium",
+        "category": "warning",
+        "topic": "Content Availability",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "Personal motivation: the speaker is excited, curious, and aims to become an expert, seeing learning as a powerful experience.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "Personal Motivation",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "Speaker invites feedback and suggestions from the audience to improve the content.",
+        "importance": "medium",
+        "category": "rule",
+        "topic": "Audience Interaction",
+        "timestamp": 2831.2,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_21",
+            "timestamp_start": 2831.2,
+            "timestamp_end": 3003.76
+          }
+        ]
+      },
+      {
+        "text": "The presenter invites viewers to leave comments in the comment section.",
+        "importance": "low",
+        "category": "procedure",
+        "topic": "Audience Engagement",
+        "timestamp": 3000.48,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_22",
+            "timestamp_start": 3000.48,
+            "timestamp_end": 3016.08
+          }
+        ]
+      },
+      {
+        "text": "The series begins with the goal to learn and master Generative AI.",
+        "importance": "high",
+        "category": "observation",
+        "topic": "Generative AI",
+        "timestamp": 3000.48,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_22",
+            "timestamp_start": 3000.48,
+            "timestamp_end": 3016.08
+          }
+        ]
+      },
+      {
+        "text": "Viewers are asked to like, share, and subscribe if they enjoy the video.",
+        "importance": "low",
+        "category": "procedure",
+        "topic": "Audience Engagement",
+        "timestamp": 3000.48,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_22",
+            "timestamp_start": 3000.48,
+            "timestamp_end": 3016.08
+          }
+        ]
+      },
+      {
+        "text": "The presenter signs off and mentions the next video.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "Video Closing",
+        "timestamp": 3000.48,
+        "sources": [
+          {
+            "chunk_id": "pSVk-5WemQ0_range_22",
+            "timestamp_start": 3000.48,
+            "timestamp_end": 3016.08
+          }
+        ]
+      }
+    ]
+  }
+}

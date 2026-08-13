@@ -365,3 +365,37 @@ class InterviewOutput(BaseLLMOutput):
     scenario_questions: List[ScenarioQuestion] = Field(default_factory=list)
     viva_questions: List[VivaQuestion] = Field(default_factory=list)
     difficulty_breakdown: Dict[str, int] = Field(default_factory=lambda: {"easy": 0, "medium": 0, "hard": 0})
+
+class KeyPointItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    text: str
+    importance: ImportanceLevel = ImportanceLevel.MEDIUM
+    category: str = ""
+    topic: str = ""
+    sources: List[SourceReferenceItem] = Field(default_factory=list)
+
+class KeyPointsOutput(BaseLLMOutput):
+    key_points: List[KeyPointItem] = Field(default_factory=list)
+
+class RelationshipItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    from_concept: str
+    relationship_type: str
+    to_concept: str
+    explanation: str = ""
+    sources: List[SourceReferenceItem] = Field(default_factory=list)
+
+class RelationshipsOutput(BaseLLMOutput):
+    relationships: List[RelationshipItem] = Field(default_factory=list)
+
+class FormulaItemModel(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str
+    expression: str
+    variables: Dict[str, str] = Field(default_factory=dict)
+    explanation: str = ""
+    topic: str = ""
+    sources: List[SourceReferenceItem] = Field(default_factory=list)
+
+class FormulasOutput(BaseLLMOutput):
+    formulas: List[FormulaItemModel] = Field(default_factory=list)

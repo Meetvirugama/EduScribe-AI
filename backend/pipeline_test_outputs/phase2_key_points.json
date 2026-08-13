@@ -1,0 +1,144 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 4.57,
+    "processed_chunks": 2
+  },
+  "data": {
+    "provider": "groq",
+    "model": "groq/llama-3.3-70b-versatile",
+    "latency": 3.54,
+    "total_tokens": 2337,
+    "schema_version": "1.0",
+    "created_at": 1786556318.099287,
+    "confidence": 1.0,
+    "key_points": [
+      {
+        "text": "The year 2024 saw significant development in generative AI, with various LLM models and Tech Giants competing to create LM models.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Generative AI",
+        "timestamp": 0.56,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          }
+        ]
+      },
+      {
+        "text": "Agentic AI, also known as AI agents or multi-AI agents, has emerged as a new area of focus in the field of generative AI.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Agentic AI",
+        "timestamp": 0.56,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          }
+        ]
+      },
+      {
+        "text": "Agentic AI is expected to be a key skill set for many people to work on in the upcoming years.",
+        "importance": "medium",
+        "category": "observation",
+        "topic": "Agentic AI",
+        "timestamp": 0.56,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          }
+        ]
+      },
+      {
+        "text": "The speaker plans to cover various frameworks for creating agentic AI applications and build end-to-end use cases in 2025.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "Agentic AI",
+        "timestamp": 0.56,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          }
+        ]
+      },
+      {
+        "text": "The speaker is near to launching their own mock interview platform, initially created as a generative AI application, and now being integrated with agentic AI.",
+        "importance": "low",
+        "category": "fact",
+        "topic": "Mock Interview Platform",
+        "timestamp": 0.56,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          }
+        ]
+      },
+      {
+        "text": "Agentic AI is being discussed in the context of converting generative AI into an agentic application.",
+        "importance": "high",
+        "category": "fact",
+        "topic": "Agentic AI",
+        "timestamp": 124.12,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_1",
+            "timestamp_start": 124.12,
+            "timestamp_end": 192.96
+          }
+        ]
+      },
+      {
+        "text": "LLM models, such as Open LLM models or LLaMA, are being used for agentic AI applications.",
+        "importance": "medium",
+        "category": "fact",
+        "topic": "LLM Models",
+        "timestamp": 124.12,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_1",
+            "timestamp_start": 124.12,
+            "timestamp_end": 192.96
+          }
+        ]
+      },
+      {
+        "text": "The main task of LLM models is to query and generate content based on a specific prompt.",
+        "importance": "medium",
+        "category": "procedure",
+        "topic": "LLM Models",
+        "timestamp": 124.12,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_1",
+            "timestamp_start": 124.12,
+            "timestamp_end": 192.96
+          }
+        ]
+      },
+      {
+        "text": "A specific prompt is required to define how the LLM model should behave, such as acting like an author.",
+        "importance": "low",
+        "category": "observation",
+        "topic": "LLM Models",
+        "timestamp": 124.12,
+        "sources": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_1",
+            "timestamp_start": 124.12,
+            "timestamp_end": 192.96
+          }
+        ]
+      }
+    ]
+  }
+}

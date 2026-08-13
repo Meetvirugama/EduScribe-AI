@@ -1,0 +1,963 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 601.27,
+    "processed_chunks": 23
+  },
+  "data": {
+    "provider": "cohere",
+    "model": "cohere/command-a-plus-05-2026",
+    "latency": 239.83,
+    "total_tokens": 81609,
+    "schema_version": "1.0",
+    "created_at": 1786561974.463168,
+    "confidence": 1.0,
+    "relationships": [
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "example_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "derived_from",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Machine Learning",
+        "relationship_type": "part_of",
+        "to_concept": "AI"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "part_of",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Symbolic AI",
+        "relationship_type": "part_of",
+        "to_concept": "AI"
+      },
+      {
+        "from_concept": "Expert Systems",
+        "relationship_type": "example_of",
+        "to_concept": "Symbolic AI"
+      },
+      {
+        "from_concept": "Fuzzy Logic",
+        "relationship_type": "example_of",
+        "to_concept": "Symbolic AI"
+      },
+      {
+        "from_concept": "Statistics",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Models",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Algorithms",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Neural network",
+        "relationship_type": "example_of",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "causes",
+        "to_concept": "Human creativity mimicry"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "contrasts_with",
+        "to_concept": "Symbolic AI"
+      },
+      {
+        "from_concept": "AI",
+        "relationship_type": "contains",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "AI Agents"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "derived_from",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Prompt Engineering"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "depends_on",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Evaluation Metrics"
+      },
+      {
+        "from_concept": "Technology Success Criteria",
+        "relationship_type": "contains",
+        "to_concept": "Evaluation Metrics"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "contains",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "depends_on",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "depends_on",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Prompt Engineering"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "contains",
+        "to_concept": "Retrieval-Augmented Generation (RAG)"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Machine Learning",
+        "relationship_type": "contains",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Evaluation Metrics"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "example_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "causes",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "derived_from",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Prompt Engineering"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "example_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "derived_from",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "contrasts_with",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Task-specific models",
+        "relationship_type": "contrasts_with",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Large Language Models",
+        "relationship_type": "example_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Large multimodal models",
+        "relationship_type": "example_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Large Language Models",
+        "relationship_type": "derived_from",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "derived_from",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Retrieval-Augmented Generation (RAG)",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Quantization",
+        "relationship_type": "part_of",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "derived_from",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Deployment",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "depends_on",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Machine Learning",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "causes",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Evaluation Metrics",
+        "relationship_type": "depends_on",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "part_of",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "Optimization",
+        "relationship_type": "part_of",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Instruction Tuning",
+        "relationship_type": "example_of",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Optimization",
+        "relationship_type": "part_of",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Evaluation",
+        "relationship_type": "depends_on",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Deployment",
+        "relationship_type": "depends_on",
+        "to_concept": "Evaluation"
+      },
+      {
+        "from_concept": "Evaluation Metrics",
+        "relationship_type": "part_of",
+        "to_concept": "Evaluation"
+      },
+      {
+        "from_concept": "Knowledge Distillation",
+        "relationship_type": "part_of",
+        "to_concept": "Optimization"
+      },
+      {
+        "from_concept": "Quantization",
+        "relationship_type": "part_of",
+        "to_concept": "Optimization"
+      },
+      {
+        "from_concept": "LLM",
+        "relationship_type": "example_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Deep Seek",
+        "relationship_type": "example_of",
+        "to_concept": "LLM"
+      },
+      {
+        "from_concept": "r1",
+        "relationship_type": "example_of",
+        "to_concept": "LLM"
+      },
+      {
+        "from_concept": "cha gpd",
+        "relationship_type": "example_of",
+        "to_concept": "LLM"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Optimization"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Evaluation"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "part_of",
+        "to_concept": "Instruction Tuning"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "example_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "depends_on",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "promotion",
+        "relationship_type": "similar_to",
+        "to_concept": "Prompt Engineering"
+      },
+      {
+        "from_concept": "writing prompt",
+        "relationship_type": "example_of",
+        "to_concept": "Prompt Engineering"
+      },
+      {
+        "from_concept": "foundation model",
+        "relationship_type": "example_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "LLM",
+        "relationship_type": "example_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "rag",
+        "relationship_type": "example_of",
+        "to_concept": "Retrieval-Augmented Generation"
+      },
+      {
+        "from_concept": "Fine tuning",
+        "relationship_type": "example_of",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "AI agents",
+        "relationship_type": "example_of",
+        "to_concept": "AI Agents"
+      },
+      {
+        "from_concept": "chat Bots",
+        "relationship_type": "example_of",
+        "to_concept": "AI Agents"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Retrieval-Augmented Generation",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "LLM",
+        "relationship_type": "depends_on",
+        "to_concept": "tools"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "depends_on",
+        "to_concept": "chat bot"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "depends_on",
+        "to_concept": "tools"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "example_of",
+        "to_concept": "LLM based applications"
+      },
+      {
+        "from_concept": "LLM based applications",
+        "relationship_type": "depends_on",
+        "to_concept": "LLM"
+      },
+      {
+        "from_concept": "LLM based applications",
+        "relationship_type": "depends_on",
+        "to_concept": "deployment"
+      },
+      {
+        "from_concept": "deployment",
+        "relationship_type": "part_of",
+        "to_concept": "LLM Ops"
+      },
+      {
+        "from_concept": "evaluation",
+        "relationship_type": "part_of",
+        "to_concept": "LLM Ops"
+      },
+      {
+        "from_concept": "improvements",
+        "relationship_type": "part_of",
+        "to_concept": "LLM Ops"
+      },
+      {
+        "from_concept": "technical handling",
+        "relationship_type": "part_of",
+        "to_concept": "LLM Ops"
+      },
+      {
+        "from_concept": "LLM Ops",
+        "relationship_type": "depends_on",
+        "to_concept": "libraries"
+      },
+      {
+        "from_concept": "LLM Ops",
+        "relationship_type": "depends_on",
+        "to_concept": "LLM"
+      },
+      {
+        "from_concept": "foundation models",
+        "relationship_type": "contains",
+        "to_concept": "multimodal"
+      },
+      {
+        "from_concept": "audio input",
+        "relationship_type": "part_of",
+        "to_concept": "multimodal"
+      },
+      {
+        "from_concept": "video input",
+        "relationship_type": "part_of",
+        "to_concept": "multimodal"
+      },
+      {
+        "from_concept": "stable diffusion",
+        "relationship_type": "example_of",
+        "to_concept": "diffusion based models"
+      },
+      {
+        "from_concept": "diffusion based models",
+        "relationship_type": "part_of",
+        "to_concept": "miscellaneous"
+      },
+      {
+        "from_concept": "curriculum",
+        "relationship_type": "contains",
+        "to_concept": "builder's side"
+      },
+      {
+        "from_concept": "curriculum",
+        "relationship_type": "contains",
+        "to_concept": "user side"
+      },
+      {
+        "from_concept": "builder's side",
+        "relationship_type": "part_of",
+        "to_concept": "curriculum"
+      },
+      {
+        "from_concept": "user side",
+        "relationship_type": "part_of",
+        "to_concept": "curriculum"
+      },
+      {
+        "from_concept": "Foundation Models",
+        "relationship_type": "contains",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "LLM",
+        "relationship_type": "example_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Builder side",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "AI Engineer",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Research Scientist",
+        "relationship_type": "causes",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Deployment",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Machine Learning",
+        "relationship_type": "requires",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Builder side"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "User side"
+      },
+      {
+        "from_concept": "Builder side",
+        "relationship_type": "contrasts_with",
+        "to_concept": "User side"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "contains",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "example_of",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Retrieval-Augmented Generation (RAG)"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "depends_on",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Retrieval-Augmented Generation (RAG)",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Transformer Architecture"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Pre-training"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Fine-tuning"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Prompt Engineering"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Retrieval-Augmented Generation (RAG)"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "AI Agents"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Evaluation Metrics"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "contains",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Deep Learning",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Retrieval-Augmented Generation (RAG)",
+        "relationship_type": "example_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "example_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Evaluation Metrics"
+      },
+      {
+        "from_concept": "Deployment",
+        "relationship_type": "depends_on",
+        "to_concept": "Evaluation Metrics"
+      },
+      {
+        "from_concept": "Deployment",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Curriculum Design",
+        "relationship_type": "depends_on",
+        "to_concept": "Technology Success Criteria"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Technology Success Criteria"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "depends_on",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Transformer Architecture",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Pre-training",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Fine-tuning",
+        "relationship_type": "part_of",
+        "to_concept": "Foundation Models"
+      },
+      {
+        "from_concept": "Prompt Engineering",
+        "relationship_type": "part_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Retrieval-Augmented Generation (RAG)",
+        "relationship_type": "example_of",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "AI Agents",
+        "relationship_type": "depends_on",
+        "to_concept": "Generative AI"
+      },
+      {
+        "from_concept": "Evaluation Metrics",
+        "relationship_type": "part_of",
+        "to_concept": "Deployment"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Machine Learning"
+      },
+      {
+        "from_concept": "Machine Learning",
+        "relationship_type": "contains",
+        "to_concept": "Deep Learning"
+      },
+      {
+        "from_concept": "Generative AI",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      },
+      {
+        "from_concept": "Technology Success Criteria",
+        "relationship_type": "part_of",
+        "to_concept": "Curriculum Design"
+      }
+    ]
+  }
+}

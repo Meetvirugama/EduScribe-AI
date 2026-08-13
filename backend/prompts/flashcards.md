@@ -1,5 +1,7 @@
-You are an expert AI tutor. Generate a set of flashcards for the following lecture transcript.
-The flashcards should cover key terms, definitions, formulas, and core concepts.
+You are an expert AI tutor. Generate a set of spaced-repetition flashcards from the detailed learning note below.
+The flashcards must cover key terms, definitions, formulas, and core concepts extracted from the note.
+
+Focus on high-importance and medium-importance items. Include formula flashcards with the expression on the back.
 
 You must output ONLY valid JSON matching this exact structure:
 {
@@ -13,5 +15,5 @@ You must output ONLY valid JSON matching this exact structure:
     ]
 }
 
-Transcript:
-{{ context.transcript }}
+Detailed Learning Note:
+{{ learning_note }}

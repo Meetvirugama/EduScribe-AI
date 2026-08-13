@@ -1,0 +1,54 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 0.93,
+    "processed_chunks": 2
+  },
+  "data": {
+    "definitions": [
+      {
+        "term": "Agentic AI",
+        "definition": "Not explicitly defined in the provided transcript chunks, but mentioned as a topic to be covered in the video.",
+        "source": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          },
+          {
+            "chunk_id": "xOS0BhhdUbo_range_1",
+            "timestamp_start": 124.12,
+            "timestamp_end": 192.96
+          }
+        ]
+      },
+      {
+        "term": "Generative AI",
+        "definition": "Not explicitly defined in the provided transcript chunks, but mentioned as a field related to the development of LLM models.",
+        "source": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          }
+        ]
+      },
+      {
+        "term": "LLM models",
+        "definition": "Not explicitly defined in the provided transcript chunks, but mentioned as models used for content generation.",
+        "source": [
+          {
+            "chunk_id": "xOS0BhhdUbo_range_0",
+            "timestamp_start": 0.56,
+            "timestamp_end": 125.88
+          },
+          {
+            "chunk_id": "xOS0BhhdUbo_range_1",
+            "timestamp_start": 124.12,
+            "timestamp_end": 192.96
+          }
+        ]
+      }
+    ]
+  }
+}

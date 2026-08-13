@@ -34,11 +34,11 @@ class ProviderStats:
         key = (provider, model)
         if key not in self.history or len(self.history[key]) == 0:
             return {"success_rate": 1.0, "avg_latency": 0.0, "samples": 0}
-            
+
         history = self.history[key]
         success_rate = sum(x["success"] for x in history) / len(history)
         avg_latency = sum(x["latency"] for x in history) / len(history)
-        
+
         return {
             "success_rate": success_rate,
             "avg_latency": avg_latency,
@@ -47,18 +47,17 @@ class ProviderStats:
 
     def calculate_score(self, provider: str, model: str) -> float:
         """
-        Calculate a dynamic score (0-100) for routing priority.
-        Higher is better.
+        Dynamic 0–100 score for intra-tier fallback ordering.
+        Higher is better. Used by FallbackManager to sort providers
+        within each tier by observed reliability and speed.
+        70% weight on success rate, 30% on latency.
         """
         stats = self.get_stats(provider, model)
         if stats["samples"] == 0:
-            return 50.0  # Default neutral score for untested models
-            
+            return 50.0  # Neutral score for untested models
+
         success_score = stats["success_rate"] * 100
-        
-        # normalize latency (assume 1s = 100, 10s = 0)
-        # using max() to prevent negative scores
-        latency_score = max(0, 100 - (stats["avg_latency"] * 10))
-        
-        # 70% success, 30% latency (Cost is excluded as all APIs are free)
-        return (0.7 * success_score) + (0.3 * latency_score)
+        # Normalize latency: 1s = 90pts, 10s = 0pts
+        latency_score = max(0.0, 100.0 - (stats["avg_latency"] * 10))
+        return round((0.7 * success_score) + (0.3 * latency_score), 2)
+

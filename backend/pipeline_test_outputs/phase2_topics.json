@@ -1,0 +1,98 @@
+{
+  "status": "success",
+  "metadata": {
+    "execution_time_sec": 9.59,
+    "processed_chunks": 2
+  },
+  "data": {
+    "provider": "groq",
+    "model": "groq/llama-3.3-70b-versatile",
+    "latency": 2.32,
+    "total_tokens": 1996,
+    "schema_version": "1.0",
+    "created_at": 1786556305.586216,
+    "confidence": 1.0,
+    "summary": "The lecture discusses the development of generative AI in 2024, highlighting the emergence of LLM models and Tech Giants' competition in creating these models. It also introduces the concept of agentic AI, which has gained attention in the second half of the year, and explains that the video will cover what agentic AI is, how it differs from generative AI, and the frameworks used to create agentic AI applications.\n\nThe lecture introduces the concept of agentic AI, explaining how it differs from generative AI. The speaker discusses the use of large language models (LLMs) such as open-source LLMs and highlights the importance of prompts in determining the behavior of these models. The lecture aims to provide an understanding of agentic AI and its applications, with a focus on LLMs and their role in content creation.",
+    "topics": [
+      {
+        "title": "Introduction to Generative AI in 2024",
+        "start_time": "00:00:00",
+        "end_time": "00:01:26",
+        "key_takeaways": [
+          "Generative AI saw significant development in 2024",
+          "LLM models were a key focus area",
+          "Tech Giants competed to create LLM models"
+        ],
+        "citations": [
+          {
+            "timestamp": "00:00:56",
+            "source": "transcript"
+          }
+        ]
+      },
+      {
+        "title": "Emergence of Agentic AI",
+        "start_time": "00:01:26",
+        "end_time": "00:02:38",
+        "key_takeaways": [
+          "Agentic AI has gained attention in the second half of 2024",
+          "Companies have started talking about multi-AI agents or agentic AI",
+          "Agentic AI is expected to be a key skill set in the upcoming years"
+        ],
+        "citations": [
+          {
+            "timestamp": "00:02:02",
+            "source": "transcript"
+          }
+        ]
+      },
+      {
+        "title": "Agentic AI and its Differences from Generative AI",
+        "start_time": "00:02:38",
+        "end_time": "00:04:10",
+        "key_takeaways": [
+          "The video will cover what agentic AI is",
+          "The video will explain how agentic AI differs from generative AI",
+          "The video will discuss frameworks used to create agentic AI applications"
+        ],
+        "citations": [
+          {
+            "timestamp": "00:03:14",
+            "source": "transcript"
+          }
+        ]
+      },
+      {
+        "title": "Future Plans and Applications",
+        "start_time": "00:04:10",
+        "end_time": "00:05:30",
+        "key_takeaways": [
+          "The speaker plans to cover many frameworks and build end-to-end use cases with agentic AI applications in 2025",
+          "The speaker is near to launching their own mock interview platform, initially created as a generative AI application"
+        ],
+        "citations": [
+          {
+            "timestamp": "00:04:40",
+            "source": "transcript"
+          }
+        ]
+      },
+      {
+        "title": "Introduction to Agentic AI",
+        "start_time": "00:00:00",
+        "end_time": "00:01:28",
+        "key_takeaways": [
+          "Agentic AI is a concept that builds upon generative AI",
+          "Large language models (LLMs) are used in agentic AI applications",
+          "Prompts play a crucial role in determining the behavior of LLMs"
+        ],
+        "citations": [
+          {
+            "timestamp": "00:00:10",
+            "source": "transcript"
+          }
+        ]
+      }
+    ]
+  }
+}

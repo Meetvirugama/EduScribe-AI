@@ -28,85 +28,11 @@ LLD Reference: §15 LLM Provider Architecture
 """
 
 from .llm_manager import LLMManager
-from .model_selector import (
-    TaskType,
-    ModelConfig,
-    get_model_config,
-    get_primary_model,
-    get_secondary_model,
-    get_emergency_model,
-    list_all_task_types,
-    get_tasks_by_phase,
-    ROUTING_TABLE,
-)
-from .base_provider import BaseProvider, ProviderTransientError, ProviderPermanentError
-from .key_manager import KeyManager
-from .quota_tracker import QuotaTracker
-from .retry_manager import RetryManager
-from .fallback_manager import FallbackManager, AllProvidersExhaustedError, FALLBACK_CHAIN
-from .validation import (
-    RawResponseParser,
-    ResponseParseError,
-)
-from .validation.schemas.core import (
-    LectureAnalysis,
-    TopicList,
-    Topic,
-    SubtopicList,
-    KnowledgeGap,
-    SubtopicExplanation,
-    ExampleSet,
-    QuizSet,
-    QuizQuestion,
-    FlashcardSet,
-    Flashcard,
-    MindMap,
-)
+from .model_selector import TaskType
+from .fallback_manager import AllProvidersExhaustedError
 
 __all__ = [
-    # Orchestrator — primary entry point
     "LLMManager",
-
-    # Task routing
     "TaskType",
-    "ModelConfig",
-    "ROUTING_TABLE",
-    "get_model_config",
-    "get_primary_model",
-    "get_secondary_model",
-    "get_emergency_model",
-    "list_all_task_types",
-    "get_tasks_by_phase",
-
-    # Provider base
-    "BaseProvider",
-    "ProviderTransientError",
-    "ProviderPermanentError",
-
-    # Sub-managers
-    "KeyManager",
-    "QuotaTracker",
-    "RetryManager",
-    "FallbackManager",
     "AllProvidersExhaustedError",
-    "FALLBACK_CHAIN",
-
-    # Response layer
-    "RawResponseParser",
-    "ResponseParseError",
-
-    # PydanticAI schemas (§17.2)
-    "LectureAnalysis",
-    "TopicList",
-    "Topic",
-    "SubtopicList",
-    "KnowledgeGap",
-    "SubtopicExplanation",
-    "ExampleSet",
-    "QuizSet",
-    "QuizQuestion",
-    "FlashcardSet",
-    "Flashcard",
-    "MindMap",
 ]
-

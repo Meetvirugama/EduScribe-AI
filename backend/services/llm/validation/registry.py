@@ -70,7 +70,7 @@ class SchemaRegistry:
         TaskType.MIND_MAP_GENERATION:       MindMap,
 
         # ── Phase 1 — Notes pipeline schemas ─────────────────────────────────
-        TaskType.DETAILED_NOTES:            TopicsAndNotesOutput,
+        TaskType.DETAILED_NOTES:            GenericTextOutput,
 
         # ── Phase 2 — Content understanding schemas ───────────────────────────
         TaskType.CONCEPT_EXTRACTION:                ConceptsOutput,

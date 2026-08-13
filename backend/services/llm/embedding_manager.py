@@ -103,7 +103,7 @@ class EmbeddingManager:
                 last_error = exc
             except ProviderPermanentError as exc:
                 logger.warning(f"Embedding permanent failure on {provider}, skipping provider. Error: {exc}")
-                self.quota_tracker.record_failure(provider)
                 last_error = exc
+
 
         raise RuntimeError(f"All embedding providers exhausted. Last error: {last_error}")

@@ -5,11 +5,14 @@ from schemas.content import Concept, Topic, Definition, LectureInput, LectureSta
 @dataclass
 class LectureContext:
     """
-    Deprecated: Transitioning to separate LectureInput and LectureState.
-    This class combines them for backward compatibility.
+    Runtime container for a lecture's input data and extracted knowledge.
+
+    Wraps LectureInput (raw data) and LectureState (extracted results)
+    and exposes both as flat properties for convenience across the pipeline.
     """
     input: LectureInput
     state: LectureState = field(default_factory=LectureState)
+
 
     # Backward compatibility properties
     @property
@@ -72,45 +75,26 @@ class LectureContext:
     @important_frames.setter
     def important_frames(self, val): self.state.important_frames = val
 
-    # CRITICAL-006: Proxy properties for the extended LectureState fields
-    @property
-    def quiz(self): return self.state.quiz
-
-    @quiz.setter
-    def quiz(self, val): self.state.quiz = val
-
-    @property
-    def flashcards(self): return self.state.flashcards
-
-    @flashcards.setter
-    def flashcards(self, val): self.state.flashcards = val
-
-    @property
-    def mindmap(self): return self.state.mindmap
-
-    @mindmap.setter
-    def mindmap(self, val): self.state.mindmap = val
-
-    @property
-    def interview(self): return self.state.interview
-
-    @interview.setter
-    def interview(self, val): self.state.interview = val
-
-    @property
-    def revision(self): return self.state.revision
-
-    @revision.setter
-    def revision(self, val): self.state.revision = val
-
-    @property
-    def formula(self): return self.state.formula
-
-    @formula.setter
-    def formula(self, val): self.state.formula = val
-
     @property
     def status(self) -> Dict[str, Any]: return self.state.status
 
     @property
     def errors(self) -> Dict[str, str]: return self.state.errors
+
+    @property
+    def unified_md(self) -> str: return self.state.unified_md
+
+    @unified_md.setter
+    def unified_md(self, val: str): self.state.unified_md = val
+
+    @property
+    def detailed_notes_md(self) -> str: return self.state.detailed_notes_md
+
+    @detailed_notes_md.setter
+    def detailed_notes_md(self, val: str): self.state.detailed_notes_md = val
+
+    @property
+    def knowledge_compilation_doc(self) -> str: return self.state.knowledge_compilation_doc
+
+    @knowledge_compilation_doc.setter
+    def knowledge_compilation_doc(self, val: str): self.state.knowledge_compilation_doc = val

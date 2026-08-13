@@ -15,6 +15,7 @@ import uuid
 from typing import Any, AsyncGenerator, Optional
 
 import litellm
+litellm.drop_params = True
 
 from .model_selector import TaskType, ModelConfig, get_model_config
 from .key_manager import KeyManager

@@ -46,8 +46,5 @@ Output ONLY valid JSON matching this schema:
     "difficulty_breakdown": {"easy": 3, "medium": 5, "hard": 2}
 }
 
-Key concepts covered: 
-{{ concepts_context }}
-
-Transcript:
-{{ transcript_text }}
+Detailed Learning Note:
+{{ learning_note }}

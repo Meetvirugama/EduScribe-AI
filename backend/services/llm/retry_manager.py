@@ -23,7 +23,6 @@ Exponential backoff schedule (§19.3):
 
 import logging
 from typing import Any, Callable, Awaitable
-from functools import wraps
 
 from tenacity import (
     retry,
@@ -53,35 +52,6 @@ logger = logging.getLogger(__name__)
 # 2 s, 4 s, 8 s for the 2nd, 3rd, and 4th retry respectively,
 # matching the LLD table precisely.
 # ---------------------------------------------------------------------------
-
-def with_retry(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
-    """
-    Async decorator that applies the LLD-defined exponential backoff
-    retry policy to an LLM provider call.
-
-    Only retries on ProviderTransientError. ProviderPermanentError
-    propagates immediately with no retry.
-
-    Usage:
-        @with_retry
-        async def my_llm_call(...):
-            ...
-
-    After 4 failed attempts, raises RetryError (which the
-    fallback_manager interprets as a signal to switch providers).
-    """
-    @retry(
-        reraise=True,
-        stop=stop_after_attempt(4),          # attempts 1–4; attempt 5 = switch provider
-        wait=wait_exponential(multiplier=2, min=2, max=8),
-        retry=retry_if_exception_type(ProviderTransientError),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-    )
-    @wraps(func)
-    async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        return await func(*args, **kwargs)
-
-    return wrapper
 
 
 class RetryManager:

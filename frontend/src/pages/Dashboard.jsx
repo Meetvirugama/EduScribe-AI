@@ -10,17 +10,20 @@ import { useProgressStream } from '../hooks/useProgressStream';
 const PROCESSING_STATUSES = [
   'PROCESSING', 'UPLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING',
   'EXTRACTING_FRAMES', 'RUNNING_OCR', 'CHUNKING', 'DETECTING_TOPICS',
+  'MERGING_ALIGNMENT', 'UNDERSTANDING_CONTENT', 'GENERATING_ARTIFACT',
   'GENERATING_NOTES', 'EXPORTING',
 ];
 
 const STATUS_COLORS = {
   COMPLETED: '#10B981',
+  READY_FOR_SELECTION: '#3B82F6',
   FAILED: '#EF4444',
   default: '#F59E0B',
 };
 
 const STATUS_LABELS = {
   COMPLETED: 'Completed',
+  READY_FOR_SELECTION: 'Ready',
   FAILED: 'Failed',
   UPLOADING: 'Uploading…',
   EXTRACTING_AUDIO: 'Extracting Audio…',
@@ -29,6 +32,9 @@ const STATUS_LABELS = {
   RUNNING_OCR: 'Running OCR…',
   CHUNKING: 'Chunking…',
   DETECTING_TOPICS: 'Detecting Topics…',
+  MERGING_ALIGNMENT: 'Aligning Data…',
+  UNDERSTANDING_CONTENT: 'Understanding Content…',
+  GENERATING_ARTIFACT: 'Generating Artifact…',
   GENERATING_NOTES: 'Generating Notes…',
   EXPORTING: 'Exporting…',
   PROCESSING: 'Processing…',
@@ -95,7 +101,7 @@ function VideoCard({ video, onDelete, onNavigate }) {
               </p>
             </div>
           )}
-          {video.status === 'COMPLETED' && (
+          {(video.status === 'COMPLETED' || video.status === 'READY_FOR_SELECTION') && (
             <button
               id={`view-workspace-${video.id}`}
               onClick={() => onNavigate(video.id)}

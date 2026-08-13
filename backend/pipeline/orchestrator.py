@@ -191,8 +191,8 @@ async def process_video_pipeline_async(video_id_str: str):
             res = await db.execute(select(Video).where(Video.id == video_id))
             video = res.scalar_one_or_none()
             if video:
-                video.status = VideoStatus.COMPLETED
-                video.current_step = "Completed"
+                video.status = VideoStatus.READY_FOR_SELECTION
+                video.current_step = "Ready for Selection"
                 video.progress_percent = 100
                 if processing_time is not None:
                     video.processing_time_seconds = processing_time

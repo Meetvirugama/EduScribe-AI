@@ -39,8 +39,8 @@ class Topic(BaseModel):
     @field_validator("start_time", "end_time")
     @classmethod
     def validate_timestamp(cls, v: str) -> str:
-        if not re.match(r"^\d{2}:\d{2}:\d{2}$", v):
-            raise ValueError("Timestamp must be in HH:MM:SS format")
+        if not re.match(r"^\d{2}:\d{2}:\d{2}(\.\d+)?$", v):
+            raise ValueError("Timestamp must be in HH:MM:SS or HH:MM:SS.sss format")
         return v
 
 class TopicList(BaseLLMOutput):
