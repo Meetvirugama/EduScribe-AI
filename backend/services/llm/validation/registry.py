@@ -100,7 +100,4 @@ class SchemaRegistry:
         """
         return cls._registry.get(task, GenericTextOutput)
 
-    @classmethod
-    def has_strict_schema(cls, task: TaskType) -> bool:
-        """Return True if the task has a schema stricter than GenericTextOutput."""
-        return task in cls._registry
+

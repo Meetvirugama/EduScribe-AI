@@ -60,20 +60,6 @@ def compute_phash(frame_path: str) -> str:
             f"Could not compute hash for {frame_path}: {exc}") from exc
 
 
-def hamming_distance(hash_a: str, hash_b: str) -> int:
-    """
-    Compute the Hamming distance between two hex hash strings.
-
-    Args:
-        hash_a: First hash hex string.
-        hash_b: Second hash hex string.
-
-    Returns:
-        Integer Hamming distance.
-    """
-    h_a = imagehash.hex_to_hash(hash_a)
-    h_b = imagehash.hex_to_hash(hash_b)
-    return int(h_a - h_b)
 
 
 def deduplicate_frames(

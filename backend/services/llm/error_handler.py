@@ -2,6 +2,7 @@ import logging
 import litellm
 from .base_provider import ProviderTransientError, ProviderPermanentError
 from .pipeline import RequestContext
+from .key_manager import KeyManager
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class ErrorHandler:
     @staticmethod
     def handle_litellm_error(
             exc: Exception, provider: str, model: str, context: RequestContext,
-            key_manager: "KeyManager" = None, api_key: str = None) -> None:
+            key_manager: KeyManager = None, api_key: str = None) -> None:
         err_msg = str(exc)
         req_id = context.request_id
         task_val = context.task.value

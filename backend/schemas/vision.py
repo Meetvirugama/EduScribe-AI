@@ -40,14 +40,7 @@ class VideoFrameResponse(BaseModel):
         from_attributes = True
 
 
-class FrameExtractionStatus(BaseModel):
-    video_id: str
-    scenes: int
-    frames_extracted: int
-    frames_after_blur_filter: int
-    frames_after_dedup: int
-    frames_selected: int
-    message: str = "Frame extraction complete."
+
 
 
 class FrameDeleteResponse(BaseModel):

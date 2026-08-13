@@ -192,44 +192,10 @@ class ApplicationsOutput(BaseLLMOutput):
     industry_examples: List[str] = Field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
-# Phase 3 — Examples  (generate_examples)
-# ---------------------------------------------------------------------------
-
-class ExamplesDetailedOutput(BaseLLMOutput):
-    examples: List[Dict[str, Any]] = Field(default_factory=list)
-    worked_examples: List[Dict[str, Any]] = Field(default_factory=list)
-    counter_examples: List[str] = Field(default_factory=list)
 
 
-# ---------------------------------------------------------------------------
-# Phase 3 — Misconceptions  (detect_misconceptions_and_edge_cases)
-# ---------------------------------------------------------------------------
-
-class MisconceptionItem(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    misconception: str
-    correction: str
-    explanation: str = ""
 
 
-class MisconceptionsOutput(BaseLLMOutput):
-    misconceptions: List[MisconceptionItem] = Field(default_factory=list)
-    edge_cases: List[Dict[str, Any]] = Field(default_factory=list)
-    common_errors: List[str] = Field(default_factory=list)
-
-
-# ---------------------------------------------------------------------------
-# Phase 5 — Assessments  (generate_assessments)
-# ---------------------------------------------------------------------------
-
-class AssessmentQuestion(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    question: str
-    question_type: str = "mcq"             # mcq | true_false | fill_blank | hots
-    options: Optional[List[str]] = None
-    correct_answer: str
-    explanation: str
 
 # ---------------------------------------------------------------------------
 # Phase 7 — Revision Sheet
@@ -252,47 +218,7 @@ class RevisionSheetOutput(BaseLLMOutput):
     last_minute_tips: List[str] = Field(default_factory=list)
 
 
-class AssessmentsOutput(BaseLLMOutput):
-    quiz_questions: List[AssessmentQuestion] = Field(default_factory=list)
-    flashcards: List[Dict[str, Any]] = Field(default_factory=list)
 
-
-# ---------------------------------------------------------------------------
-# Phase 5 — Learning Support  (generate_learning_support)
-# ---------------------------------------------------------------------------
-
-class LearningSupportOutput(BaseLLMOutput):
-    study_tips: List[str] = Field(default_factory=list)
-    recommended_resources: List[Dict[str, Any]] = Field(default_factory=list)
-    practice_exercises: List[str] = Field(default_factory=list)
-    memory_aids: List[str] = Field(default_factory=list)
-
-
-# ---------------------------------------------------------------------------
-# Phase 5 — Learning Path  (generate_learning_path)
-# ---------------------------------------------------------------------------
-
-class LearningPathStep(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    step: int = Field(ge=1)
-    title: str
-    description: str
-    estimated_time_minutes: int = Field(default=30, ge=1)
-    resources: List[str] = Field(default_factory=list)
-
-
-class LearningPathOutput(BaseLLMOutput):
-    path_title: str = ""
-    total_estimated_time_minutes: int = Field(default=0, ge=0)
-    steps: List[LearningPathStep] = Field(default_factory=list)
-
-
-# ---------------------------------------------------------------------------
-# Phase 5 — Glossary  (generate_glossary)
-# ---------------------------------------------------------------------------
-
-class GlossaryOutput(BaseLLMOutput):
-    terms: List[DefinitionItem] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

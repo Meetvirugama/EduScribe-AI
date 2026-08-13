@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class QualityReport:
+class ArtifactQualityReport:
     schema_valid: bool = True
     coverage_score: float = 0.0
     completeness_score: float = 0.0
@@ -86,7 +86,7 @@ class QualityEvaluator:
         artifact_data: Any,
         transcript_text: str,
         concepts: List[Any] = None
-    ) -> QualityReport:
+    ) -> ArtifactQualityReport:
         """Evaluate a single artifact."""
         schema_valid = self._schema_validator.validate(
             artifact_type, artifact_data)
@@ -107,7 +107,7 @@ class QualityEvaluator:
             warnings.append(
                 f"Potential hallucination detected (risk: {hallucination_risk:.0%})")
 
-        return QualityReport(
+        return ArtifactQualityReport(
             schema_valid=schema_valid,
             hallucination_risk=hallucination_risk,
             overall_score=max(0.0, overall),

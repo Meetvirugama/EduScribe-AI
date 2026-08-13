@@ -57,10 +57,7 @@ class MergedSection:
         return " ".join(s.get("text", "").strip()
                         for s in self.transcript_segments if s.get("text"))
 
-    @property
-    def ocr_texts(self) -> List[str]:
-        """All non-empty OCR strings from frames in this section."""
-        return [f.ocr_text for f in self.frames if f.ocr_text and f.ocr_text.strip()]
+
 
     @property
     def duration_seconds(self) -> float:
