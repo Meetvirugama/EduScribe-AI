@@ -3,12 +3,13 @@ import os
 from yt_dlp import YoutubeDL
 from typing import Dict, Any
 
+
 class MetadataService:
     """
     Safely interfaces with yt-dlp to verify the video is ACCESSIBLE
     and retrieves metadata.
     """
-    
+
     @staticmethod
     async def fetch_metadata(url: str) -> Dict[str, Any]:
         base_ydl_opts = {
@@ -16,10 +17,11 @@ class MetadataService:
             'no_warnings': True,
             'extractor_args': {'youtube': {'player_client': ['android']}},
         }
-        
+
         def _fetch(opts):
             with YoutubeDL(opts) as ydl:
-                # This will raise exceptions if the video is DELETED, PRIVATE, or RESTRICTED
+                # This will raise exceptions if the video is DELETED, PRIVATE,
+                # or RESTRICTED
                 info = ydl.extract_info(url, download=False)
                 return {
                     "title": info.get("title", "Unknown"),
@@ -31,7 +33,7 @@ class MetadataService:
 
         try:
             return await asyncio.to_thread(_fetch, base_ydl_opts)
-        except Exception as e:
+        except Exception:
             # Fallback for bot protection
             if os.path.exists("/.dockerenv"):
                 raise Exception("youtube_bot_protection")

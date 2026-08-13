@@ -17,7 +17,10 @@ class PromptManager:
     Loads and renders external markdown prompt templates using Jinja2.
     Templates live in backend/prompts/<template_name>.md.
     """
-    PROMPTS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../prompts"))
+    PROMPTS_DIR = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "../../prompts"))
 
     @classmethod
     def render(cls, template_name: str, **kwargs) -> str:

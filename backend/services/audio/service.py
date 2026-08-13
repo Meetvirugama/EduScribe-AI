@@ -4,6 +4,7 @@ import asyncio
 import ffmpeg
 from core.config import settings
 
+
 class AudioService:
     def __init__(self):
         os.makedirs(settings.TEMP_DIR, exist_ok=True)
@@ -11,7 +12,7 @@ class AudioService:
     async def extract_audio(self, video_path: str, video_id: str) -> str:
         if not os.path.exists(video_path):
             raise Exception("Video not found")
-            
+
         audio_path = os.path.join(settings.TEMP_DIR, f"{video_id}.wav")
 
         def _process():
@@ -21,16 +22,18 @@ class AudioService:
                 format_info = probe.get('format', {})
                 duration = float(format_info.get('duration', 0))
                 size = int(format_info.get('size', 0))
-                
+
                 if duration > 2 * 3600:
                     raise Exception("Video exceeds 2 hour maximum duration")
-                
+
                 max_size_bytes = settings.MAX_VIDEO_SIZE_MB * 1024 * 1024
                 if size > max_size_bytes:
-                    raise Exception(f"Video exceeds {settings.MAX_VIDEO_SIZE_MB}MB size limit")
+                    raise Exception(
+                        f"Video exceeds {settings.MAX_VIDEO_SIZE_MB}MB size limit")
             except ffmpeg.Error as e:
-                raise Exception(f"Failed to probe video: {e.stderr.decode('utf8', errors='ignore')}")
-                
+                raise Exception(
+                    f"Failed to probe video: {e.stderr.decode('utf8', errors='ignore')}")
+
             try:
                 (
                     ffmpeg
@@ -43,17 +46,21 @@ class AudioService:
                         af='loudnorm,afftdn',
                         # Use 4 threads for ~50% faster encoding on multi-core machines.
                         # PCM encoding is CPU-bound; parallelizing the loudnorm/afftdn
-                        # filter graph cuts extraction time significantly for long videos.
+                        # filter graph cuts extraction time significantly for
+                        # long videos.
                         **{'threads': 4}
                     )
                     .overwrite_output()
                     .run(quiet=True)
                 )
-            except ffmpeg.Error as e:
-                # e.stderr is not captured when quiet=True, so just raise a generic error
-                raise Exception("FFmpeg extraction failed (see system logs if available)")
+            except ffmpeg.Error:
+                # e.stderr is not captured when quiet=True, so just raise a
+                # generic error
+                raise Exception(
+                    "FFmpeg extraction failed (see system logs if available)")
 
         await asyncio.to_thread(_process)
         return audio_path
+
 
 audio_service = AudioService()

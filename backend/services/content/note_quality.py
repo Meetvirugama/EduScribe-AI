@@ -5,13 +5,13 @@ Evaluates the pedagogical quality and evidence grounding of a generated topic no
 """
 
 import json
-from typing import Dict, Any, List
-from .context import LectureContext
+from typing import Dict, Any
 from ..llm.model_selector import TaskType
 from schemas.content import QualityReport
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class NoteQualityEvaluator:
     """Evaluates topic notes using a premium LLM as a Critic."""
@@ -19,13 +19,15 @@ class NoteQualityEvaluator:
     def __init__(self, llm_manager):
         self.llm_manager = llm_manager
 
-    async def evaluate(self, topic_json: Dict[str, Any], context_packet: str) -> QualityReport:
+    async def evaluate(
+            self, topic_json: Dict[str, Any], context_packet: str) -> QualityReport:
         """
         Evaluates a generated topic note against its source context.
         Returns a QualityReport containing a score (0-100) and specific issues.
         """
-        logger.info(f"Evaluating quality for topic: {topic_json.get('title', 'Unknown')}")
-        
+        logger.info(
+            f"Evaluating quality for topic: {topic_json.get('title', 'Unknown')}")
+
         system_msg = (
             "You are EduScribe's Note Quality Evaluator.\n"
             "Evaluate the generated topic note against the raw source context.\n"
@@ -35,7 +37,7 @@ class NoteQualityEvaluator:
             "3. Clarity & Structure\n"
             "Return a strictly valid JSON matching the schema."
         )
-        
+
         prompt = (
             "=== SOURCE CONTEXT PACKET ===\n"
             f"{context_packet}\n\n"
@@ -58,33 +60,34 @@ class NoteQualityEvaluator:
             "  ]\n"
             "}"
         )
-        
+
         # We use COMPLEX_PRIMARY for critique
         messages = [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": prompt}
         ]
-        
+
         try:
             # We bypass the internal registry for this specific internal validation by
             # using litellm directly if needed, or we can use the generic text output and parse.
-            # For robustness, we will use the llm_manager but parse the JSON ourselves.
+            # For robustness, we will use the llm_manager but parse the JSON
+            # ourselves.
             response = await self.llm_manager.generate(
-                task=TaskType.DETAILED_NOTES, # fallback task to get it routed
+                task=TaskType.DETAILED_NOTES,  # fallback task to get it routed
                 messages=messages,
                 response_format={"type": "json_object"}
             )
-            
-            # The llm_manager will return a BaseLLMOutput or dict. 
+
+            # The llm_manager will return a BaseLLMOutput or dict.
             # We will extract the raw string and parse it into QualityReport.
             raw_text = getattr(response, "text", str(response))
             import re
-            
+
             # extract json block if wrapped in markdown
             match = re.search(r'```(?:json)?(.*?)```', raw_text, re.DOTALL)
             if match:
                 raw_text = match.group(1).strip()
-                
+
             try:
                 data = json.loads(raw_text)
             except json.JSONDecodeError:
@@ -93,11 +96,12 @@ class NoteQualityEvaluator:
                     data = response
                 else:
                     logger.error("Failed to parse critic JSON.")
-                    return QualityReport(score=100, issues=[]) # Fail open to avoid blocking
+                    # Fail open to avoid blocking
+                    return QualityReport(score=100, issues=[])
 
             report = QualityReport.model_validate(data)
             return report
-            
+
         except Exception as e:
             logger.error(f"Critic evaluation failed: {e}")
             # Fail open if the critic fails

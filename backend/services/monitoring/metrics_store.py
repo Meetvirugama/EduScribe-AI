@@ -93,14 +93,19 @@ class MetricsStore:
         total = len(records)
         successes = sum(1 for r in records if r.get("success"))
         total_tokens = sum(r.get("total_tokens", 0) for r in records)
-        latencies = [r.get("latency_ms", 0) for r in records if r.get("success")]
+        latencies = [r.get("latency_ms", 0)
+                     for r in records if r.get("success")]
 
         # Per-provider breakdown
         providers: Dict[str, Dict] = {}
         for r in records:
             prov = r.get("provider", "unknown")
             if prov not in providers:
-                providers[prov] = {"requests": 0, "successes": 0, "total_tokens": 0, "latencies": []}
+                providers[prov] = {
+                    "requests": 0,
+                    "successes": 0,
+                    "total_tokens": 0,
+                    "latencies": []}
             providers[prov]["requests"] += 1
             if r.get("success"):
                 providers[prov]["successes"] += 1

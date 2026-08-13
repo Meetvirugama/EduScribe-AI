@@ -54,7 +54,8 @@ class MergedSection:
     @property
     def full_text(self) -> str:
         """Concatenated transcript text for this section."""
-        return " ".join(s.get("text", "").strip() for s in self.transcript_segments if s.get("text"))
+        return " ".join(s.get("text", "").strip()
+                        for s in self.transcript_segments if s.get("text"))
 
     @property
     def ocr_texts(self) -> List[str]:

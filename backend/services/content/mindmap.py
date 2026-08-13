@@ -12,27 +12,30 @@ from ..llm.model_selector import TaskType
 
 logger = logging.getLogger(__name__)
 
+
 class MindmapGenerator(BaseContentService):
-    async def generate_mindmap(self, context: LectureContext) -> Dict[str, Any]:
+    async def generate_mindmap(
+            self, context: LectureContext) -> Dict[str, Any]:
         """Generates a Mermaid.js mind map from the Detailed Learning Note."""
         logger.info("Generating mindmap from Detailed Learning Note...")
-        
+
         empty_result = {"topic": "", "format": "mermaid", "content": ""}
-        
+
         if not self.llm_manager:
             return empty_result
-        
+
         learning_note = context.detailed_notes_md
         if not learning_note.strip():
-            logger.warning("MindmapGenerator: detailed_notes_md is empty. Falling back to transcript.")
+            logger.warning(
+                "MindmapGenerator: detailed_notes_md is empty. Falling back to transcript.")
             learning_note = context.transcript
-        
+
         messages = self._render_messages(
             system_msg="You are an expert AI tutor. Output only valid JSON.",
             template_name="mindmap",
             learning_note=learning_note
         )
-        
+
         try:
             response = await self.llm_manager.generate(TaskType.MIND_MAP_GENERATION, messages)
             raw_dict = self._safe_dump(response, fallback=empty_result)

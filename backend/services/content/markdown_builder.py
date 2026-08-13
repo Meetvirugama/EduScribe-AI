@@ -1,7 +1,7 @@
 """
 services/content/markdown_builder.py — Phase 1: Unified Markdown Generator
 
-Merges the transcript segments and vision frames (OCR) into a single, 
+Merges the transcript segments and vision frames (OCR) into a single,
 structured Markdown document with chunk metadata. This becomes the single
 source of truth that all Phase 2 extraction services read from.
 
@@ -43,7 +43,8 @@ def build_unified_markdown(
         A string — structured GitHub Flavored Markdown document.
     """
     if not segments:
-        logger.warning("build_unified_markdown: no transcript segments provided.")
+        logger.warning(
+            "build_unified_markdown: no transcript segments provided.")
         return "# Lecture Content\n\n*No transcript available.*\n"
 
     video_id = metadata.get("video_id", "unknown")
@@ -56,7 +57,7 @@ def build_unified_markdown(
         f"",
     ]
 
-    # ── Build time-bounded chunks ──────────────────────────────────────────────
+    # ── Build time-bounded chunks ───────────────────────────────────────────
     chunks: List[Dict[str, Any]] = []
     current_segs: List[str] = []
     current_start: float = None
@@ -102,11 +103,11 @@ def build_unified_markdown(
             "text": " ".join(current_segs),
         })
 
-    # ── Build frame lookup by time_sec ────────────────────────────────────────
+    # ── Build frame lookup by time_sec ──────────────────────────────────────
     # frames is a list of dicts with keys: path, time_sec, ocr, scene_number
     sorted_frames = sorted(frames, key=lambda f: f.get("time_sec", 0.0))
 
-    # ── Render each chunk to Markdown ─────────────────────────────────────────
+    # ── Render each chunk to Markdown ───────────────────────────────────────
     for c in chunks:
         c_start = c["start"]
         c_end = c["end"]

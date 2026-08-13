@@ -18,7 +18,7 @@ Architecture rules:
 """
 import asyncio
 import logging
-from typing import Dict, Any, List
+
 
 from .context import LectureContext
 from ..llm.llm_manager import LLMManager
@@ -62,14 +62,16 @@ class ContentPipeline:
         # Phase 3 — Knowledge compiler
         self.detailed_notes_generator = DetailedNotesGenerator(llm_manager)
 
-    async def build_learning_context(self, merged_lecture: MergedLecture) -> LectureContext:
+    async def build_learning_context(
+            self, merged_lecture: MergedLecture) -> LectureContext:
         """
         Execute Phase 1 → Phase 2 → Phase 3 sequentially.
         Returns the fully populated LectureContext (with detailed_notes_md).
         """
-        logger.info(f"Starting content pipeline for video {merged_lecture.video_id}")
+        logger.info(
+            f"Starting content pipeline for video {merged_lecture.video_id}")
 
-        # ── Build initial context ──────────────────────────────────────────────
+        # ── Build initial context ────────────────────────────────────────────
         lecture_input = LectureInput(
             transcript=merged_lecture.full_transcript_text,
             metadata=merged_lecture.metadata,
@@ -104,7 +106,8 @@ class ContentPipeline:
             ],
             metadata=merged_lecture.metadata,
         )
-        logger.info(f"Phase 1 complete: unified_md ({len(context.unified_md)} chars)")
+        logger.info(
+            f"Phase 1 complete: unified_md ({len(context.unified_md)} chars)")
 
         # ══════════════════════════════════════════════════════════════════════
         # PHASE 2: Parallel Extractions
@@ -135,7 +138,8 @@ class ContentPipeline:
                 self.relationship_service.extract_relationships, context
             )
         else:
-            logger.warning("Phase 2: Skipping relationship extraction — concepts failed.")
+            logger.warning(
+                "Phase 2: Skipping relationship extraction — concepts failed.")
 
         logger.info("Phase 2 complete.")
 

@@ -10,7 +10,6 @@ from typing import List, Dict, Any, Optional
 import cv2
 
 from core.config import settings
-from services.vision.filtering.blur_detector import compute_laplacian_variance
 
 logger = logging.getLogger(__name__)
 
@@ -67,29 +66,47 @@ class FrameExtractorService:
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video file not found: {video_path}")
         if not scenes:
-            logger.warning("No scenes provided for video %s – skipping extraction.", video_id)
+            logger.warning(
+                "No scenes provided for video %s – skipping extraction.",
+                video_id)
             return []
 
         output_dir = self.get_video_frames_dir(video_id)
-        logger.info("Extracting frames for video %s into %s", video_id, output_dir)
+        logger.info(
+            "Extracting frames for video %s into %s",
+            video_id,
+            output_dir)
 
         try:
             frames = await asyncio.to_thread(
                 self._extract_frames_sync, video_path, video_id, scenes, output_dir
             )
-            
+
             # Save metadata per the optimization plan so it can be reused later
             import json
             metadata_path = os.path.join(output_dir, "frames.json")
             await asyncio.to_thread(
-                lambda: open(metadata_path, 'w').write(json.dumps(frames, indent=2))
+                lambda: open(
+                    metadata_path,
+                    'w').write(
+                    json.dumps(
+                        frames,
+                        indent=2))
             )
-            
-        except Exception as exc:
-            logger.error("Frame extraction failed for video %s: %s", video_id, exc)
-            raise FrameExtractionError(f"Frame extraction failed: {exc}") from exc
 
-        logger.info("Extracted %d frames and saved metadata to %s for video %s", len(frames), "frames.json", video_id)
+        except Exception as exc:
+            logger.error(
+                "Frame extraction failed for video %s: %s",
+                video_id,
+                exc)
+            raise FrameExtractionError(
+                f"Frame extraction failed: {exc}") from exc
+
+        logger.info(
+            "Extracted %d frames and saved metadata to %s for video %s",
+            len(frames),
+            "frames.json",
+            video_id)
         return frames
 
     def _extract_frames_sync(
@@ -102,13 +119,15 @@ class FrameExtractorService:
         """Synchronous frame extraction – runs inside asyncio.to_thread."""
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
-            raise FrameExtractionError(f"OpenCV could not open video: {video_path}")
+            raise FrameExtractionError(
+                f"OpenCV could not open video: {video_path}")
 
         extracted: List[Dict[str, Any]] = []
 
         try:
             for scene in scenes:
-                frame_info = self._extract_best_from_scene(cap, scene, output_dir, video_id)
+                frame_info = self._extract_best_from_scene(
+                    cap, scene, output_dir, video_id)
                 if frame_info:
                     extracted.append(frame_info)
         finally:
@@ -125,21 +144,21 @@ class FrameExtractorService:
     ) -> Optional[Dict[str, Any]]:
         """
         Adaptive Frame Extraction Strategy:
-        
+
         # What this does:
-        # Extracts the middle frame of a scene first, computes its sharpness, 
+        # Extracts the middle frame of a scene first, computes its sharpness,
         # and only takes a second fallback sample if the first is blurry.
-        # 
+        #
         # Why this was selected:
-        # We only sample the middle frame first because most scenes 
-        # contain stable content in the middle section. This reduces frame 
-        # decoding CPU cost by up to 80% compared to checking multiple 
+        # We only sample the middle frame first because most scenes
+        # contain stable content in the middle section. This reduces frame
+        # decoding CPU cost by up to 80% compared to checking multiple
         # fixed frames from every scene.
-        # 
+        #
         # Why alternatives were rejected:
-        # Batch processing all frames would cause Memory OOMs. Scanning 5 frames 
+        # Batch processing all frames would cause Memory OOMs. Scanning 5 frames
         # per scene wastes CPU on already sharp scenes.
-        # 
+        #
         # Expected CPU/Memory Impact:
         # Reduces peak memory to ~2 frames and cuts CPU decode overhead by 4x.
         """
@@ -154,13 +173,14 @@ class FrameExtractorService:
         midpoint_ms = start_ms + duration_ms // 2
         cap.set(cv2.CAP_PROP_POS_MSEC, midpoint_ms)
         ret, frame1 = cap.read()
-        
+
         if not ret or frame1 is None:
             logger.warning("Could not read frame from scene %d", scene_num)
             return None
 
         # Convert OpenCV BGR to grayscale and resize for fast blur check
-        # Resize to width 320 for speed, preserving aspect ratio, as per optimization plan
+        # Resize to width 320 for speed, preserving aspect ratio, as per
+        # optimization plan
         h, w = frame1.shape[:2]
         dim = (320, int(h * (320 / float(w))))
         gray1 = cv2.cvtColor(cv2.resize(frame1, dim), cv2.COLOR_BGR2GRAY)
@@ -177,9 +197,13 @@ class FrameExtractorService:
             cap.set(cv2.CAP_PROP_POS_MSEC, fallback_ms)
             ret2, frame2 = cap.read()
             if ret2 and frame2 is not None:
-                gray2 = cv2.cvtColor(cv2.resize(frame2, dim), cv2.COLOR_BGR2GRAY)
+                gray2 = cv2.cvtColor(
+                    cv2.resize(
+                        frame2,
+                        dim),
+                    cv2.COLOR_BGR2GRAY)
                 score2 = compute_laplacian_variance(gray2)
-                
+
                 if score2 > best_score:
                     best_score = score2
                     best_frame = frame2
@@ -188,7 +212,9 @@ class FrameExtractorService:
         # Step 3: Write to disk only ONCE
         filename = f"scene_{scene_num:04d}_{best_ts_ms}.jpg"
         frame_path = os.path.join(output_dir, filename)
-        success = cv2.imwrite(frame_path, best_frame, [cv2.IMWRITE_JPEG_QUALITY, 92])
+        success = cv2.imwrite(
+            frame_path, best_frame, [
+                cv2.IMWRITE_JPEG_QUALITY, 92])
         if not success:
             logger.error("Failed to write frame to disk: %s", frame_path)
             return None
@@ -198,7 +224,8 @@ class FrameExtractorService:
         # correct URL as: `http://localhost:5001/${frame.frame_path}`
         # e.g. "storage/frames/{video_id}/scene_0001_12345.jpg"
         # We store the absolute path separately for internal file-system ops.
-        web_relative_path = os.path.join("storage", "frames", video_id, filename)
+        web_relative_path = os.path.join(
+            "storage", "frames", video_id, filename)
         return {
             "scene_number": scene_num,
             "timestamp_ms": best_ts_ms,

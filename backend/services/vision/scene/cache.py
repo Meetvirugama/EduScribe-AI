@@ -3,11 +3,13 @@ In-memory and/or simple cache for scene detection results.
 """
 from typing import List, Dict, Any, Optional
 
+
 class SceneCache:
     """
     Scene results are cached because detecting scenes requires
     reading the entire video. Re-running detection wastes CPU time.
     """
+
     def __init__(self):
         self._cache = {}
         self.VERSION = "v2.0"
@@ -27,5 +29,6 @@ class SceneCache:
 
     def clear(self):
         self._cache.clear()
+
 
 scene_cache = SceneCache()

@@ -4,11 +4,13 @@ from enum import Enum
 import re
 from ..base_schema import BaseLLMOutput
 
+
 class QuestionType(str, Enum):
     MCQ = "mcq"
     TRUE_FALSE = "true_false"
     FILL_BLANK = "fill_blank"
     HOTS = "hots"
+
 
 class MindMapFormat(str, Enum):
     MERMAID = "mermaid"
@@ -18,6 +20,8 @@ class MindMapFormat(str, Enum):
 # ---------------------------------------------------------
 # Stage 1 — Lecture Analysis
 # ---------------------------------------------------------
+
+
 class LectureAnalysis(BaseLLMOutput):
     subject: str
     difficulty: int = Field(ge=1, le=5)
@@ -29,19 +33,23 @@ class LectureAnalysis(BaseLLMOutput):
 # ---------------------------------------------------------
 # Stage 2 — Topic Detection
 # ---------------------------------------------------------
+
+
 class Topic(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
     title: str
     start_time: str
     end_time: str
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
-    
+
     @field_validator("start_time", "end_time")
     @classmethod
     def validate_timestamp(cls, v: str) -> str:
         if not re.match(r"^\d{2}:\d{2}:\d{2}(\.\d+)?$", v):
-            raise ValueError("Timestamp must be in HH:MM:SS or HH:MM:SS.sss format")
+            raise ValueError(
+                "Timestamp must be in HH:MM:SS or HH:MM:SS.sss format")
         return v
+
 
 class TopicList(BaseLLMOutput):
     topics: List[Topic]
@@ -49,6 +57,8 @@ class TopicList(BaseLLMOutput):
 # ---------------------------------------------------------
 # Stage 3 — Subtopic Detection
 # ---------------------------------------------------------
+
+
 class SubtopicList(BaseLLMOutput):
     topic: str
     subtopics: List[str] = Field(min_length=1)
@@ -56,6 +66,8 @@ class SubtopicList(BaseLLMOutput):
 # ---------------------------------------------------------
 # Stage 4 — Knowledge Gap Analysis
 # ---------------------------------------------------------
+
+
 class KnowledgeGap(BaseLLMOutput):
     missing_definitions: List[str]
     missing_prerequisites: List[str]
@@ -65,6 +77,8 @@ class KnowledgeGap(BaseLLMOutput):
 # ---------------------------------------------------------
 # Stage 5 — Explanation
 # ---------------------------------------------------------
+
+
 class SubtopicExplanation(BaseLLMOutput):
     subtopic: str
     definition: str
@@ -74,12 +88,12 @@ class SubtopicExplanation(BaseLLMOutput):
     common_mistakes: List[str]
     key_takeaways: List[str]
     frame_references: List[str]
-    
+
     @property
     def word_count(self) -> int:
         full_text = " ".join([
-            self.definition, self.motivation, self.step_by_step, 
-            self.worked_example, " ".join(self.common_mistakes), 
+            self.definition, self.motivation, self.step_by_step,
+            self.worked_example, " ".join(self.common_mistakes),
             " ".join(self.key_takeaways)
         ])
         return len(full_text.split())
@@ -87,6 +101,8 @@ class SubtopicExplanation(BaseLLMOutput):
 # ---------------------------------------------------------
 # Stage 6 — Example Generation
 # ---------------------------------------------------------
+
+
 class ExampleSet(BaseLLMOutput):
     subtopic: str
     simple_examples: List[str]
@@ -99,6 +115,8 @@ class ExampleSet(BaseLLMOutput):
 # ---------------------------------------------------------
 # Stage 9 — Quiz Generation
 # ---------------------------------------------------------
+
+
 class QuizQuestion(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
     question: str
@@ -108,6 +126,7 @@ class QuizQuestion(BaseModel):
     explanation: str
     difficulty: int = Field(ge=1, le=5)
 
+
 class QuizSet(BaseLLMOutput):
     topic: str
     subtopic: str
@@ -116,20 +135,25 @@ class QuizSet(BaseLLMOutput):
 # ---------------------------------------------------------
 # Extras
 # ---------------------------------------------------------
+
+
 class Flashcard(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
     front: str
     back: str
     tags: Optional[List[str]] = None
 
+
 class FlashcardSet(BaseLLMOutput):
     topic: str
     flashcards: List[Flashcard]
+
 
 class MindMap(BaseLLMOutput):
     topic: str
     format: MindMapFormat
     content: str
+
 
 class GenericTextOutput(BaseLLMOutput):
     """Fallback schema for tasks that return unstructured text."""

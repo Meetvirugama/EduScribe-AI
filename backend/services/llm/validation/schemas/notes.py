@@ -21,18 +21,18 @@ from ..base_schema import BaseLLMOutput
 # ---------------------------------------------------------------------------
 
 class BloomLevel(str, Enum):
-    REMEMBER   = "remember"
+    REMEMBER = "remember"
     UNDERSTAND = "understand"
-    APPLY      = "apply"
-    ANALYZE    = "analyze"
-    EVALUATE   = "evaluate"
-    CREATE     = "create"
+    APPLY = "apply"
+    ANALYZE = "analyze"
+    EVALUATE = "evaluate"
+    CREATE = "create"
 
 
 class ImportanceLevel(str, Enum):
-    HIGH   = "high"
+    HIGH = "high"
     MEDIUM = "medium"
-    LOW    = "low"
+    LOW = "low"
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +78,7 @@ class SourceReferenceItem(BaseModel):
     timestamp_start: Optional[float] = None
     timestamp_end: Optional[float] = None
 
+
 class ConceptItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     name: str
@@ -85,6 +86,7 @@ class ConceptItem(BaseModel):
     importance: ImportanceLevel = ImportanceLevel.MEDIUM
     brief_description: str = ""
     sources: List[SourceReferenceItem] = Field(default_factory=list)
+
 
 class ConceptsOutput(BaseLLMOutput):
     concepts: List[ConceptItem] = Field(default_factory=list)
@@ -104,7 +106,8 @@ class LearningObjectiveItem(BaseModel):
 
 
 class LearningObjectivesOutput(BaseLLMOutput):
-    learning_objectives: List[LearningObjectiveItem] = Field(default_factory=list)
+    learning_objectives: List[LearningObjectiveItem] = Field(
+        default_factory=list)
     target_audience: str = ""
     estimated_study_time_minutes: int = Field(default=0, ge=0)
 
@@ -232,10 +235,12 @@ class AssessmentQuestion(BaseModel):
 # Phase 7 — Revision Sheet
 # ---------------------------------------------------------------------------
 
+
 class KeyDefinition(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
     term: str
     definition: str
+
 
 class RevisionSheetOutput(BaseLLMOutput):
     title: str = Field(min_length=1)
@@ -245,6 +250,7 @@ class RevisionSheetOutput(BaseLLMOutput):
     important_formulas: List[str] = Field(default_factory=list)
     priority_topics: List[str] = Field(default_factory=list)
     last_minute_tips: List[str] = Field(default_factory=list)
+
 
 class AssessmentsOutput(BaseLLMOutput):
     quiz_questions: List[AssessmentQuestion] = Field(default_factory=list)
@@ -338,12 +344,14 @@ class TechnicalQuestion(BaseModel):
     difficulty: str = "medium"
     topic: str = ""
 
+
 class ConceptualQuestion(BaseModel):
     model_config = ConfigDict(extra="ignore")
     question: str
     expected_answer_points: List[str] = Field(default_factory=list)
     difficulty: str = "medium"
     topic: str = ""
+
 
 class ScenarioQuestion(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -353,18 +361,23 @@ class ScenarioQuestion(BaseModel):
     difficulty: str = "medium"
     topic: str = ""
 
+
 class VivaQuestion(BaseModel):
     model_config = ConfigDict(extra="ignore")
     question: str
     follow_up: str = ""
     topic: str = ""
 
+
 class InterviewOutput(BaseLLMOutput):
     technical_questions: List[TechnicalQuestion] = Field(default_factory=list)
-    conceptual_questions: List[ConceptualQuestion] = Field(default_factory=list)
+    conceptual_questions: List[ConceptualQuestion] = Field(
+        default_factory=list)
     scenario_questions: List[ScenarioQuestion] = Field(default_factory=list)
     viva_questions: List[VivaQuestion] = Field(default_factory=list)
-    difficulty_breakdown: Dict[str, int] = Field(default_factory=lambda: {"easy": 0, "medium": 0, "hard": 0})
+    difficulty_breakdown: Dict[str, int] = Field(
+        default_factory=lambda: {"easy": 0, "medium": 0, "hard": 0})
+
 
 class KeyPointItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -374,8 +387,10 @@ class KeyPointItem(BaseModel):
     topic: str = ""
     sources: List[SourceReferenceItem] = Field(default_factory=list)
 
+
 class KeyPointsOutput(BaseLLMOutput):
     key_points: List[KeyPointItem] = Field(default_factory=list)
+
 
 class RelationshipItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -385,7 +400,6 @@ class RelationshipItem(BaseModel):
     explanation: str = ""
     sources: List[SourceReferenceItem] = Field(default_factory=list)
 
+
 class RelationshipsOutput(BaseLLMOutput):
     relationships: List[RelationshipItem] = Field(default_factory=list)
-
-

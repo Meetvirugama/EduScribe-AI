@@ -32,7 +32,7 @@ import yaml
 import time
 import logging
 from enum import Enum
-from typing import Any, Callable, Awaitable, Optional, Tuple, List, Dict
+from typing import Any, Callable, Awaitable, Optional, List, Dict
 from dataclasses import dataclass
 
 from tenacity import RetryError
@@ -53,18 +53,26 @@ class FallbackModel:
     supports_vision: bool
     max_context_window: int
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "litellm_fallback_config.yaml")
+
+CONFIG_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "..",
+    "..",
+    "litellm_fallback_config.yaml")
+
 
 def load_fallback_chain() -> List[FallbackModel]:
     try:
         if not os.path.exists(CONFIG_PATH):
-            logger.warning(f"Config file not found at {CONFIG_PATH}. Using empty chain.")
+            logger.warning(
+                f"Config file not found at {CONFIG_PATH}. Using empty chain.")
             return []
         with open(CONFIG_PATH, "r") as f:
             config = yaml.safe_load(f)
         chain = []
         fallback_cfg = config.get("fallback_chain", {})
-        for tier_num, tier_key in enumerate(["tier1", "tier2", "tier3", "tier4"], start=1):
+        for tier_num, tier_key in enumerate(
+                ["tier1", "tier2", "tier3", "tier4"], start=1):
             for entry in fallback_cfg.get(tier_key, []):
                 chain.append(FallbackModel(
                     provider=entry.get("provider", ""),
@@ -78,50 +86,56 @@ def load_fallback_chain() -> List[FallbackModel]:
         logger.error(f"Failed to load fallback chain from YAML: {e}")
         return []
 
+
 FALLBACK_CHAIN: list[FallbackModel] = load_fallback_chain()
+
 
 class CircuitState(Enum):
     CLOSED = "CLOSED"      # Normal operation
     OPEN = "OPEN"          # Failing, fast-fail requests
-    HALF_OPEN = "HALF_OPEN" # Testing if healthy again
+    HALF_OPEN = "HALF_OPEN"  # Testing if healthy again
+
 
 class CircuitBreaker:
-    def __init__(self, failure_threshold: int = 3, cooldown_seconds: int = 120, rate_limit_cooldown: int = 60):
+    def __init__(self, failure_threshold: int = 3,
+                 cooldown_seconds: int = 120, rate_limit_cooldown: int = 60):
         self.state: CircuitState = CircuitState.CLOSED
         self.failure_count = 0
         self.failure_threshold = failure_threshold
         self.cooldown_seconds = cooldown_seconds
         self.rate_limit_cooldown = rate_limit_cooldown
         self.cooldown_until = 0.0
-        
+
     def record_failure(self, is_rate_limit: bool = False):
         now = time.time()
         if is_rate_limit:
             self.cooldown_until = now + self.rate_limit_cooldown
-            logger.warning(f"Circuit breaker activated (Rate Limit). Cooldown for {self.rate_limit_cooldown}s.")
+            logger.warning(
+                f"Circuit breaker activated (Rate Limit). Cooldown for {self.rate_limit_cooldown}s.")
             return
-            
+
         self.failure_count += 1
         if self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN
             self.cooldown_until = now + self.cooldown_seconds
-            logger.warning(f"Circuit breaker OPENED. Cooldown for {self.cooldown_seconds}s.")
-            
+            logger.warning(
+                f"Circuit breaker OPENED. Cooldown for {self.cooldown_seconds}s.")
+
     def record_success(self):
         self.failure_count = 0
         self.state = CircuitState.CLOSED
         self.cooldown_until = 0.0
-        
+
     def can_execute(self) -> bool:
         now = time.time()
         if now < self.cooldown_until:
             return False
-            
+
         if self.state == CircuitState.OPEN:
             # Cooldown passed, try half-open
             self.state = CircuitState.HALF_OPEN
             return True
-            
+
         return True
 
 
@@ -149,7 +163,7 @@ class FallbackManager:
     def __init__(self):
         self.circuit_breakers: Dict[str, CircuitBreaker] = {}
         self.stats = ProviderStats()
-        
+
     def _get_circuit_breaker(self, provider: str) -> CircuitBreaker:
         if provider not in self.circuit_breakers:
             self.circuit_breakers[provider] = CircuitBreaker()
@@ -197,26 +211,32 @@ class FallbackManager:
                 model=preferred_model,
                 tier=0,                    # Highest priority
                 supports_vision=True,      # assume True to bypass filter
-                max_context_window=2000000 # assume large to bypass filter
+                max_context_window=2000000  # assume large to bypass filter
             )
-            base_chain = [entry for entry in chain if not (entry.provider == preferred_provider and entry.model == preferred_model)]
-            base_chain.sort(key=lambda m: (m.tier, -self.stats.calculate_score(m.provider, m.model)))
+            base_chain = [
+                entry for entry in chain if not (
+                    entry.provider == preferred_provider and entry.model == preferred_model)]
+            base_chain.sort(key=lambda m: (m.tier, -
+                                           self.stats.calculate_score(m.provider, m.model)))
             chain = [preferred_fallback] + base_chain
         else:
-            chain.sort(key=lambda m: (m.tier, -self.stats.calculate_score(m.provider, m.model)))
+            chain.sort(key=lambda m: (m.tier, -
+                                      self.stats.calculate_score(m.provider, m.model)))
 
         last_error: Optional[Exception] = None
 
         for fallback_model in chain:
             provider = fallback_model.provider
             model = fallback_model.model
-            
+
             # Capability Filtering
             if required_vision and not fallback_model.supports_vision:
-                logger.debug(f"fallback_manager: skipping {provider}/{model} — lacks vision capability")
+                logger.debug(
+                    f"fallback_manager: skipping {provider}/{model} — lacks vision capability")
                 continue
             if min_context_window > fallback_model.max_context_window:
-                logger.debug(f"fallback_manager: skipping {provider}/{model} — insufficient context window ({fallback_model.max_context_window} < {min_context_window})")
+                logger.debug(
+                    f"fallback_manager: skipping {provider}/{model} — insufficient context window ({fallback_model.max_context_window} < {min_context_window})")
                 continue
             breaker = self._get_circuit_breaker(provider)
             if not breaker.can_execute():
@@ -256,11 +276,12 @@ class FallbackManager:
                     provider,
                     model,
                 )
-                
+
                 latency = time.time() - start_time
-                self.stats.record_call(provider, model, success=True, latency=latency)
+                self.stats.record_call(
+                    provider, model, success=True, latency=latency)
                 breaker.record_success()
-                
+
                 # Record successful request against quota
                 tokens_used = (
                     result.get("usage", {}).get("total_tokens", 0)
@@ -278,11 +299,12 @@ class FallbackManager:
 
             except RetryError as exc:
                 latency = time.time() - start_time
-                self.stats.record_call(provider, model, success=False, latency=latency)
-                
+                self.stats.record_call(
+                    provider, model, success=False, latency=latency)
+
                 is_429 = "429" in str(exc) or "rate limit" in str(exc).lower()
                 breaker.record_failure(is_rate_limit=is_429)
-                
+
                 logger.warning(
                     "fallback_manager: %s / %s failed after all retries — "
                     "descending to next provider in chain",
@@ -294,8 +316,9 @@ class FallbackManager:
 
             except Exception as exc:
                 latency = time.time() - start_time
-                self.stats.record_call(provider, model, success=False, latency=latency)
-                
+                self.stats.record_call(
+                    provider, model, success=False, latency=latency)
+
                 breaker.record_failure(is_rate_limit=False)
                 logger.error(
                     "fallback_manager: unexpected error from %s / %s: %s",
@@ -311,22 +334,6 @@ class FallbackManager:
             "The pipeline will queue this request until quotas reset (midnight UTC). "
             f"Last error: {last_error}"
         )
-
-    @staticmethod
-    def get_fallback_chain() -> list[tuple[str, str]]:
-        """Return the full fallback chain for inspection / logging."""
-        return [(entry.provider, entry.model) for entry in FALLBACK_CHAIN]
-
-    @staticmethod
-    def get_tier(provider: str, model: str) -> int:
-        """
-        Return the tier (1–4) for a given (provider, model) entry,
-        or 0 if the entry is not in the chain.
-        """
-        for entry in FALLBACK_CHAIN:
-            if entry.provider == provider and entry.model == model:
-                return entry.tier
-        return 0
 
 
 class AllProvidersExhaustedError(Exception):

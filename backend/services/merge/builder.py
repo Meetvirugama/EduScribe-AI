@@ -19,10 +19,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-import uuid
 from typing import Any, Dict, List, Optional
 
-from core.config import settings
 from services.merge.models import MergedFrame, MergedLecture, MergedSection
 
 logger = logging.getLogger(__name__)
@@ -74,7 +72,9 @@ class MergeBuilder:
         frames = sorted(frames_data, key=lambda f: float(f.get("time_sec", 0)))
 
         if not segments:
-            logger.warning("MergeBuilder: no transcript segments for video %s", video_id)
+            logger.warning(
+                "MergeBuilder: no transcript segments for video %s",
+                video_id)
 
         # ── 2. Build sections from scene boundaries ──────────────────────────
         sections = self._build_sections(segments, frames, video_id)
@@ -100,7 +100,8 @@ class MergeBuilder:
 
         logger.info(
             "MergeBuilder: built %d sections, %d frames, %d segments for video %s",
-            len(sections), sum(len(s.frames) for s in sections), len(segments), video_id,
+            len(sections), sum(len(s.frames)
+                               for s in sections), len(segments), video_id,
         )
         return lecture
 
@@ -126,12 +127,14 @@ class MergeBuilder:
         scene_boundaries = self._extract_scene_boundaries(frames)
 
         if not scene_boundaries:
-            # No frame data — create one section per significant transcript pause
+            # No frame data — create one section per significant transcript
+            # pause
             return self._sections_from_transcript(segments, video_id)
 
         sections: List[MergedSection] = []
 
-        for i, (scene_start, scene_end, scene_num) in enumerate(scene_boundaries):
+        for i, (scene_start, scene_end, scene_num) in enumerate(
+                scene_boundaries):
             section_id = f"{video_id}_sec_{i:04d}"
 
             # Gather transcript segments that overlap with this scene window
@@ -152,8 +155,10 @@ class MergeBuilder:
                     timestamp_sec=float(f.get("time_sec", 0)),
                     scene_number=int(f.get("scene_number", scene_num)),
                     ocr_text=f.get("ocr") or None,
-                    importance_score=float(f.get("visual_importance_score", 0.0)),
-                    transcript_similarity=float(f.get("transcript_similarity", 0.0)),
+                    importance_score=float(
+                        f.get("visual_importance_score", 0.0)),
+                    transcript_similarity=float(
+                        f.get("transcript_similarity", 0.0)),
                 )
                 for f in frames
                 if int(f.get("scene_number", -1)) == scene_num
@@ -175,12 +180,14 @@ class MergeBuilder:
             for sec in sections
             for s in sec.transcript_segments
         }
-        orphan_segs = [s for s in segments if s.get("start") not in mapped_seg_starts]
+        orphan_segs = [s for s in segments if s.get(
+            "start") not in mapped_seg_starts]
         if orphan_segs:
             orphan_section = MergedSection(
                 section_id=f"{video_id}_sec_orphan",
                 start_time=float(orphan_segs[0].get("start", 0)),
-                end_time=float(orphan_segs[-1].get("end", orphan_segs[-1].get("start", 0))),
+                end_time=float(
+                    orphan_segs[-1].get("end", orphan_segs[-1].get("start", 0))),
                 transcript_segments=orphan_segs,
                 frames=[],
                 scene_numbers=[],
@@ -214,7 +221,8 @@ class MergeBuilder:
         for i, sn in enumerate(scene_nums):
             times = scene_times[sn]
             scene_start = min(times)
-            # Scene end = start of next scene or max time of current scene + small buffer
+            # Scene end = start of next scene or max time of current scene +
+            # small buffer
             if i + 1 < len(scene_nums):
                 next_sn = scene_nums[i + 1]
                 scene_end = min(scene_times[next_sn])
@@ -239,16 +247,25 @@ class MergeBuilder:
         current_group: List[Dict] = [segments[0]]
 
         for seg in segments[1:]:
-            prev_end = float(current_group[-1].get("end", current_group[-1].get("start", 0)))
+            prev_end = float(
+                current_group[-1].get("end", current_group[-1].get("start", 0)))
             curr_start = float(seg.get("start", 0))
             if curr_start - prev_end > PAUSE_THRESHOLD:
-                sections.append(self._group_to_section(current_group, video_id, len(sections)))
+                sections.append(
+                    self._group_to_section(
+                        current_group,
+                        video_id,
+                        len(sections)))
                 current_group = [seg]
             else:
                 current_group.append(seg)
 
         if current_group:
-            sections.append(self._group_to_section(current_group, video_id, len(sections)))
+            sections.append(
+                self._group_to_section(
+                    current_group,
+                    video_id,
+                    len(sections)))
 
         return sections
 
@@ -265,12 +282,13 @@ class MergeBuilder:
         )
 
 
-def _overlaps(seg_start: float, seg_end: float, win_start: float, win_end: float) -> bool:
+def _overlaps(seg_start: float, seg_end: float,
+              win_start: float, win_end: float) -> bool:
     """True if [seg_start, seg_end] overlaps with [win_start, win_end]."""
     return seg_start <= win_end and seg_end >= win_start
 
 
-# ── Serialise / Deserialise ───────────────────────────────────────────────────
+# ── Serialise / Deserialise ─────────────────────────────────────────────
 
 def merged_lecture_to_dict(lecture: MergedLecture) -> Dict[str, Any]:
     """Serialize MergedLecture to a JSON-safe dict."""
@@ -346,7 +364,8 @@ def save_merged_lecture(lecture: MergedLecture, output_dir: str) -> str:
     data = merged_lecture_to_dict(lecture)
     with open(json_path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False)
-    logger.info("MergedLecture saved to %s (%d bytes)", json_path, os.path.getsize(json_path))
+    logger.info("MergedLecture saved to %s (%d bytes)",
+                json_path, os.path.getsize(json_path))
     return json_path
 
 
@@ -381,7 +400,8 @@ def render_merged_lecture_md(lecture: MergedLecture, output_dir: str) -> str:
     for sec in lecture.sections:
         start_fmt = _fmt_time(sec.start_time)
         end_fmt = _fmt_time(sec.end_time)
-        lines.append(f"\n## Section `{sec.section_id}` [{start_fmt} → {end_fmt}]\n")
+        lines.append(
+            f"\n## Section `{sec.section_id}` [{start_fmt} → {end_fmt}]\n")
 
         if sec.transcript_segments:
             lines.append("**Transcript:**\n")

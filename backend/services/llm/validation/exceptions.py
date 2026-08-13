@@ -5,12 +5,14 @@ class ResponseParseError(Exception):
     """
     pass
 
+
 class JSONExtractionError(Exception):
     """
     Raised when JSON cannot be extracted or repaired from the LLM response.
     Treated as a transient error to trigger a retry.
     """
     pass
+
 
 class SchemaValidationError(Exception):
     """

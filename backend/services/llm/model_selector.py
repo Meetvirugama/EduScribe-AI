@@ -27,7 +27,7 @@ Capability Classes:
 """
 
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Optional
 from dataclasses import dataclass
 
 
@@ -35,55 +35,55 @@ class TaskType(Enum):
     """All task types actively executed by the EduScribe AI LLM pipeline."""
 
     # ── Phase 1 – Content Preparation ────────────────────────────────────────
-    LECTURE_ANALYSIS            = "lecture_analysis"
-    TRANSCRIPT_CLEANING         = "transcript_cleaning"
-    METADATA_EXTRACTION         = "metadata_extraction"
+    LECTURE_ANALYSIS = "lecture_analysis"
+    TRANSCRIPT_CLEANING = "transcript_cleaning"
+    METADATA_EXTRACTION = "metadata_extraction"
 
     # ── Phase 2 – Content Understanding ──────────────────────────────────────
-    TOPIC_DETECTION             = "topic_detection"
-    SUBTOPIC_DETECTION          = "subtopic_detection"
-    CONCEPT_EXTRACTION          = "concept_extraction"
-    KEYWORD_EXTRACTION          = "keyword_extraction"
-    KEY_POINTS_EXTRACTION       = "key_points_extraction"
-    RELATIONSHIP_EXTRACTION     = "relationship_extraction"
-    EXAMPLE_EXTRACTION          = "example_extraction"
-    LEARNING_OBJECTIVE_DETECTION= "learning_objective_detection"
-    PREREQUISITE_DETECTION      = "prerequisite_detection"
-    DEPENDENCY_DETECTION        = "dependency_detection"
-    KNOWLEDGE_GAP_ANALYSIS      = "knowledge_gap_analysis"
-    DIFFICULTY_CLASSIFICATION   = "difficulty_classification"
+    TOPIC_DETECTION = "topic_detection"
+    SUBTOPIC_DETECTION = "subtopic_detection"
+    CONCEPT_EXTRACTION = "concept_extraction"
+    KEYWORD_EXTRACTION = "keyword_extraction"
+    KEY_POINTS_EXTRACTION = "key_points_extraction"
+    RELATIONSHIP_EXTRACTION = "relationship_extraction"
+    EXAMPLE_EXTRACTION = "example_extraction"
+    LEARNING_OBJECTIVE_DETECTION = "learning_objective_detection"
+    PREREQUISITE_DETECTION = "prerequisite_detection"
+    DEPENDENCY_DETECTION = "dependency_detection"
+    KNOWLEDGE_GAP_ANALYSIS = "knowledge_gap_analysis"
+    DIFFICULTY_CLASSIFICATION = "difficulty_classification"
 
     # ── Phase 3 – Knowledge Enrichment ───────────────────────────────────────
-    DEFINITION_GENERATION       = "definition_generation"
-    DETAILED_EXPLANATION_GEN    = "detailed_explanation_generation"
-    STEP_BY_STEP_EXPLANATION    = "step_by_step_explanation"
-    FORMULA_EXPLANATION         = "formula_explanation"
-    REAL_WORLD_APPLICATIONS     = "real_world_applications"
-    INDUSTRY_USE_CASES          = "industry_use_cases"
-    DETAILED_NOTES              = "detailed_notes"
-    CHUNK_NOTES_GENERATION      = "chunk_notes_generation"
-    
+    DEFINITION_GENERATION = "definition_generation"
+    DETAILED_EXPLANATION_GEN = "detailed_explanation_generation"
+    STEP_BY_STEP_EXPLANATION = "step_by_step_explanation"
+    FORMULA_EXPLANATION = "formula_explanation"
+    REAL_WORLD_APPLICATIONS = "real_world_applications"
+    INDUSTRY_USE_CASES = "industry_use_cases"
+    DETAILED_NOTES = "detailed_notes"
+    CHUNK_NOTES_GENERATION = "chunk_notes_generation"
+
     # Redesigned Phase 3 Tasks
-    LEARNING_PLAN_GENERATION    = "learning_plan_generation"
-    TOPIC_NOTE_WRITING          = "topic_note_writing"
-    ACCURACY_CHECK              = "accuracy_check"
-    PEDAGOGY_CHECK              = "pedagogy_check"
-    NOTE_REPAIR                 = "note_repair"
+    LEARNING_PLAN_GENERATION = "learning_plan_generation"
+    TOPIC_NOTE_WRITING = "topic_note_writing"
+    ACCURACY_CHECK = "accuracy_check"
+    PEDAGOGY_CHECK = "pedagogy_check"
+    NOTE_REPAIR = "note_repair"
 
     # ── Phase 4 – Educational Enhancement ────────────────────────────────────
-    EXAMPLE_GENERATION          = "example_generation"
-    INTERVIEW_PERSPECTIVE       = "interview_perspective"
+    EXAMPLE_GENERATION = "example_generation"
+    INTERVIEW_PERSPECTIVE = "interview_perspective"
 
     # ── Phase 5 – Assessment Generation ──────────────────────────────────────
-    QUIZ_GENERATION             = "quiz_generation"
-    FLASHCARD_GENERATION        = "flashcard_generation"
-    MIND_MAP_GENERATION         = "mind_map"
+    QUIZ_GENERATION = "quiz_generation"
+    FLASHCARD_GENERATION = "flashcard_generation"
+    MIND_MAP_GENERATION = "mind_map"
 
     # ── Phase 6 – Note Organization ──────────────────────────────────────────
-    REVISION_GENERATION         = "revision_generation"
+    REVISION_GENERATION = "revision_generation"
 
     # ── Phase 7 – Quality Assurance ──────────────────────────────────────────
-    FACT_VERIFICATION           = "fact_verification"
+    FACT_VERIFICATION = "fact_verification"
 
 
 @dataclass
@@ -98,10 +98,10 @@ class ModelConfig:
         temperature: Sampling temperature. Lower = more deterministic.
         max_tokens:  Maximum completion tokens for this task type.
     """
-    primary:     str
-    secondary:   str
-    emergency:   str
-    max_tokens:  int
+    primary: str
+    secondary: str
+    emergency: str
+    max_tokens: int
     temperature: Optional[float] = None
 
 
@@ -111,30 +111,30 @@ class ModelConfig:
 # ---------------------------------------------------------------------------
 
 # ── Capability: Complex Reasoning & Long Context Analysis ──────────────────
-_COMPLEX_PRIMARY   = "groq/llama-3.3-70b-versatile"
+_COMPLEX_PRIMARY = "groq/llama-3.3-70b-versatile"
 _COMPLEX_SECONDARY = "cohere/command-a-plus-05-2026"
 _COMPLEX_EMERGENCY = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 
 # ── Capability: Cleaning, Formatting & Fast Processing ────────────────────
-_FAST_PRIMARY   = "groq/llama-3.3-70b-versatile"
+_FAST_PRIMARY = "groq/llama-3.3-70b-versatile"
 _FAST_SECONDARY = "groq/llama-3.1-8b-instant"
 _FAST_EMERGENCY = "cohere/command-a-03-2025"
 
 # ── Capability: Code & Math Generation ────────────────────────────────────
-_CODE_PRIMARY   = "cloudflare/@cf/moonshotai/kimi-k2.7-code"
+_CODE_PRIMARY = "cloudflare/@cf/moonshotai/kimi-k2.7-code"
 _CODE_SECONDARY = "groq/llama-3.3-70b-versatile"
 _CODE_EMERGENCY = "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct"
 
 # ── Capability: Vision & Multimodal Analysis ──────────────────────────────
-_FAST_PRIMARY    = "groq/llama-3.1-8b-instant"
-_FAST_SECONDARY  = "gemini/gemini-1.5-flash"
-_FAST_EMERGENCY  = "cloudflare/meta/llama-3.1-8b-instruct"
+_FAST_PRIMARY = "groq/llama-3.1-8b-instant"
+_FAST_SECONDARY = "gemini/gemini-1.5-flash"
+_FAST_EMERGENCY = "cloudflare/meta/llama-3.1-8b-instruct"
 
-_COMPLEX_PRIMARY   = "openrouter/openai/gpt-4o-mini"
+_COMPLEX_PRIMARY = "openrouter/openai/gpt-4o-mini"
 _COMPLEX_SECONDARY = "openrouter/openai/gpt-4o-mini"
 _COMPLEX_EMERGENCY = "groq/llama-3.3-70b-versatile"
 
-_VISION_PRIMARY   = "gemini/gemini-2.5-pro"
+_VISION_PRIMARY = "gemini/gemini-2.5-pro"
 _VISION_SECONDARY = "gemini/gemini-2.5-flash"
 _VISION_EMERGENCY = "cloudflare/@cf/meta/llama-3.2-11b-vision-instruct"
 

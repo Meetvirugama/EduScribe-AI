@@ -27,7 +27,8 @@ class WhisperService:
     def __init__(self):
         os.makedirs(settings.TRANSCRIPT_DIR, exist_ok=True)
         # Model is lazy-loaded on first transcription request.
-        # Thread lock prevents concurrent load attempts from spawning duplicate models.
+        # Thread lock prevents concurrent load attempts from spawning duplicate
+        # models.
         self.model = None
         self._model_lock = threading.Lock()
 
@@ -64,7 +65,8 @@ class WhisperService:
         if self.model is not None:
             with self._model_lock:
                 if self.model is not None:
-                    logger.info("Unloading faster-whisper model to free RAM for OCR pipeline.")
+                    logger.info(
+                        "Unloading faster-whisper model to free RAM for OCR pipeline.")
                     del self.model
                     self.model = None
                     gc.collect()
@@ -83,8 +85,10 @@ class WhisperService:
         Returns:
             dict with keys: json_path, txt_path, language, word_count
         """
-        transcript_json_path = os.path.join(settings.TRANSCRIPT_DIR, f"{video_id}.json")
-        transcript_txt_path = os.path.join(settings.TRANSCRIPT_DIR, f"{video_id}.txt")
+        transcript_json_path = os.path.join(
+            settings.TRANSCRIPT_DIR, f"{video_id}.json")
+        transcript_txt_path = os.path.join(
+            settings.TRANSCRIPT_DIR, f"{video_id}.txt")
 
         def _process():
             model = self._get_model()

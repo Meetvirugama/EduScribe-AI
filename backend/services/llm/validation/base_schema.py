@@ -1,6 +1,6 @@
 import time
-from typing import Optional, Any
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class BaseLLMOutput(BaseModel):
     """
@@ -17,6 +17,6 @@ class BaseLLMOutput(BaseModel):
     total_tokens: int = Field(default=0)
     schema_version: str = Field(default="1.0")
     created_at: float = Field(default_factory=time.time)
-    
+
     # Confidence score (optional, overridable by subclasses)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)

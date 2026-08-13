@@ -77,7 +77,8 @@ PROVIDER_FREE_TIER_LIMITS: dict[str, dict] = {
         "context_window": 8_192,
     },
     # Cohere — free tier: 20 RPM, 1,000 calls/month (trial key)
-    # Key purposes: K1=Reranking, K2=Embeddings, K3=Search, K4=Backup, K5=HighTraffic
+    # Key purposes: K1=Reranking, K2=Embeddings, K3=Search, K4=Backup,
+    # K5=HighTraffic
     "cohere": {
         "rpm": 20,
         "rpd": None,
@@ -86,7 +87,8 @@ PROVIDER_FREE_TIER_LIMITS: dict[str, dict] = {
     },
 
     # Cloudflare Workers AI — free tier: 10,000 neurons/day
-    # Vision Router / Edge: K1=Llama, K2=BGE-embed, K3=Whisper, K4=EdgeChat, K5=Backup
+    # Vision Router / Edge: K1=Llama, K2=BGE-embed, K3=Whisper, K4=EdgeChat,
+    # K5=Backup
     "cloudflare": {
         "rpm": 60,
         "rpd": None,
@@ -94,7 +96,6 @@ PROVIDER_FREE_TIER_LIMITS: dict[str, dict] = {
         "context_window": 32_000,
     },
 }
-
 
 
 class QuotaTracker:
@@ -127,7 +128,8 @@ class QuotaTracker:
     def _connect_redis(self, redis_url: Optional[str]) -> None:
         """Attempt to connect to Redis; fall back to in-memory on failure."""
         import os
-        url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        url = redis_url or os.environ.get(
+            "REDIS_URL", "redis://localhost:6379/0")
         try:
             import redis as redis_lib
             self._redis = redis_lib.from_url(url, decode_responses=True)
@@ -231,7 +233,8 @@ class QuotaTracker:
         )
         for p in providers_to_reset:
             self._reset_provider(p)
-            logger.info("quota_tracker: reset daily counters for provider '%s'", p)
+            logger.info(
+                "quota_tracker: reset daily counters for provider '%s'", p)
 
     # ---------------------------------------------------------------------------
     # Internal helpers — Redis vs. in-memory
@@ -276,7 +279,9 @@ class QuotaTracker:
             try:
                 pipe = self._redis.pipeline()
                 pipe.incr(self._rpd_key(provider))
-                pipe.expire(self._rpd_key(provider), self._seconds_until_midnight_utc())
+                pipe.expire(
+                    self._rpd_key(provider),
+                    self._seconds_until_midnight_utc())
                 pipe.execute()
                 return
             except Exception:
@@ -290,7 +295,9 @@ class QuotaTracker:
             try:
                 pipe = self._redis.pipeline()
                 pipe.incrby(self._token_key(provider), tokens)
-                pipe.expire(self._token_key(provider), self._seconds_until_midnight_utc())
+                pipe.expire(
+                    self._token_key(provider),
+                    self._seconds_until_midnight_utc())
                 pipe.execute()
                 return
             except Exception:
@@ -302,7 +309,9 @@ class QuotaTracker:
     def _reset_provider(self, provider: str) -> None:
         if self._redis:
             try:
-                self._redis.delete(self._rpd_key(provider), self._token_key(provider))
+                self._redis.delete(
+                    self._rpd_key(provider),
+                    self._token_key(provider))
                 return
             except Exception:
                 pass

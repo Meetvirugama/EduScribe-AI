@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 
+
 @dataclass
 class TranscriptSegment:
     index: int
@@ -11,6 +12,7 @@ class TranscriptSegment:
     speaker: Optional[str] = None
     confidence: float = 1.0
 
+
 @dataclass
 class CanonicalTranscript:
     video_id: str
@@ -18,7 +20,7 @@ class CanonicalTranscript:
     language: str
     segments: List[TranscriptSegment] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     @property
     def total_duration(self) -> float:
         if not self.segments:

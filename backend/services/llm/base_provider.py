@@ -9,7 +9,7 @@ LLD Reference: §15.3 Folder Structure, §15 LLM Provider Architecture
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 
 class BaseProvider(ABC):

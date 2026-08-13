@@ -1,8 +1,9 @@
 from urllib.parse import urlparse
 from typing import Dict, Optional
 
+
 class URLNormalizer:
-    
+
     _ALLOWED_HOSTNAMES = {
         "www.youtube.com", "youtube.com", "youtu.be",
         "m.youtube.com", "music.youtube.com",
@@ -16,16 +17,16 @@ class URLNormalizer:
         """
         if not url:
             raise ValueError("empty URL")
-            
+
         parsed = urlparse(url)
-        
+
         if parsed.netloc not in URLNormalizer._ALLOWED_HOSTNAMES:
             raise ValueError(f"unsupported domain: {parsed.netloc}")
-            
+
         video_id = URLNormalizer._extract_video_id(url)
         if not video_id:
             raise ValueError("missing video ID")
-            
+
         return {
             "source": "youtube",
             "video_id": video_id

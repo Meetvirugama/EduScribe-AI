@@ -7,6 +7,7 @@ Converts structured LLM JSON outputs into consistent Markdown.
 
 from typing import Dict, Any, List
 
+
 class MarkdownRenderer:
     """Renders structured topic notes into Markdown."""
 
@@ -17,7 +18,7 @@ class MarkdownRenderer:
         Gracefully skips empty or missing sections.
         """
         md = []
-        
+
         title = topic_data.get("title", "Untitled Topic")
         md.append(f"## {title}")
         md.append("")
@@ -99,18 +100,19 @@ class MarkdownRenderer:
         return "\n".join(md)
 
     @staticmethod
-    def compile_final_notes(lecture_title: str, topic_markdowns: List[str]) -> str:
+    def compile_final_notes(lecture_title: str,
+                            topic_markdowns: List[str]) -> str:
         """Assembles the final comprehensive detailed notes."""
         md = []
         md.append(f"# {lecture_title}")
         md.append("")
-        
+
         md.append("## Detailed Notes")
         md.append("")
-        
+
         for t_md in topic_markdowns:
             md.append(t_md)
             md.append("---")
             md.append("")
-            
+
         return "\n".join(md)

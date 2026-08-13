@@ -47,8 +47,10 @@ PIPELINE_CONFIG = {
     "max_frames_per_scene": 5
 }
 
+
 class VisionPipelineError(Exception):
     """Top-level error for the vision pipeline."""
+
 
 @dataclass
 class ProcessingContext:
@@ -61,7 +63,7 @@ class ProcessingContext:
     scene_count: int = 0
     frames_extracted: int = 0
     errors: List[str] = field(default_factory=list)
-    
+
     # Checkpoints
     scene_completed: bool = False
     frames_completed: bool = False
@@ -91,7 +93,9 @@ class VisionPipeline:
         # ------------------------------------------------------------------ #
         transcript_path: Optional[str] = await self._get_transcript_path(video_id)
         if not transcript_path:
-            logger.warning("No transcript found for %s – OCR matching will score 0.", video_id)
+            logger.warning(
+                "No transcript found for %s – OCR matching will score 0.",
+                video_id)
 
         # ------------------------------------------------------------------ #
         # 2. Scene detection
@@ -103,7 +107,8 @@ class VisionPipeline:
             ctx.scene_count = len(scenes)
         except SceneDetectionError as exc:
             ctx.errors.append(str(exc))
-            raise VisionPipelineError(f"Scene detection failed: {exc}") from exc
+            raise VisionPipelineError(
+                f"Scene detection failed: {exc}") from exc
 
         if not scenes:
             return self._abort_early(ctx)
@@ -120,7 +125,8 @@ class VisionPipeline:
             ctx.frames_extracted = len(raw_frames)
         except FrameExtractionError as exc:
             ctx.errors.append(str(exc))
-            raise VisionPipelineError(f"Frame extraction failed: {exc}") from exc
+            raise VisionPipelineError(
+                f"Frame extraction failed: {exc}") from exc
 
         if not raw_frames:
             return self._abort_early(ctx)
@@ -175,7 +181,8 @@ class VisionPipeline:
         # 8. Scoring & selection
         # ------------------------------------------------------------------ #
         ctx.current_stage = "ranking"
-        scored_frames = rank_and_trim_frames(frames_with_ocr, top_n=top_frames_per_group)
+        scored_frames = rank_and_trim_frames(
+            frames_with_ocr, top_n=top_frames_per_group)
         ctx.ranking_completed = True
 
         # ------------------------------------------------------------------ #
@@ -183,7 +190,7 @@ class VisionPipeline:
         # ------------------------------------------------------------------ #
         ctx.current_stage = "persistence"
         await self._persist_bulk(video_id, scored_frames)
-        
+
         if PIPELINE_CONFIG["delete_unused_frames"]:
             self._cleanup_unused_frames(scored_frames, raw_frames)
 
@@ -204,7 +211,10 @@ class VisionPipeline:
         }
 
     def _abort_early(self, ctx: ProcessingContext) -> Dict[str, Any]:
-        logger.warning("Pipeline aborting early at stage: %s for video %s", ctx.current_stage, ctx.video_id)
+        logger.warning(
+            "Pipeline aborting early at stage: %s for video %s",
+            ctx.current_stage,
+            ctx.video_id)
         return {
             "scenes": ctx.scene_count,
             "frames_extracted": ctx.frames_extracted,
@@ -216,14 +226,16 @@ class VisionPipeline:
         """Fetch the transcript JSON file path from the database."""
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(Transcript).where(Transcript.video_id == parse_video_id(video_id))
+                select(Transcript).where(
+                    Transcript.video_id == parse_video_id(video_id))
             )
             transcript = result.scalar_one_or_none()
             if transcript and transcript.transcript_path:
                 return transcript.transcript_path
         return None
 
-    async def _run_ocr_batch(self, frames: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _run_ocr_batch(
+            self, frames: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Run OCR sequentially on each frame, tolerating per-frame failures."""
         enriched: List[Dict[str, Any]] = []
         for frame in frames:
@@ -242,7 +254,8 @@ class VisionPipeline:
                 enriched.append({**frame, **empty_data})
         return enriched
 
-    async def _persist_bulk(self, video_id: str, scored_frames: List[Dict[str, Any]]) -> None:
+    async def _persist_bulk(self, video_id: str,
+                            scored_frames: List[Dict[str, Any]]) -> None:
         """
         Database writes use bulk operations because inserting
         thousands of frames individually creates unnecessary
@@ -251,7 +264,8 @@ class VisionPipeline:
         async with AsyncSessionLocal() as db:
             # Idempotent: remove any previously extracted frames for this video
             await db.execute(
-                delete(VideoFrame).where(VideoFrame.video_id == parse_video_id(video_id))
+                delete(VideoFrame).where(
+                    VideoFrame.video_id == parse_video_id(video_id))
             )
             await db.flush()
 
@@ -262,7 +276,7 @@ class VisionPipeline:
 
             for frame_data in scored_frames:
                 frame_uuid = uuid.uuid4()
-                
+
                 db_frames.append(VideoFrame(
                     id=frame_uuid,
                     video_id=parse_video_id(video_id),
@@ -287,31 +301,36 @@ class VisionPipeline:
 
                 db_scores.append(FrameScore(
                     frame_id=frame_uuid,
-                    transcript_similarity=frame_data.get("transcript_similarity"),
-                    visual_importance_score=frame_data.get("visual_importance_score"),
+                    transcript_similarity=frame_data.get(
+                        "transcript_similarity"),
+                    visual_importance_score=frame_data.get(
+                        "visual_importance_score"),
                     is_selected=bool(frame_data.get("is_selected", False)),
                 ))
 
             db.add_all(db_frames)
-            await db.flush() # flush frames to get them into the session
-            
+            await db.flush()  # flush frames to get them into the session
+
             db.add_all(db_metas)
             db.add_all(db_ocrs)
             db.add_all(db_scores)
 
             await db.commit()
-            logger.info("Bulk persisted %d frames for video %s", len(scored_frames), video_id)
-            
-    def _cleanup_unused_frames(self, selected_frames: List[Dict[str, Any]], all_frames: List[Dict[str, Any]]):
+            logger.info(
+                "Bulk persisted %d frames for video %s",
+                len(scored_frames),
+                video_id)
+
+    def _cleanup_unused_frames(
+            self, selected_frames: List[Dict[str, Any]], all_frames: List[Dict[str, Any]]):
         """
         Deletes the physical files for frames that did not pass the selection criteria.
         Long videos create many temporary images which fill up disk space quickly.
-        
+
         Frame paths are stored as web-relative paths (e.g. storage/frames/vid/file.jpg).
         We resolve them to absolute OS paths before deletion.
         """
         from core.config import settings
-        import re
 
         def _abs(web_path: str) -> str:
             """Convert web-relative path to absolute path using FRAMES_DIR base."""
@@ -319,10 +338,15 @@ class VisionPipeline:
                 return ""
             # web_path looks like: storage/frames/{video_id}/scene_xxx.jpg
             # Resolve via the project storage root, two levels up from backend/
-            storage_root = os.path.normpath(os.path.join(os.path.dirname(settings.FRAMES_DIR), ".."))
+            storage_root = os.path.normpath(
+                os.path.join(
+                    os.path.dirname(
+                        settings.FRAMES_DIR),
+                    ".."))
             return os.path.join(storage_root, web_path)
 
-        selected_paths = {f.get("frame_path") for f in selected_frames if f.get("is_selected")}
+        selected_paths = {f.get("frame_path")
+                          for f in selected_frames if f.get("is_selected")}
         all_paths = {f.get("frame_path") for f in all_frames}
 
         unselected_paths = all_paths - selected_paths
@@ -334,10 +358,10 @@ class VisionPipeline:
                     os.remove(abs_path)
                     deleted += 1
                 except Exception as e:
-                    logger.debug("Failed to delete unused frame %s: %s", abs_path, e)
+                    logger.debug(
+                        "Failed to delete unused frame %s: %s", abs_path, e)
 
         logger.info("Cleaned up %d unused frame files.", deleted)
-
 
     async def delete_frames(self, video_id: str) -> int:
         """
@@ -345,7 +369,8 @@ class VisionPipeline:
         """
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                delete(VideoFrame).where(VideoFrame.video_id == parse_video_id(video_id))
+                delete(VideoFrame).where(
+                    VideoFrame.video_id == parse_video_id(video_id))
             )
             count = result.rowcount
             await db.commit()

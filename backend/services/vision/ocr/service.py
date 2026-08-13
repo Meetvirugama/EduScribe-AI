@@ -27,7 +27,7 @@ class OCRServiceError(Exception):
 class OCRService:
     def __init__(self) -> None:
         self._ocr = None
-        
+
         # A single OCR inference path is used because concurrent GPU
         # inference can increase memory pressure and create unstable behavior.
         self._lock = asyncio.Lock()
@@ -95,17 +95,21 @@ class OCRService:
             except OCRServiceError:
                 raise
             except Exception as exc:
-                logger.error("Unexpected OCR error for %s: %s", frame_path, exc)
-                raise OCRServiceError(f"OCR failed for {frame_path}: {exc}") from exc
+                logger.error(
+                    "Unexpected OCR error for %s: %s",
+                    frame_path,
+                    exc)
+                raise OCRServiceError(
+                    f"OCR failed for {frame_path}: {exc}") from exc
 
     def _run_ocr_sync(self, frame_path: str) -> Dict[str, Any]:
         """Synchronous OCR execution – called inside a thread."""
         ocr = self._get_ocr()
-        
+
         # Read and resize
         img = cv2.imread(frame_path)
         img = self._resize_for_ocr(img)
-        
+
         ocr_result = ocr.predict(img)
 
         lines: List[str] = []
@@ -135,9 +139,10 @@ class OCRService:
 
         # Generate numerical features once and cache them flat
         features = generate_ocr_features(clean_text, avg_conf, len(lines))
-        
+
         logger.debug(
-            "OCR result for %s: %d lines, avg_conf=%.3f", frame_path, len(lines), avg_conf
+            "OCR result for %s: %d lines, avg_conf=%.3f", frame_path, len(
+                lines), avg_conf
         )
 
         return {
@@ -169,7 +174,13 @@ class OCRService:
             # Remove likely noise: single char or only punctuation
             if len(stripped) <= 1 and not stripped.isdigit():
                 continue
-            stripped = stripped.replace("\u2019", "'").replace("\u201c", '"').replace("\u201d", '"')
+            stripped = stripped.replace(
+                "\u2019",
+                "'").replace(
+                "\u201c",
+                '"').replace(
+                "\u201d",
+                '"')
             stripped = re.sub(r"\s{2,}", " ", stripped)
             cleaned.append(stripped)
         return "\n".join(cleaned)

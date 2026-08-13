@@ -3,6 +3,7 @@ Applies the visual importance weighting formula using O(1) float operations.
 """
 from typing import Dict
 
+
 def calculate_score(features: Dict[str, float]) -> float:
     """
     Weighted importance score based on cached features.

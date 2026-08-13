@@ -2,7 +2,7 @@
 key_manager.py — Per-Provider API Key Rotation
 
 Cycles through all registered API keys for a provider using round-robin.
-Handles dynamic loading of API keys from the environment and 
+Handles dynamic loading of API keys from the environment and
 intelligent cooldowns for temporary rate limits.
 
 LLD Reference: §21 API Key Rotation
@@ -72,38 +72,41 @@ class KeyManager:
     def _load_keys(self) -> None:
         """
         Dynamically loads all API keys from environment variables.
-        Supports both PROVIDER_API_KEYS (comma-separated) and 
+        Supports both PROVIDER_API_KEYS (comma-separated) and
         PROVIDER_API_KEY_1 (numbered).
         """
         providers_found = set()
-        
+
         # Scan os.environ for anything matching *_API_KEY*
         for env_key in os.environ.keys():
             env_key = env_key.upper()
-            
-            match_numbered = re.match(r'^([A-Z0-9]+)_API_KEY(?:_\d+)?$', env_key)
+
+            match_numbered = re.match(
+                r'^([A-Z0-9]+)_API_KEY(?:_\d+)?$', env_key)
             if match_numbered:
                 providers_found.add(match_numbered.group(1).lower())
-                
+
             match_plural = re.match(r'^([A-Z0-9]+)_API_KEYS$', env_key)
             if match_plural:
                 providers_found.add(match_plural.group(1).lower())
 
         for provider in providers_found:
             loaded_meta: List[KeyMetadata] = []
-            
+
             # Special case for huggingface
-            env_prefix = "HUGGINGFACE" if provider in ("huggingface", "hf") else provider.upper()
+            env_prefix = "HUGGINGFACE" if provider in (
+                "huggingface", "hf") else provider.upper()
             actual_provider = "huggingface" if provider == "hf" else provider
-            
+
             # 1. Check plural comma-separated format
             plural_var = f"{env_prefix}_API_KEYS"
             if plural_var in os.environ:
-                keys = [k.strip() for k in os.environ[plural_var].split(",") if k.strip()]
+                keys = [k.strip()
+                        for k in os.environ[plural_var].split(",") if k.strip()]
                 for k in keys:
                     if self._validate_key(actual_provider, k):
                         loaded_meta.append(KeyMetadata(key=k))
-            
+
             # 2. Check numbered format
             for i in range(1, 20):
                 single_var = f"{env_prefix}_API_KEY_{i}"
@@ -111,14 +114,15 @@ class KeyManager:
                     k = os.environ[single_var].strip()
                     if k and self._validate_key(actual_provider, k):
                         meta = KeyMetadata(key=k)
-                        
+
                         # Handle Cloudflare Account IDs paired with keys
                         if actual_provider == "cloudflare":
                             acc_var = f"{env_prefix}_ACCOUNT_ID_{i}"
-                            meta.account_id = os.environ.get(acc_var, "").strip()
-                            
+                            meta.account_id = os.environ.get(
+                                acc_var, "").strip()
+
                         loaded_meta.append(meta)
-            
+
             # 3. Check singular format without number
             single_var_no_num = f"{env_prefix}_API_KEY"
             if single_var_no_num in os.environ and plural_var not in os.environ:
@@ -155,10 +159,11 @@ class KeyManager:
             for i in range(len(keys)):
                 idx = (start_idx + i) % len(keys)
                 meta = keys[idx]
-                
+
                 if meta.is_healthy():
                     meta.last_used = time.time()
-                    # Advance for the next call to achieve round-robin load balancing
+                    # Advance for the next call to achieve round-robin load
+                    # balancing
                     self._current_index[provider] = (idx + 1) % len(keys)
                     return meta.key
 
@@ -174,11 +179,12 @@ class KeyManager:
                 return meta.account_id
         return None
 
-    def mark_key_exhausted(self, provider: str, key_val: str, error_type: str = "quota") -> bool:
+    def mark_key_exhausted(self, provider: str, key_val: str,
+                           error_type: str = "quota") -> bool:
         """
         Mark a specific key as exhausted or place it in cooldown.
         error_type: "quota" (permanent), "rate_limit" (60s cooldown)
-        
+
         Returns:
             True  — at least one key is still healthy; retry.
             False — all keys exhausted; switch providers.
@@ -194,13 +200,13 @@ class KeyManager:
                     if error_type == "rate_limit":
                         meta.cooldown_until = time.time() + 60.0
                         logger.warning(
-                            "key_manager: %s key placed in 60s cooldown (429 Rate Limit)", 
+                            "key_manager: %s key placed in 60s cooldown (429 Rate Limit)",
                             provider
                         )
                     else:
                         meta.exhausted = True
                         logger.warning(
-                            "key_manager: %s key permanently exhausted (%s)", 
+                            "key_manager: %s key permanently exhausted (%s)",
                             provider, error_type
                         )
                     break

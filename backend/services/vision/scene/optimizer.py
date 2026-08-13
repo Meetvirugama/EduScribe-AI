@@ -6,18 +6,20 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-def merge_short_scenes(scenes: List[Dict[str, Any]], min_duration_ms: int = 2000) -> List[Dict[str, Any]]:
+
+def merge_short_scenes(
+        scenes: List[Dict[str, Any]], min_duration_ms: int = 2000) -> List[Dict[str, Any]]:
     """
     Short scenes are merged because tiny segments increase the
     number of frames passed into OCR and ranking stages.
     """
     if not scenes:
         return []
-        
+
     merged = [scenes[0].copy()]
     for current in scenes[1:]:
         prev = merged[-1]
-        
+
         # If the previous scene was too short, merge this current one into it
         if prev["duration_ms"] < min_duration_ms:
             prev["end_time_ms"] = current["end_time_ms"]
@@ -25,13 +27,17 @@ def merge_short_scenes(scenes: List[Dict[str, Any]], min_duration_ms: int = 2000
             prev["frame_count"] += current.get("frame_count", 0)
         else:
             merged.append(current.copy())
-            
+
     # Re-number
     for i, s in enumerate(merged):
         s["scene_number"] = i + 1
-        
-    logger.debug("Merged %d raw scenes down to %d optimized scenes", len(scenes), len(merged))
+
+    logger.debug(
+        "Merged %d raw scenes down to %d optimized scenes",
+        len(scenes),
+        len(merged))
     return merged
+
 
 def generate_adaptive_fallback(video_path: str) -> List[Dict[str, Any]]:
     """
@@ -40,7 +46,7 @@ def generate_adaptive_fallback(video_path: str) -> List[Dict[str, Any]]:
     We adapt chunk size based on video length (60-120s for long videos).
     """
     import cv2
-    
+
     cap = cv2.VideoCapture(video_path)
     try:
         fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
@@ -53,17 +59,17 @@ def generate_adaptive_fallback(video_path: str) -> List[Dict[str, Any]]:
         return []
 
     # Adaptive chunking logic
-    if duration_ms > 3600000: # > 1 hour
-        chunk_duration_ms = 120000 # 2 mins
-    elif duration_ms > 600000: # > 10 mins
-        chunk_duration_ms = 60000 # 1 min
+    if duration_ms > 3600000:  # > 1 hour
+        chunk_duration_ms = 120000  # 2 mins
+    elif duration_ms > 600000:  # > 10 mins
+        chunk_duration_ms = 60000  # 1 min
     else:
-        chunk_duration_ms = 30000 # 30s
+        chunk_duration_ms = 30000  # 30s
 
     scenes = []
     start_ms = 0
     scene_num = 1
-    
+
     while start_ms < duration_ms:
         end_ms = min(start_ms + chunk_duration_ms, duration_ms)
         scenes.append({

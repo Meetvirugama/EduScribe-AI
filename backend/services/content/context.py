@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
-from schemas.content import Concept, Topic, Definition, LectureInput, LectureState
+from schemas.content import Concept, LectureInput, LectureState
+
 
 @dataclass
 class LectureContext:
@@ -13,59 +14,61 @@ class LectureContext:
     input: LectureInput
     state: LectureState = field(default_factory=LectureState)
 
-
     # Backward compatibility properties
+
     @property
     def transcript(self) -> str: return self.input.transcript
-    
+
     @property
     def segments(self) -> List[Dict[str, Any]]: return self.input.segments
-    
+
     @property
     def metadata(self) -> Dict[str, Any]: return self.input.metadata
-    
+
     @property
     def frames(self) -> List[Dict[str, Any]]: return self.input.frames
 
     @property
     def concepts(self) -> List[Concept]: return self.state.concepts
-    
+
     @concepts.setter
     def concepts(self, val: List[Concept]): self.state.concepts = val
-    
+
     @property
     def topics(self) -> List[Dict[str, Any]]: return self.state.topics
-    
+
     @topics.setter
     def topics(self, val: List[Dict[str, Any]]): self.state.topics = val
-    
+
     @property
-    def definitions(self) -> List[Dict[str, Any]]: return self.state.definitions
+    def definitions(self) -> List[Dict[str, Any]
+                                  ]: return self.state.definitions
 
     @definitions.setter
-    def definitions(self, val: List[Dict[str, Any]]): self.state.definitions = val
+    def definitions(self, val: List[Dict[str, Any]]
+                    ): self.state.definitions = val
 
     @property
     def formulas_extracted(self): return self.state.formulas_extracted
-    
+
     @formulas_extracted.setter
     def formulas_extracted(self, val): self.state.formulas_extracted = val
-    
+
     @property
     def examples(self): return self.state.examples
-    
+
     @examples.setter
     def examples(self, val): self.state.examples = val
-    
+
     @property
     def key_points(self): return self.state.key_points
-    
+
     @key_points.setter
     def key_points(self, val): self.state.key_points = val
-    
+
     @property
     def relationships(self): return self.state.relationships
-    
+
     @relationships.setter
     def relationships(self, val): self.state.relationships = val
 
@@ -94,7 +97,9 @@ class LectureContext:
     def detailed_notes_md(self, val: str): self.state.detailed_notes_md = val
 
     @property
-    def knowledge_compilation_doc(self) -> str: return self.state.knowledge_compilation_doc
+    def knowledge_compilation_doc(
+        self) -> str: return self.state.knowledge_compilation_doc
 
     @knowledge_compilation_doc.setter
-    def knowledge_compilation_doc(self, val: str): self.state.knowledge_compilation_doc = val
+    def knowledge_compilation_doc(
+        self, val: str): self.state.knowledge_compilation_doc = val

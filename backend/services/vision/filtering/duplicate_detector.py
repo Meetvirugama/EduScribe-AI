@@ -18,14 +18,15 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 # Hamming distance threshold – lower = stricter deduplication
-# For dhash, a threshold of 5 is generally still effective for visually identical frames.
+# For dhash, a threshold of 5 is generally still effective for visually
+# identical frames.
 PHASH_THRESHOLD: int = getattr(settings, "PHASH_THRESHOLD", 5)
 
 
 def compute_phash(frame_path: str) -> str:
     """
     Compute the difference hash (dhash) of an image file.
-    
+
     (Note: Retained name 'compute_phash' for API/Test compatibility,
     but internally upgraded to use dhash for CPU minimization).
 
@@ -51,10 +52,12 @@ def compute_phash(frame_path: str) -> str:
         # We use dhash (Difference Hash) instead of phash (Perceptual Hash).
         # dhash compares adjacent pixel gradients (integer subtraction) whereas
         # phash uses Discrete Cosine Transforms (floating-point math).
-        # This dramatically lowers CPU usage while keeping exact-duplicate accuracy high.
+        # This dramatically lowers CPU usage while keeping exact-duplicate
+        # accuracy high.
         return str(imagehash.dhash(img))
     except Exception as exc:
-        raise ValueError(f"Could not compute hash for {frame_path}: {exc}") from exc
+        raise ValueError(
+            f"Could not compute hash for {frame_path}: {exc}") from exc
 
 
 def hamming_distance(hash_a: str, hash_b: str) -> int:
@@ -113,20 +116,22 @@ def deduplicate_frames(
             # We use Pillow instead of OpenCV to avoid heavy C++ dependencies.
             # We call .draft('RGB', (32, 32)) BEFORE .convert("RGB") to instruct
             # the underlying JPEG decoder (libjpeg) to stop parsing high-resolution
-            # DCT coefficients. This massively drops CPU decode overhead and I/O wait.
+            # DCT coefficients. This massively drops CPU decode overhead and
+            # I/O wait.
             img = Image.open(path)
             img.draft("RGB", (32, 32))
             img = img.convert("RGB")
-            
+
             # We use dhash (Difference Hash) instead of phash (Perceptual Hash).
             # dhash compares adjacent pixel gradients (integer subtraction) whereas
             # phash uses Discrete Cosine Transforms (floating-point math).
             # This dramatically lowers CPU usage while keeping exact-duplicate accuracy high.
-            # We do NOT use GPU acceleration because transferring a 1080p image over PCIe 
-            # for a 64-bit hash math operation creates a massive bottleneck vs native CPU.
+            # We do NOT use GPU acceleration because transferring a 1080p image over PCIe
+            # for a 64-bit hash math operation creates a massive bottleneck vs
+            # native CPU.
             h_obj = imagehash.dhash(img)
             h_str = str(h_obj)
-            
+
         except (FileNotFoundError, ValueError, OSError) as exc:
             logger.warning("Skipping frame in dedup (%s): %s", path, exc)
             # If we can't read it, fail safely by discarding it to duplicates
@@ -151,7 +156,8 @@ def deduplicate_frames(
 
         if is_dup:
             logger.debug("Duplicate frame detected: %s", path)
-            # Retain 'phash' key name for database pipeline backwards compatibility
+            # Retain 'phash' key name for database pipeline backwards
+            # compatibility
             duplicates.append({**frame, "phash": h_str})
         else:
             last_unique_hash = h_obj

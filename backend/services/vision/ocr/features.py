@@ -4,11 +4,14 @@ Generates reusable numerical features from OCR text for downstream ranking.
 import re
 from typing import Dict, Any
 
-_CODE_PATTERN = re.compile(r"(def |class |import |#include|<[a-z]|{|}|;$|\(\))", re.M)
+_CODE_PATTERN = re.compile(
+    r"(def |class |import |#include|<[a-z]|{|}|;$|\(\))", re.M)
 _EQUATION_PATTERN = re.compile(r"[=+\-*/\\∑∫∂√≈≤≥±]+")
 _BULLET_PATTERN = re.compile(r"^[\s]*[•\-\*\d\.]+\s", re.M)
 
-def generate_ocr_features(clean_text: str, avg_conf: float, line_count: int) -> Dict[str, Any]:
+
+def generate_ocr_features(clean_text: str, avg_conf: float,
+                          line_count: int) -> Dict[str, Any]:
     """Generates reusable numerical features for downstream ranking."""
     if not clean_text:
         return {

@@ -12,6 +12,7 @@ from typing import Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
+
 class ProviderStats:
     def __init__(self, window_size: int = 100):
         # Store recent latency and success (1 or 0) per provider/model
@@ -19,11 +20,12 @@ class ProviderStats:
         self.window_size = window_size
         self.history: Dict[Tuple[str, str], collections.deque] = {}
 
-    def record_call(self, provider: str, model: str, success: bool, latency: float):
+    def record_call(self, provider: str, model: str,
+                    success: bool, latency: float):
         key = (provider, model)
         if key not in self.history:
             self.history[key] = collections.deque(maxlen=self.window_size)
-        
+
         self.history[key].append({
             "success": 1 if success else 0,
             "latency": latency,
@@ -60,4 +62,3 @@ class ProviderStats:
         # Normalize latency: 1s = 90pts, 10s = 0pts
         latency_score = max(0.0, 100.0 - (stats["avg_latency"] * 10))
         return round((0.7 * success_score) + (0.3 * latency_score), 2)
-

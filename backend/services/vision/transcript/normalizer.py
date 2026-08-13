@@ -3,6 +3,7 @@ Text normalization utilities for transcript and OCR string matching.
 """
 import re
 
+
 def normalize_text(text: str) -> str:
     """
     Text normalization reduces formatting differences between

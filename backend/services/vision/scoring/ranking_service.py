@@ -10,7 +10,8 @@ from services.vision.scoring.importance_scorer import calculate_score
 logger = logging.getLogger(__name__)
 
 
-def rank_and_trim_frames(frames: List[Dict[str, Any]], top_n: int = 1) -> List[Dict[str, Any]]:
+def rank_and_trim_frames(
+        frames: List[Dict[str, Any]], top_n: int = 1) -> List[Dict[str, Any]]:
     """
     Scores and selects the best top_n frames **per scene**, not globally.
 
@@ -34,7 +35,8 @@ def rank_and_trim_frames(frames: List[Dict[str, Any]], top_n: int = 1) -> List[D
         features = extract_features(f)
         score = calculate_score(features)
 
-        # Trim heavy/unnecessary metadata, preserving schema keys for DB insertion
+        # Trim heavy/unnecessary metadata, preserving schema keys for DB
+        # insertion
         trimmed = {
             "scene_number": f.get("scene_number"),
             "timestamp_ms": f.get("timestamp_ms"),
@@ -53,15 +55,18 @@ def rank_and_trim_frames(frames: List[Dict[str, Any]], top_n: int = 1) -> List[D
 
     # Sort by scene_number first so groupby works correctly, then by score desc within each scene.
     # We use a stable two-key sort: primary=scene_number, secondary=score desc.
-    scored_frames.sort(key=lambda x: (x["scene_number"] or 0, -(x["visual_importance_score"] or 0.0)))
+    scored_frames.sort(key=lambda x: (
+        x["scene_number"] or 0, -(x["visual_importance_score"] or 0.0)))
 
     total_selected = 0
     result: List[Dict[str, Any]] = []
 
     # Group by scene and mark the top_n highest-scoring frames per group
-    for scene_num, scene_iter in groupby(scored_frames, key=lambda x: x["scene_number"]):
+    for scene_num, scene_iter in groupby(
+            scored_frames, key=lambda x: x["scene_number"]):
         scene_frames = list(scene_iter)
-        # Within each scene, frames are already sorted by score descending (from sort above)
+        # Within each scene, frames are already sorted by score descending
+        # (from sort above)
         for i, frame in enumerate(scene_frames):
             if i < top_n:
                 frame["is_selected"] = True
@@ -75,7 +80,8 @@ def rank_and_trim_frames(frames: List[Dict[str, Any]], top_n: int = 1) -> List[D
         len(set(f["scene_number"] for f in result)),
         total_selected,
         top_n,
-        max((f["visual_importance_score"] or 0.0) for f in result) if result else 0.0,
+        max((f["visual_importance_score"] or 0.0)
+            for f in result) if result else 0.0,
     )
 
     return result
