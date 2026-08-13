@@ -57,3 +57,92 @@ class BaseContentService:
                         f"Service {service_name} completely failed after {max_retries} attempts.")
                     return None
                 await asyncio.sleep(2 ** attempt)
+
+    def _chunk_segments_with_ocr(self, context: LectureContext, video_id: str, use_semantic_chunking: bool = False) -> List[Dict[str, Any]]:
+        """
+        Chunks transcript segments and injects relevant OCR frames into the chunks.
+        Supports optional semantic boundary chunking.
+        """
+        segments = context.segments
+        frames = context.frames
+        chunks = []
+        if not segments:
+            return chunks
+
+        current_text = []
+        current_start = None
+        current_end = 0.0
+        chunk_index = 0
+
+        for seg in segments:
+            seg_start = seg.get("start", 0.0)
+
+            if current_start is not None and current_text:
+                duration = current_end - current_start
+                text_len = sum(len(t) for t in current_text)
+
+                is_boundary = False
+                if use_semantic_chunking:
+                    time_gap = seg_start - current_end
+                    last_text = current_text[-1].strip()
+                    ends_with_punctuation = last_text.endswith(('.', '?', '!', '\n'))
+                    is_soft_boundary = duration >= 90.0 and (ends_with_punctuation or time_gap >= 2.0)
+                    is_hard_boundary = duration >= 240.0 or text_len > 3000
+                    is_boundary = is_soft_boundary or is_hard_boundary
+                else:
+                    is_boundary = duration >= 180.0 or text_len > 2000
+
+                if is_boundary:
+                    chunks.append({
+                        "chunk_id": f"{video_id}_range_{chunk_index}",
+                        "start_time": round(current_start, 2),
+                        "end_time": round(current_end, 2),
+                        "text": " ".join(current_text)
+                    })
+                    chunk_index += 1
+                    current_text = []
+                    current_start = None
+
+            if current_start is None:
+                current_start = seg_start
+
+            current_text.append(seg.get("text", ""))
+
+            if "end" in seg:
+                current_end = seg["end"]
+            elif "duration" in seg:
+                current_end = seg_start + seg.get("duration", 0.0)
+            else:
+                current_end = seg_start
+
+        if current_text:
+            chunks.append({
+                "chunk_id": f"{video_id}_range_{chunk_index}",
+                "start_time": round(current_start, 2) if current_start is not None else 0.0,
+                "end_time": round(current_end, 2),
+                "text": " ".join(current_text)
+            })
+
+        # Inject OCR frames into chunks
+        sorted_frames = sorted(frames or [], key=lambda f: f.get("time_sec", 0.0))
+        for c in chunks:
+            c_start = c["start_time"]
+            c_end = c["end_time"]
+            
+            chunk_frames = [
+                f for f in sorted_frames
+                if c_start <= f.get("time_sec", 0.0) <= c_end
+                and f.get("ocr", "").strip()
+            ]
+            
+            if chunk_frames:
+                ocr_text = "\n\n### Visual Content (OCR from Slides/Frames)\n\n"
+                for frm in chunk_frames:
+                    ts = frm.get("time_sec", 0.0)
+                    scene = frm.get("scene_number", "?")
+                    ocr = frm.get("ocr", "").strip()
+                    ocr_text += f"**[Timestamp: {round(ts, 1)}s | Scene {scene}]**\n> {ocr}\n\n"
+                
+                c["text"] = c["text"] + ocr_text
+
+        return chunks

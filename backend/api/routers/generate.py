@@ -7,6 +7,7 @@ import os
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from schemas.content import ArtifactType
 from core.dependencies import get_owned_video
 from core.database import get_db
 from models.video import Video
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/generate", tags=["Artifacts"])
 
 class GenerateRequest(BaseModel):
-    artifacts: List[str]
+    artifacts: List[ArtifactType]
 
 @router.post("/{video_id}")
 async def generate_artifacts(

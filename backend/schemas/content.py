@@ -1,8 +1,14 @@
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from dataclasses import dataclass, field
 from datetime import datetime
+
+
+class ChunkClassification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    classification: Literal["technical", "administrative", "promotional", "filler"]
+    reasoning: str
 
 
 class ServiceStatus(str, Enum):
@@ -10,6 +16,16 @@ class ServiceStatus(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class ArtifactType(str, Enum):
+    QUIZ = "quiz"
+    FLASHCARDS = "flashcards"
+    MINDMAP = "mindmap"
+    FORMULA_SHEET = "formula_sheet"
+    INTERVIEW = "interview"
+    REVISION = "revision"
+    DETAILED_NOTES = "detailed_notes"
 
 
 class SourceReference(BaseModel):
@@ -168,4 +184,5 @@ class QualityIssue(BaseModel):
 class QualityReport(BaseModel):
     model_config = ConfigDict(extra="ignore")
     score: int
+    is_relevant: bool = True
     issues: List[QualityIssue] = Field(default_factory=list)

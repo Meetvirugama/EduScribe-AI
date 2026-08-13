@@ -17,6 +17,7 @@ Your task is to analyze the provided lecture chunks and extract the most importa
 * Return **only valid JSON**.
 * Limit the number of returned concepts to the most important 10-15.
 * **Source attribution is strictly required.** For every concept, you MUST provide an array of `sources` pointing to the exact `chunk_id` where it was discussed, preserving the start and end timestamps if available in the chunk.
+* Do NOT extract concepts from non-academic content (e.g. course logistics, pricing, discounts, promo codes, scheduling, technical setup instructions like audio/video checks, motivational remarks, calls to action like like/share/subscribe, or platform announcements).
 
 ## Required JSON format
 

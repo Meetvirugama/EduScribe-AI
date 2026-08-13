@@ -5,6 +5,8 @@ from typing import Dict, Any
 from core.config import settings
 
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 class CaptionService:
     """
     Handles discovery and acquisition of captions using youtube-transcript-api.
@@ -12,6 +14,7 @@ class CaptionService:
     """
 
     @staticmethod
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def discover_and_acquire(
             video_id: str, requested_language: str = "en") -> Dict[str, Any]:
         """

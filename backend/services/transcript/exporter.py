@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Dict
 
 from .models import CanonicalTranscript
 from core.config import settings

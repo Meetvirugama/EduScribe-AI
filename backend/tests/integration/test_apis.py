@@ -14,7 +14,9 @@ load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from services.llm.key_manager import KeyManager
+import pytest
 
+@pytest.mark.asyncio
 async def test_all():
     # Load fallback config to get a valid model for each provider
     try:

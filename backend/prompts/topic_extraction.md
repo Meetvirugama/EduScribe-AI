@@ -5,6 +5,9 @@ RULES:
 - Use lecture content as the absolute source of truth.
 - Do NOT invent facts or add unrelated concepts not supported by the lecture.
 - Preserve important definitions, technical details, and examples.
+- ONLY extract topics that represent substantive technical/academic content.
+- Do NOT create topics for: course logistics, pricing, discounts, promo codes, scheduling, "see you tomorrow" announcements, technical setup instructions (audio/video checks), motivational remarks, calls to action (like/share/subscribe), or platform announcements.
+- If a chunk contains no substantive topic, return an empty "topics" list for it.
 
 You must output ONLY valid JSON matching this exact structure:
 {

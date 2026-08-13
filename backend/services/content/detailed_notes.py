@@ -38,27 +38,25 @@ class DetailedNotesGenerator(BaseContentService):
             topic_title = getattr(topic, "title", f"Topic {index+1}")
             logger.info(f"Processing Topic: {topic_title}")
 
-            # 1. Context Packet Builder
-            context_packet = self._build_context_packet(topic_title, context)
-
             # 2. LLM Topic Synthesis
-            topic_json = await self._synthesize_topic(topic_title, context_packet)
+            topic_json = await self._synthesize_topic(topic, context)
 
-            if not topic_json:
+            if not topic_json or not topic_json.get("notes_markdown"):
                 continue
 
             # 3. Topic Validation (Critic)
-            quality_report = await evaluator.evaluate(topic_json, context_packet)
+            quality_report = await evaluator.evaluate(topic_json, "")
 
             # 4. Targeted Repair (if score < 85)
             if quality_report.score < 85 and quality_report.issues:
                 logger.info(
                     f"Repairing topic {topic_title} (Score: {quality_report.score})")
-                topic_json = await self._repair_topic(topic_json, quality_report.issues, context_packet)
+                topic_json = await self._repair_topic(topic_json, quality_report.issues, topic_title)
 
             # 5. Render to Markdown
             t_md = MarkdownRenderer.render_topic(topic_json)
-            topic_markdowns.append(t_md)
+            if t_md:
+                topic_markdowns.append(t_md)
 
         # 6. Final Assembly
         final_markdown = MarkdownRenderer.compile_final_notes(
@@ -69,91 +67,128 @@ class DetailedNotesGenerator(BaseContentService):
 
         return {"notes_markdown": final_markdown}
 
-    def _build_context_packet(self, topic_title: str,
-                              context: LectureContext) -> str:
-        """Assembles a highly specific context packet for a single topic."""
-        packet = []
-        packet.append(f"TOPIC: {topic_title}")
-        packet.append(f"TRANSCRIPT:\n{context.transcript}")
+    def _hhmmss_to_sec(self, time_str: str) -> float:
+        try:
+            parts = time_str.split(":")
+            if len(parts) == 3:
+                return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+        except Exception:
+            pass
+        return 0.0
 
-        # In a fully fleshed out system, we would filter these by topic_association.
-        # For now, we provide the global context and ask the LLM to pull what's
-        # relevant to this topic.
+    def _build_context_packet(self, topic: Any,
+                              context: LectureContext) -> tuple[str, str]:
+        """Returns (enriched_chunk, cross_chunk_context)"""
+        topic_title = getattr(topic, "title", "Topic")
+        
+        enriched = []
+        enriched.append(f"Title: {topic_title}")
+        
+        # 1. Inject Raw Transcript & OCR using start/end times
+        start_time_str = getattr(topic, "start_time", "00:00:00")
+        end_time_str = getattr(topic, "end_time", "00:00:00")
+        
+        start_sec = self._hhmmss_to_sec(start_time_str)
+        end_sec = self._hhmmss_to_sec(end_time_str)
+        
+        # If timestamps are valid, extract the exact segment window
+        if end_sec > start_sec:
+            raw_text = []
+            
+            # Transcript text
+            if context.segments:
+                segment_texts = [s.get("text", "") for s in context.segments 
+                               if start_sec <= float(s.get("start", 0.0)) <= end_sec]
+                if segment_texts:
+                    raw_text.append("### Source Transcript")
+                    raw_text.append(" ".join(segment_texts))
+            
+            # OCR text
+            if context.frames:
+                frame_texts = []
+                sorted_frames = sorted(context.frames, key=lambda f: f.get("time_sec", 0.0))
+                for f in sorted_frames:
+                    t = f.get("time_sec", 0.0)
+                    ocr = f.get("ocr", "").strip()
+                    if start_sec <= t <= end_sec and ocr:
+                        scene = f.get("scene_number", "?")
+                        frame_texts.append(f"**[Timestamp: {round(t, 1)}s | Scene {scene}]**\n> {ocr}")
+                
+                if frame_texts:
+                    raw_text.append("\n### Source Visual Content (OCR)")
+                    raw_text.extend(frame_texts)
+            
+            if raw_text:
+                enriched.append("\n".join(raw_text))
+        
+        # 2. Inject Key Takeaways
+        takeaways = getattr(topic, "key_takeaways", [])
+        if takeaways:
+            enriched.append("\nKey Takeaways:")
+            for t in takeaways:
+                enriched.append(f"- {t}")
+                
+        global_ctx = []
         if context.concepts:
-            packet.append("CONCEPTS:")
+            global_ctx.append("CONCEPTS:")
             for c in context.concepts:
-                packet.append(
-                    f"- {getattr(c, 'name', '')}: {getattr(c, 'brief_description', '')}")
+                global_ctx.append(f"- {getattr(c, 'name', '')}: {getattr(c, 'brief_description', '')}")
 
         if context.definitions:
-            packet.append("DEFINITIONS:")
+            global_ctx.append("DEFINITIONS:")
             for d in context.definitions:
-                packet.append(
-                    f"- {getattr(d, 'term', '')}: {getattr(d, 'definition', '')}")
+                global_ctx.append(f"- {getattr(d, 'term', '')}: {getattr(d, 'definition', '')}")
 
         if context.examples:
-            packet.append("EXAMPLES:")
+            global_ctx.append("EXAMPLES:")
             for e in context.examples:
-                packet.append(
-                    f"- {getattr(e, 'title', '')}: {getattr(e, 'problem', '')}")
+                global_ctx.append(f"- {getattr(e, 'title', '')}: {getattr(e, 'problem', '')}")
 
         if context.key_points:
-            packet.append("KEY POINTS:")
+            global_ctx.append("KEY POINTS:")
             for k in context.key_points:
-                packet.append(f"- {getattr(k, 'text', '')}")
+                global_ctx.append(f"- {getattr(k, 'text', '')}")
 
-        return "\n\n".join(packet)
+        return "\n\n".join(enriched), "\n\n".join(global_ctx)
 
     async def _synthesize_topic(
-            self, topic_title: str, context_packet: str) -> Dict[str, Any]:
+            self, topic: Any, context: LectureContext) -> Dict[str, Any]:
         """Generates the structured JSON note for a topic."""
-        system_msg = (
-            "You are an expert technical educator.\n"
-            "Generate a highly structured educational note for the specific TOPIC using ONLY the provided CONTEXT PACKET.\n"
-            "Format the output strictly as a JSON object with the following keys:\n"
-            "{\n"
-            '  "title": "Topic Name",\n'
-            '  "overview": "Brief summary",\n'
-            '  "core_idea": "Main concept",\n'
-            '  "steps": ["Step 1", "Step 2"],\n'
-            '  "important_terms": [{"term": "T", "meaning": "M"}],\n'
-            '  "formulas": [{"expression": "E", "explanation": "E"}],\n'
-            '  "examples": [{"problem": "P", "solution": "S"}],\n'
-            '  "relationships": ["Rel 1"],\n'
-            '  "misconceptions": ["Misc 1"],\n'
-            '  "key_takeaways": ["Takeaway 1"]\n'
-            "}\n"
-            "Omit keys or use empty lists if the context does not support them. Do not hallucinate."
-        )
+        topic_title = getattr(topic, "title", "Topic")
+        enriched_chunk, cross_chunk_context = self._build_context_packet(topic, context)
+        from .prompts import PromptManager
+        
+        try:
+            system_msg = PromptManager.render(
+                "detailed_notes_artifact",
+                chunk_label=topic_title,
+                enriched_chunk=enriched_chunk,
+                cross_chunk_context=cross_chunk_context
+            )
+        except Exception as e:
+            logger.error(f"Could not render detailed_notes_artifact.md: {e}")
+            return {}
 
         messages = [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": context_packet}
+            {"role": "system", "content": system_msg}
         ]
 
         try:
-            # Bypass registry for strict internal JSON loop by using
-            # response_format
             response = await self.llm_manager.generate(
-                task=TaskType.DETAILED_NOTES,
+                task=TaskType.TOPIC_NOTE_WRITING,
                 messages=messages,
                 response_format={"type": "json_object"}
             )
-
-            raw_text = getattr(response, "text", str(response))
-            import re
-            match = re.search(r'```(?:json)?(.*?)```', raw_text, re.DOTALL)
-            if match:
-                raw_text = match.group(1).strip()
-
-            return json.loads(raw_text)
+            if hasattr(response, "model_dump"):
+                return response.model_dump()
+            return {"notes_markdown": getattr(response, "text", "")}
 
         except Exception as e:
             logger.error(f"Failed to synthesize topic {topic_title}: {e}")
             return {}
 
     async def _repair_topic(
-            self, topic_json: Dict[str, Any], issues: List[Any], context_packet: str) -> Dict[str, Any]:
+            self, topic_json: Dict[str, Any], issues: List[Any], topic_title: str) -> Dict[str, Any]:
         """Repairs a topic note based on critic feedback."""
         system_msg = (
             "You are an expert Note Repair editor.\n"
@@ -164,10 +199,10 @@ class DetailedNotesGenerator(BaseContentService):
             [f"- [{i.severity}] {i.type} in {i.section}: {i.problem} -> Fix: {i.fix}" for i in issues])
 
         prompt = (
-            f"=== CONTEXT ===\n{context_packet}\n\n"
+            f"=== TOPIC TITLE ===\n{topic_title}\n\n"
             f"=== ISSUES TO FIX ===\n{issues_text}\n\n"
             f"=== CURRENT JSON ===\n{json.dumps(topic_json, indent=2)}\n\n"
-            "Return the corrected JSON."
+            "Return the corrected JSON matching the exact schema."
         )
 
         messages = [
@@ -177,17 +212,14 @@ class DetailedNotesGenerator(BaseContentService):
 
         try:
             response = await self.llm_manager.generate(
-                task=TaskType.DETAILED_NOTES,
+                task=TaskType.NOTE_REPAIR,
                 messages=messages,
                 response_format={"type": "json_object"}
             )
-            raw_text = getattr(response, "text", str(response))
-            import re
-            match = re.search(r'```(?:json)?(.*?)```', raw_text, re.DOTALL)
-            if match:
-                raw_text = match.group(1).strip()
-            return json.loads(raw_text)
+            if hasattr(response, "model_dump"):
+                return response.model_dump()
+            return {"notes_markdown": getattr(response, "text", "")}
 
         except Exception as e:
             logger.error(f"Failed to repair topic: {e}")
-            return topic_json  # Return original if repair fails
+            return topic_json

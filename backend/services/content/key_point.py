@@ -11,53 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class KeyPointService(BaseContentService):
-    def _chunk_segments(self, segments: list, video_id: str) -> list:
-        chunks = []
-        if not segments:
-            return chunks
-
-        current_text = []
-        current_start = None
-        current_end = 0.0
-        chunk_index = 0
-
-        for seg in segments:
-            seg_start = seg.get("start", 0.0)
-            if current_start is None:
-                current_start = seg_start
-
-            current_text.append(seg.get("text", ""))
-
-            if "end" in seg:
-                current_end = seg["end"]
-            elif "duration" in seg:
-                current_end = seg_start + seg.get("duration", 0.0)
-            else:
-                current_end = seg_start
-
-            # Group into timestamp ranges (approx 3 mins or 2000 chars)
-            if current_end - \
-                    current_start >= 180.0 or sum(len(t) for t in current_text) > 2000:
-                chunks.append({
-                    "chunk_id": f"{video_id}_range_{chunk_index}",
-                    "start_time": round(current_start, 2),
-                    "end_time": round(current_end, 2),
-                    "text": " ".join(current_text)
-                })
-                chunk_index += 1
-                current_text = []
-                current_start = None
-
-        if current_text:
-            chunks.append({
-                "chunk_id": f"{video_id}_range_{chunk_index}",
-                "start_time": round(current_start, 2) if current_start is not None else 0.0,
-                "end_time": round(current_end, 2),
-                "text": " ".join(current_text)
-            })
-
-        return chunks
-
     async def extract_key_points(
             self, context: LectureContext) -> Dict[str, Any]:
         """Extracts key points from the lecture content in chunks to avoid token limits."""
@@ -67,10 +20,9 @@ class KeyPointService(BaseContentService):
         video_id = context.metadata.get("video_id", "default_video")
 
         if not context.segments:
-            chunks = self._chunk_segments(
-                [{"text": context.transcript}], video_id)
+            chunks = []
         else:
-            chunks = self._chunk_segments(context.segments, video_id)
+            chunks = self._chunk_segments_with_ocr(context, video_id, use_semantic_chunking=False)
 
         try:
             all_key_points = []

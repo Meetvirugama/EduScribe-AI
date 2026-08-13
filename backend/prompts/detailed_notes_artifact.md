@@ -29,6 +29,7 @@ Rules:
 * Ensure the final result can be parsed directly using a standard JSON parser.
 * Mermaid syntax must remain inside the escaped Markdown string.
 * Do not generate malformed JSON even if the generated Markdown is very long.
+* **SAFETY GUARD**: If the Enriched Topic Context does not contain genuine technical/academic substance (e.g., is administrative, promotional, or purely logistical), respond with `{"notes_markdown": null}` instead of fabricating a full learning unit around it.
 
 ---
 

@@ -59,23 +59,14 @@ class Settings(BaseSettings):
     OCR_MIN_CONFIDENCE: float = 0.70
     TRANSCRIPT_MATCH_MIN_SCORE: float = 10.0
 
-    # ── RAG Configuration ─────────────────────────────────────────────────────
-    CHUNK_SIZE: int = 1000
-    CHUNK_OVERLAP: int = 200
-    TOP_K_RESULTS: int = 5
-    CHUNK_STRATEGY: str = "timestamp"       # token | semantic | timestamp | topic
-    MMR_LAMBDA: float = 0.7                 # relevance vs. diversity balance
-    HYBRID_BM25_ALPHA: float = 0.5          # BM25 weight in hybrid search
-    EMBED_MODEL_VERSION: str = "v1"         # bump to force re-embedding
-    RERANK_TOP_N: int = 3                   # final results after reranking
+
 
     # ── Upload & Processing Limits ────────────────────────────────────────────
     MAX_VIDEO_DURATION_SECONDS: int = 7200  # 2 hours
     MAX_UPLOADS_PER_HOUR: int = 5           # per user (rate limiting)
     MAX_YOUTUBE_PER_HOUR: int = 10          # per user (rate limiting)
 
-    # ── Quality Evaluation ────────────────────────────────────────────────────
-    MIN_QUALITY_SCORE: float = 0.5          # below this triggers a warning log
+
 
     @property
     def allowed_origins_list(self) -> List[str]:

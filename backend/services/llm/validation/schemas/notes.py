@@ -403,3 +403,12 @@ class RelationshipItem(BaseModel):
 
 class RelationshipsOutput(BaseLLMOutput):
     relationships: List[RelationshipItem] = Field(default_factory=list)
+
+
+class TopicNoteWritingOutput(BaseLLMOutput):
+    """
+    Schema for generating deep, structured, textbook-quality notes.
+    """
+    notes_markdown: Optional[str] = Field(
+        None, description="The complete generated markdown for this topic"
+    )

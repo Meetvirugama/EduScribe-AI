@@ -162,6 +162,7 @@ class QuotaTracker:
         limits = PROVIDER_FREE_TIER_LIMITS.get(provider)
         if limits is None:
             # Unknown provider — assume quota available
+            logger.warning(f"quota_tracker: Unrecognized provider '{provider}' requested. Assuming unlimited quota.")
             return True
 
         rpd_limit = limits.get("rpd")

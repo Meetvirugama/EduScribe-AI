@@ -71,7 +71,10 @@ class WhisperService:
                     self.model = None
                     gc.collect()
 
-    async def transcribe(self, audio_path: str, video_id: str) -> dict:
+    from tenacity import retry, stop_after_attempt, wait_exponential
+
+    @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=10))
+    async def transcribe(self, audio_path: str, video_id: str, language: str = None) -> dict:
         """
         Transcribe an audio file to timestamped JSON and plain-text TXT.
 
@@ -81,6 +84,7 @@ class WhisperService:
         Args:
             audio_path: Absolute path to the WAV audio file.
             video_id:   UUID string for output file naming.
+            language:   Optional language code (e.g. "en") to force transcription language.
 
         Returns:
             dict with keys: json_path, txt_path, language, word_count
@@ -95,11 +99,10 @@ class WhisperService:
 
             # faster-whisper returns a generator of Segment namedtuples.
             # beam_size=5 is the default (same as openai-whisper).
-            # language=None means auto-detection.
             segments_generator, info = model.transcribe(
                 audio_path,
                 beam_size=5,
-                language=None,  # auto-detect
+                language=language,  # Use provided language or auto-detect if None
                 vad_filter=True,  # Voice Activity Detection: skip silence, ~20% faster
                 vad_parameters=dict(min_silence_duration_ms=500),
             )
@@ -115,6 +118,8 @@ class WhisperService:
                     "start": round(segment.start, 3),
                     "end": round(segment.end, 3),
                     "text": text,
+                    "avg_logprob": round(getattr(segment, "avg_logprob", 0.0), 3),
+                    "no_speech_prob": round(getattr(segment, "no_speech_prob", 0.0), 3),
                 })
                 full_text_parts.append(text)
 

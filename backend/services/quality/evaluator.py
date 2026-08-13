@@ -44,7 +44,7 @@ class SchemaValidator:
             "formula_sheet": ["formulas", "topic_groups"],
             "interview": ["technical_questions", "conceptual_questions"],
             "revision": ["quick_facts", "must_know_points"],
-            "notes": ["summary", "topics"]
+            "detailed_notes": ["notes_markdown"]
         }
 
         req_keys = required_keys.get(artifact_type, [])

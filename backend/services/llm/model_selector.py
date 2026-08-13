@@ -66,8 +66,6 @@ class TaskType(Enum):
     # Redesigned Phase 3 Tasks
     LEARNING_PLAN_GENERATION = "learning_plan_generation"
     TOPIC_NOTE_WRITING = "topic_note_writing"
-    ACCURACY_CHECK = "accuracy_check"
-    PEDAGOGY_CHECK = "pedagogy_check"
     NOTE_REPAIR = "note_repair"
 
     # ── Phase 4 – Educational Enhancement ────────────────────────────────────
@@ -126,14 +124,6 @@ _CODE_SECONDARY = "groq/llama-3.3-70b-versatile"
 _CODE_EMERGENCY = "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct"
 
 # ── Capability: Vision & Multimodal Analysis ──────────────────────────────
-_FAST_PRIMARY = "groq/llama-3.1-8b-instant"
-_FAST_SECONDARY = "gemini/gemini-1.5-flash"
-_FAST_EMERGENCY = "cloudflare/meta/llama-3.1-8b-instruct"
-
-_COMPLEX_PRIMARY = "openrouter/openai/gpt-4o-mini"
-_COMPLEX_SECONDARY = "openrouter/openai/gpt-4o-mini"
-_COMPLEX_EMERGENCY = "groq/llama-3.3-70b-versatile"
-
 _VISION_PRIMARY = "gemini/gemini-2.5-pro"
 _VISION_SECONDARY = "gemini/gemini-2.5-flash"
 _VISION_EMERGENCY = "cloudflare/@cf/meta/llama-3.2-11b-vision-instruct"
@@ -182,16 +172,16 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
     # ── Phase 2: Content Understanding (Extraction & Classification) ───────
     # These tasks require accurate extraction from the text.
     TaskType.TOPIC_DETECTION: ModelConfig(
-        primary="gemini-2.5-flash",
+        primary="gemini/gemini-2.5-flash",
         secondary="gemini/gemini-1.5-flash",
-        emergency="cloudflare/meta/llama-3.1-8b-instruct",
+        emergency="cloudflare/@cf/meta/llama-3.1-8b-instruct",
         temperature=0.2, max_tokens=1500
     ),
 
     TaskType.EXAMPLE_EXTRACTION: ModelConfig(
         primary="groq/llama-3.3-70b-versatile",
-        secondary="gemini-2.5-flash",
-        emergency="cloudflare/meta/llama-3.1-8b-instruct",
+        secondary="gemini/gemini-2.5-flash",
+        emergency="cloudflare/@cf/meta/llama-3.1-8b-instruct",
         temperature=0.2, max_tokens=2000
     ),
     TaskType.SUBTOPIC_DETECTION: ModelConfig(
@@ -331,23 +321,7 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         secondary=_COMPLEX_SECONDARY,
         emergency=_COMPLEX_EMERGENCY,
         temperature=0.3,
-        max_tokens=8192,
-    ),
-    TaskType.CHUNK_NOTES_GENERATION: ModelConfig(
-        # Complex Reasoning — generate focused note section for one chunk
-        primary="cloudflare/@cf/meta/llama-3.1-8b-instruct",
-        secondary="cloudflare/@cf/meta/llama-3.1-8b-instruct",
-        emergency="cloudflare/@cf/meta/llama-3.1-8b-instruct",
-        temperature=None,
-        max_tokens=8192,
-    ),
-    TaskType.LEARNING_PLAN_GENERATION: ModelConfig(
-        # Fast Processing — structural ordering
-        primary=_FAST_PRIMARY,
-        secondary=_FAST_SECONDARY,
-        emergency=_FAST_EMERGENCY,
-        temperature=0.2,
-        max_tokens=2048,
+        max_tokens=16384,
     ),
     TaskType.TOPIC_NOTE_WRITING: ModelConfig(
         # Complex Reasoning — core educational note generation
@@ -355,23 +329,7 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         secondary=_COMPLEX_SECONDARY,
         emergency=_COMPLEX_EMERGENCY,
         temperature=0.4,
-        max_tokens=8192,
-    ),
-    TaskType.ACCURACY_CHECK: ModelConfig(
-        # Complex Reasoning — factual verification
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.1,
-        max_tokens=4096,
-    ),
-    TaskType.PEDAGOGY_CHECK: ModelConfig(
-        # Fast Processing — pedagogical structure evaluation
-        primary=_FAST_PRIMARY,
-        secondary=_FAST_SECONDARY,
-        emergency=_FAST_EMERGENCY,
-        temperature=0.2,
-        max_tokens=2048,
+        max_tokens=16384,
     ),
     TaskType.NOTE_REPAIR: ModelConfig(
         # Complex Reasoning — targeted targeted repair

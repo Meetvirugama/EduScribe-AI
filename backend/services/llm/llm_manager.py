@@ -263,7 +263,7 @@ class LLMManager:
             except Exception as exc:
                 # 7. Pipeline Stage: Error Handling
                 ErrorHandler.handle_litellm_error(
-                    exc, provider, model, context)
+                    exc, provider, model, context, self.key_manager, api_key)
                 raise  # ErrorHandler always raises the mapped exception
 
         # 8. Pipeline Stage: Fallback Orchestration
@@ -326,4 +326,4 @@ class LLMManager:
                 yield chunk
         except Exception as exc:
             ErrorHandler.handle_litellm_error(
-                exc, starting_provider, starting_model, context)
+                exc, starting_provider, starting_model, context, self.key_manager, api_key)

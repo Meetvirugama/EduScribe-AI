@@ -88,7 +88,7 @@ class MergeBuilder:
             "total_frames": sum(len(s.frames) for s in sections),
             "total_segments": len(segments),
             "frames_with_ocr": total_ocr,
-            "total_duration_sec": sections[-1].end_time if sections else 0,
+            "total_duration_sec": max((s.end_time for s in sections), default=0),
         }
 
         lecture = MergedLecture(

@@ -40,9 +40,10 @@ async def test_extract_concepts_valid_response(mock_llm_manager, base_context):
     
     result = await service.extract_concepts(base_context)
     
-    assert len(result["concepts"]) == 1
-    assert result["concepts"][0].name == "Test Concept"
-    assert result["concepts"][0].source[0].chunk_id == "chunk_001"
+    data = result.get("data", {})
+    assert len(data["concepts"]) == 1
+    assert data["concepts"][0]["name"] == "Test Concept"
+    assert data["concepts"][0]["source"][0]["chunk_id"] == "chunk_001"
     assert len(base_context.concepts) == 1
 
 @pytest.mark.asyncio
@@ -50,14 +51,17 @@ async def test_extract_concepts_llm_exception(mock_llm_manager, base_context):
     service = ConceptService(mock_llm_manager)
     
     # Pre-populate some concepts to ensure they aren't erased
-    base_context.concepts = ["Previous Concept"]
+    prev = ConceptItem(name="Previous Concept", category="General", importance="medium", brief_description="")
+    base_context.concepts = [prev]
     
     mock_llm_manager.generate.side_effect = Exception("API Error")
     
     result = await service.extract_concepts(base_context)
     
     # Existing concepts preserved
-    assert result["concepts"] == ["Previous Concept"]
+    data = result.get("data", {})
+    assert len(data["concepts"]) == 1
+    assert data["concepts"][0]["name"] == "Previous Concept"
 
 @pytest.mark.asyncio
 async def test_extract_concepts_malformed_json(mock_llm_manager, base_context):
@@ -70,4 +74,5 @@ async def test_extract_concepts_malformed_json(mock_llm_manager, base_context):
     result = await service.extract_concepts(base_context)
     
     # Should fallback gracefully to empty
-    assert len(result["concepts"]) == 0
+    data = result.get("data", {})
+    assert len(data.get("concepts", [])) == 0

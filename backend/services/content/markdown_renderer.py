@@ -17,6 +17,9 @@ class MarkdownRenderer:
         Renders a single topic note dictionary into a Markdown string.
         Gracefully skips empty or missing sections.
         """
+        if "notes_markdown" in topic_data:
+            return topic_data["notes_markdown"]
+
         md = []
 
         title = topic_data.get("title", "Untitled Topic")

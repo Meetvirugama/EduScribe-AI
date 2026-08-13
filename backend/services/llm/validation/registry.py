@@ -32,6 +32,7 @@ from .schemas.notes import (
     ApplicationsOutput,
     QAOutput,
     RevisionSheetOutput,
+    TopicNoteWritingOutput,
 )
 
 
@@ -64,6 +65,8 @@ class SchemaRegistry:
 
         # ── Phase 1 — Notes pipeline schemas ─────────────────────────────────
         TaskType.DETAILED_NOTES: GenericTextOutput,
+        TaskType.TOPIC_NOTE_WRITING: TopicNoteWritingOutput,
+        TaskType.NOTE_REPAIR: TopicNoteWritingOutput,
 
         # ── Phase 2 — Content understanding schemas ──────────────────────────
         TaskType.CONCEPT_EXTRACTION: ConceptsOutput,

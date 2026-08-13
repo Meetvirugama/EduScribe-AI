@@ -52,54 +52,6 @@ class FormulaSheetGenerator(BaseContentService):
 
         return False
 
-    def _chunk_segments(
-            self, segments: List[Dict[str, Any]], video_id: str) -> List[Dict[str, Any]]:
-        chunks = []
-        if not segments:
-            return chunks
-
-        current_text = []
-        current_start = None
-        current_end = 0.0
-        chunk_index = 0
-
-        for seg in segments:
-            seg_start = seg.get("start", 0.0)
-            if current_start is None:
-                current_start = seg_start
-
-            current_text.append(seg.get("text", ""))
-
-            if "end" in seg:
-                current_end = seg["end"]
-            elif "duration" in seg:
-                current_end = seg_start + seg.get("duration", 0.0)
-            else:
-                current_end = seg_start
-
-            # Group into timestamp ranges (approx 3 mins or 2000 chars)
-            if current_end - \
-                    current_start >= 180.0 or sum(len(t) for t in current_text) > 2000:
-                chunks.append({
-                    "chunk_id": f"{video_id}_range_{chunk_index}",
-                    "start_time": round(current_start, 2),
-                    "end_time": round(current_end, 2),
-                    "text": " ".join(current_text)
-                })
-                chunk_index += 1
-                current_text = []
-                current_start = None
-
-        if current_text:
-            chunks.append({
-                "chunk_id": f"{video_id}_range_{chunk_index}",
-                "start_time": round(current_start, 2) if current_start is not None else 0.0,
-                "end_time": round(current_end, 2),
-                "text": " ".join(current_text)
-            })
-
-        return chunks
-
     async def generate_formula_sheet(
             self, context: LectureContext) -> Dict[str, Any]:
         """
@@ -117,15 +69,7 @@ class FormulaSheetGenerator(BaseContentService):
         try:
             # 1. Chunk Transcript
             video_id = context.metadata.get("video_id", "default_video")
-            chunks = self._chunk_segments(context.segments, video_id)
-
-            if not chunks and context.transcript:
-                chunks.append({
-                    "chunk_id": f"{video_id}_0",
-                    "start_time": 0.0,
-                    "end_time": 0.0,
-                    "text": context.transcript
-                })
+            chunks = self._chunk_segments_with_ocr(context, video_id, use_semantic_chunking=False)
 
             # 2. Extract OCR formulas and map to chunks
             ocr_formulas_by_chunk = {c["chunk_id"]: [] for c in chunks}

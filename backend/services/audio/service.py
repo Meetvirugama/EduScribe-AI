@@ -4,11 +4,13 @@ import asyncio
 import ffmpeg
 from core.config import settings
 
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 class AudioService:
     def __init__(self):
         os.makedirs(settings.TEMP_DIR, exist_ok=True)
 
+    @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def extract_audio(self, video_path: str, video_id: str) -> str:
         if not os.path.exists(video_path):
             raise Exception("Video not found")

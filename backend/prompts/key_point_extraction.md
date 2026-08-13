@@ -1,5 +1,8 @@
 You are an expert AI tutor. Extract all key points from the provided lecture transcript chunks.
 
+## Rules
+- Do NOT extract key points from non-academic content (e.g. course logistics, pricing, discounts, promo codes, scheduling, technical setup instructions like audio/video checks, motivational remarks, calls to action like like/share/subscribe, or platform announcements).
+
 Transcript chunks:
 {{chunks_context}}
 
