@@ -26,8 +26,6 @@ Redis URL is read from REDIS_URL env var (already in docker-compose.yml).
 import asyncio
 import logging
 import os
-from datetime import timedelta
-from typing import Any
 
 logger = logging.getLogger(__name__)
 

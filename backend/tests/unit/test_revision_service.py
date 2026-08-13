@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from services.content.revision import RevisionService
 from services.llm.validation.schemas.notes import RevisionSheetOutput, KeyDefinition
 from schemas.content import LectureInput, Concept

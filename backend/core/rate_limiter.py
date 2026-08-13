@@ -10,7 +10,6 @@ Applied as a FastAPI dependency on upload-heavy endpoints.
 import logging
 import time
 from collections import defaultdict
-from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 

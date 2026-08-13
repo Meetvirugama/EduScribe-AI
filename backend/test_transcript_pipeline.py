@@ -1,6 +1,5 @@
 import asyncio
 import os
-import json
 import sys
 
 # Add backend directory to path for imports

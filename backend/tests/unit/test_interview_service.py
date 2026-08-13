@@ -1,7 +1,7 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from services.content.interview import InterviewService
-from services.llm.validation.schemas.notes import InterviewOutput, TechnicalQuestion, ConceptualQuestion
+from services.llm.validation.schemas.notes import InterviewOutput, TechnicalQuestion
 from schemas.content import LectureInput, Concept
 from services.content.context import LectureContext
 

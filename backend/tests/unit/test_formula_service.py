@@ -1,8 +1,8 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from services.content.formula import FormulaService
 from services.llm.validation.schemas.notes import FormulasOutput, FormulaItem
-from schemas.content import LectureInput, LectureState
+from schemas.content import LectureInput
 from services.content.context import LectureContext
 
 @pytest.fixture

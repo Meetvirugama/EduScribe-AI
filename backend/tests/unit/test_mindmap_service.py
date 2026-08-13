@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from services.content.mindmap import MindmapService
 from services.llm.validation.schemas.core import MindMap, MindMapFormat
 from schemas.content import LectureInput, Concept

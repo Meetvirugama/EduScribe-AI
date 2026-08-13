@@ -1,8 +1,8 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock
 from services.content.concept import ConceptService
 from services.content.context import LectureContext
-from schemas.content import LectureInput, ServiceStatus
+from schemas.content import LectureInput
 from services.llm.validation.schemas.notes import ConceptsOutput, ConceptItem, SourceReferenceItem
 
 @pytest.fixture

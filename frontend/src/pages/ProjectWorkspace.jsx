@@ -4,13 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch, API_BASE } from '../lib/api';
 import {
   Video, Clock, Upload, Database, Languages, Zap, FileText,
-  ChevronLeft, ScanText, PlayCircle, BookOpen, Search,
-  Download, Trash2, X, BookMarked, Lightbulb, Map, FileSpreadsheet, MessagesSquare, CheckSquare, Presentation
+  ChevronLeft, ScanText, PlayCircle, BookOpen,
+  Trash2, BookMarked, Lightbulb, Map, FileSpreadsheet, MessagesSquare, CheckSquare, Presentation
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import ConfirmModal from '../components/ConfirmModal';
 import './ProjectWorkspace.css';
 
 const ARTIFACT_TYPES = {

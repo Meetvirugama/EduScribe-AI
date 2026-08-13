@@ -10,7 +10,7 @@ ISSUE-08: retention_days is bounded by MAX_RETENTION_DAYS at the schema level.
 CS-06:  video_path (server filesystem path) is excluded from VideoResponse
         so it is never returned to the client.
 """
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 from urllib.parse import urlparse
