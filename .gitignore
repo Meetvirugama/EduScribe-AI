@@ -30,6 +30,10 @@ backend/eduscribe.db
 # ── Storage / Generated files ─────────────────────────────────────────────────
 storage/
 backend/storage/
+backend/full_test_outputs/
+backend/full_transcript_outputs/
+backend/pipeline_test_outputs/
+*.mp4
 
 # ── OS / IDE ──────────────────────────────────────────────────────────────────
 .DS_Store

@@ -47,10 +47,11 @@ class AudioService:
                         **{'threads': 4}
                     )
                     .overwrite_output()
-                    .run(capture_stdout=True, capture_stderr=True)
+                    .run(quiet=True)
                 )
             except ffmpeg.Error as e:
-                raise Exception(f"FFmpeg extraction failed: {e.stderr.decode('utf8', errors='ignore')}")
+                # e.stderr is not captured when quiet=True, so just raise a generic error
+                raise Exception("FFmpeg extraction failed (see system logs if available)")
 
         await asyncio.to_thread(_process)
         return audio_path

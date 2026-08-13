@@ -316,9 +316,9 @@ class FormulaItem(BaseModel):
     name: str = ""
     expression: str
     variables: Dict[str, str] = Field(default_factory=dict)
-    context: str = ""
-    source: str = "transcript"  # transcript, ocr, both
-    timestamp: Optional[str] = None
+    explanation: str = ""
+    topic: str = ""
+    sources: List[SourceReferenceItem] = Field(default_factory=list)
 
 
 class FormulasOutput(BaseLLMOutput):
@@ -388,14 +388,4 @@ class RelationshipItem(BaseModel):
 class RelationshipsOutput(BaseLLMOutput):
     relationships: List[RelationshipItem] = Field(default_factory=list)
 
-class FormulaItemModel(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    name: str
-    expression: str
-    variables: Dict[str, str] = Field(default_factory=dict)
-    explanation: str = ""
-    topic: str = ""
-    sources: List[SourceReferenceItem] = Field(default_factory=list)
 
-class FormulasOutput(BaseLLMOutput):
-    formulas: List[FormulaItemModel] = Field(default_factory=list)

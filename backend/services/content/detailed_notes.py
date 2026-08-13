@@ -31,7 +31,7 @@ class DetailedNotesGenerator(BaseContentService):
         # Process each topic concurrently or sequentially.
         # We will do it sequentially to preserve strict ordering and avoid rate limits.
         for index, topic in enumerate(context.topics):
-            topic_title = topic.get("title", f"Topic {index+1}")
+            topic_title = getattr(topic, "title", f"Topic {index+1}")
             logger.info(f"Processing Topic: {topic_title}")
 
             # 1. Context Packet Builder
@@ -60,6 +60,7 @@ class DetailedNotesGenerator(BaseContentService):
             lecture_title=context.metadata.get("title", "Lecture Notes"),
             topic_markdowns=topic_markdowns
         )
+        context.detailed_notes_md = final_markdown
 
         return {"notes_markdown": final_markdown}
 
@@ -74,22 +75,22 @@ class DetailedNotesGenerator(BaseContentService):
         if context.concepts:
             packet.append("CONCEPTS:")
             for c in context.concepts:
-                packet.append(f"- {c.get('name')}: {c.get('brief_description')}")
+                packet.append(f"- {getattr(c, 'name', '')}: {getattr(c, 'brief_description', '')}")
                 
         if context.definitions:
             packet.append("DEFINITIONS:")
             for d in context.definitions:
-                packet.append(f"- {d.get('term')}: {d.get('definition')}")
+                packet.append(f"- {getattr(d, 'term', '')}: {getattr(d, 'definition', '')}")
                 
         if context.examples:
             packet.append("EXAMPLES:")
             for e in context.examples:
-                packet.append(f"- {e.get('title')}: {e.get('problem')}")
+                packet.append(f"- {getattr(e, 'title', '')}: {getattr(e, 'problem', '')}")
 
         if context.key_points:
             packet.append("KEY POINTS:")
             for k in context.key_points:
-                packet.append(f"- {k.get('text')}")
+                packet.append(f"- {getattr(k, 'text', '')}")
 
         return "\n\n".join(packet)
 

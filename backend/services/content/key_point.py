@@ -144,7 +144,7 @@ class KeyPointService(BaseContentService):
                     importance=k.importance,
                     category=k.category,
                     topic=k.topic,
-                    timestamp=k.timestamp,
+                    timestamp=sources[0].timestamp_start if sources else None,
                     source=sources
                 ))
             

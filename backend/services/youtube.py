@@ -25,6 +25,7 @@ class YouTubeService:
         base_ydl_opts = {
             'quiet': True,
             'no_warnings': True,
+            'extractor_args': {'youtube': {'player_client': ['android']}},
         }
         def _fetch(ydl_opts_custom):
             with YoutubeDL(ydl_opts_custom) as ydl:
@@ -58,6 +59,7 @@ class YouTubeService:
             'outtmpl': os.path.join(settings.UPLOAD_DIR, f'{video_id}.%(ext)s'),
             'quiet': True,
             'no_warnings': True,
+            'extractor_args': {'youtube': {'player_client': ['android']}},
         }
 
         # Run yt-dlp synchronously in a thread
