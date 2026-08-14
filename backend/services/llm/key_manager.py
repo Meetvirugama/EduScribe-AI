@@ -129,7 +129,11 @@ class KeyManager:
                 k = os.environ[single_var_no_num].strip()
                 if k and self._validate_key(actual_provider, k):
                     if not any(m.key == k for m in loaded_meta):
-                        loaded_meta.append(KeyMetadata(key=k))
+                        meta = KeyMetadata(key=k)
+                        if actual_provider == "cloudflare":
+                            acc_var = f"{env_prefix}_ACCOUNT_ID"
+                            meta.account_id = os.environ.get(acc_var, "").strip()
+                        loaded_meta.append(meta)
 
             if loaded_meta:
                 self._keys[actual_provider] = loaded_meta

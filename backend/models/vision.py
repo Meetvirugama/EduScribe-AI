@@ -13,7 +13,7 @@ class VideoFrame(Base):
     timestamp_ms = Column(Integer, nullable=False)
     frame_path = Column(String, nullable=False)
     scene_number = Column(Integer, nullable=False)
-    # ISSUE-004: timezone-aware datetime
+    # timezone-aware datetime
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))
 
 

@@ -13,7 +13,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
     picture = Column(String, nullable=True)
-    # ISSUE-003: is_admin field for admin RBAC — defaults to False for all users
+    # is_admin field for admin RBAC — defaults to False for all users
     is_admin = Column(Boolean, nullable=False, default=False)
-    # ISSUE-004: timezone-aware datetime
+    # timezone-aware datetime
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))

@@ -82,17 +82,7 @@ class FrameExtractorService:
                 self._extract_frames_sync, video_path, video_id, scenes, output_dir
             )
 
-            # Save metadata per the optimization plan so it can be reused later
-            import json
-            metadata_path = os.path.join(output_dir, "frames.json")
-            await asyncio.to_thread(
-                lambda: open(
-                    metadata_path,
-                    'w').write(
-                    json.dumps(
-                        frames,
-                        indent=2))
-            )
+
 
         except Exception as exc:
             logger.error(
@@ -103,9 +93,8 @@ class FrameExtractorService:
                 f"Frame extraction failed: {exc}") from exc
 
         logger.info(
-            "Extracted %d frames and saved metadata to %s for video %s",
+            "Extracted %d frames for video %s",
             len(frames),
-            "frames.json",
             video_id)
         return frames
 

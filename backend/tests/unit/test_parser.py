@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from backend.services.llm.validation.parser import RawResponseParser, ResponseParseError
+from services.llm.validation.parser import RawResponseParser, ResponseParseError
 
 def test_parse_valid_response():
     """Test parsing a normal LiteLLM response."""

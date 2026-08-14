@@ -22,5 +22,5 @@ class Transcript(Base):
     language = Column(String(20), nullable=True)
     word_count = Column(Integer, nullable=True)
     source = Column(String(50), default=TranscriptSource.WHISPER_AUDIO)
-    # ISSUE-004: timezone-aware datetime
+    # timezone-aware datetime
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(tz=timezone.utc))

@@ -13,12 +13,12 @@ LLD Reference: §15.1 The Four-Tier Waterfall
                §15.6 Limitations — "Daily quota ceilings"
                §18.3 Routing Decision Workflow
 
-Redis key schema:
-    quota:{provider}:{model}:used_today     → int (tokens consumed today)
-    quota:{provider}:rpm_count              → int (requests in current minute)
-    quota:{provider}:key_exhausted:{key_n}  → "1" (set when key N is exhausted)
-
-All keys expire at midnight UTC (quota reset time for most free tiers).
+# Redis key schema:
+#     quota:{provider}:tokens_today     → int (tokens consumed today)
+#     quota:{provider}:rpd_today        → int (requests consumed today)
+#     quota:{provider}:key_exhausted:{key_n}  → "1" (set when key N is exhausted)
+#
+# All keys expire at midnight UTC (quota reset time for most free tiers).
 """
 
 import logging
@@ -150,7 +150,7 @@ class QuotaTracker:
     def has_quota(self, provider: str, model: Optional[str] = None) -> bool:
         """
         Return True if the provider (and optionally a specific model) has
-        remaining free-tier quota for today.
+        remaining free-tier quota for today (both requests and tokens).
 
         Used by llm_manager.py before making an LLM call to avoid sending
         requests to an exhausted provider (§15.4 Internal Workflow).
@@ -166,21 +166,30 @@ class QuotaTracker:
             return True
 
         rpd_limit = limits.get("rpd")
-        if rpd_limit is None:
-            # No RPD cap defined for this provider
-            return True
+        tokens_limit = limits.get("tokens_per_day")
 
-        used_today = self._get_rpd_used(provider)
-        has = used_today < rpd_limit
+        has = True
 
-        if not has:
-            logger.info(
-                "quota_tracker: provider '%s' has exhausted RPD quota "
-                "(%d / %d requests today)",
-                provider,
-                used_today,
-                rpd_limit,
-            )
+        if rpd_limit is not None:
+            used_rpd = self._get_rpd_used(provider)
+            if used_rpd >= rpd_limit:
+                has = False
+                logger.info(
+                    "quota_tracker: provider '%s' has exhausted RPD quota "
+                    "(%d / %d requests today)",
+                    provider, used_rpd, rpd_limit,
+                )
+
+        if has and tokens_limit is not None:
+            used_tokens = self._get_tokens_used(provider)
+            if used_tokens >= tokens_limit:
+                has = False
+                logger.info(
+                    "quota_tracker: provider '%s' has exhausted Token quota "
+                    "(%d / %d tokens today)",
+                    provider, used_tokens, tokens_limit,
+                )
+
         return has
 
     def record_request(

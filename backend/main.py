@@ -2,15 +2,15 @@
 main.py — FastAPI Application Entry Point
 
 Security / architecture fixes applied:
-  ISSUE-10:  CORS origins read from settings; methods and headers are explicit,
+  CORS origins read from settings; methods and headers are explicit,
              not wildcard.
-  ISSUE-11:  Storage directory created using settings.UPLOAD_DIR (not a
+  Storage directory created using settings.UPLOAD_DIR (not a
              relative ../storage string).
-  ISSUE-16:  Static file mount removed. Storage files are served through
+  Static file mount removed. Storage files are served through
              authenticated API endpoints that verify ownership.
-  S-12:      Global exception handler added to log unhandled errors and return
+  Global exception handler added to log unhandled errors and return
              structured 500 responses without leaking internals.
-  S-04:      Structured logging format with level and module name.
+  Structured logging format with level and module name.
 """
 import logging
 import os
@@ -33,7 +33,7 @@ from api.routers import generate as generate_router
 from core.config import settings
 
 # ---------------------------------------------------------------------------
-# Logging configuration  (S-04)
+# Logging configuration
 # ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -57,7 +57,7 @@ async def cleanup_expired_videos() -> None:
       3. Deletes extracted frames directory from disk
       4. Deletes all DB records (cascades to transcripts, frames, scores via FK)
 
-    ISSUE-09: This job now works correctly because expires_at is set at
+    This job now works correctly because expires_at is set at
               video creation time (previously it was always NULL).
     """
     from datetime import datetime, timezone
@@ -116,7 +116,7 @@ async def cleanup_expired_videos() -> None:
                     except Exception:
                         pass
 
-                # 5. ISSUE-15: Delete AI artifacts — embeddings, RAG index, outputs
+                # 5. Delete AI artifacts — embeddings, RAG index, outputs
                 _ai_artifact_dirs = [
                     os.path.join(settings.EMBEDDING_DIR, video_id),  # embedding vectors
                     os.path.join(settings.OUTPUT_DIR, video_id),      # merged markdown + RAG index
@@ -130,7 +130,7 @@ async def cleanup_expired_videos() -> None:
                         except OSError as e:
                             logger.warning("Could not remove AI artifact dir %s: %s", artifact_dir, e)
 
-                # 6. ISSUE-15: Delete OCR temp files (named by video_id)
+                # 6. Delete OCR temp files (named by video_id)
                 for ocr_tmp in glob.glob(f"{settings.FRAMES_DIR}/{video_id}*"):
                     try:
                         if os.path.isdir(ocr_tmp):
@@ -159,7 +159,7 @@ async def cleanup_expired_videos() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure all storage directories exist on startup (ISSUE-11 — use settings paths)
+    # Ensure all storage directories exist on startup (— use settings paths)
     for storage_dir in [
         settings.UPLOAD_DIR,
         settings.OUTPUT_DIR,
@@ -197,11 +197,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ISSUE-16: Static file mount REMOVED. Frame images and generated notes must
+# Static file mount REMOVED. Frame images and generated notes must
 # be accessed through authenticated endpoints in the respective routers.
 # (Previously: app.mount("/storage", StaticFiles(...), name="storage"))
 
-# ISSUE-10: CORS — origins from settings, explicit methods/headers only
+# CORS — origins from settings, explicit methods/headers only
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins_list,
@@ -222,7 +222,7 @@ app.include_router(generate_router.router)
 
 
 # ---------------------------------------------------------------------------
-# Global exception handler (S-12)
+# Global exception handler
 # ---------------------------------------------------------------------------
 
 @app.exception_handler(Exception)

@@ -302,7 +302,8 @@ class FallbackManager:
                 self.stats.record_call(
                     provider, model, success=False, latency=latency)
 
-                is_429 = "429" in str(exc) or "rate limit" in str(exc).lower()
+                orig_exc = exc.last_attempt.exception() if exc.last_attempt else exc
+                is_429 = "429" in str(orig_exc) or "rate limit" in str(orig_exc).lower()
                 breaker.record_failure(is_rate_limit=is_429)
 
                 logger.warning(

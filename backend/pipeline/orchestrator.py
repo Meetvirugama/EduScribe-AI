@@ -159,7 +159,8 @@ async def process_video_pipeline_async(video_id_str: str):
             save_merged_lecture(merged_lecture, output_dir)
             
             # Optional: generate MD for debugging (not used by system)
-            render_merged_lecture_md(merged_lecture, output_dir)
+            if os.getenv("DEBUG_MODE") == "true":
+                render_merged_lecture_md(merged_lecture, output_dir)
 
             # ── STEP 6: Content Pipeline (Knowledge Extraction) ──────────────────────────
             await update_status(db, VideoStatus.DETECTING_TOPICS, "Extracting Knowledge", 80)

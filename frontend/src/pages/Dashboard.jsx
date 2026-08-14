@@ -9,9 +9,7 @@ import { useProgressStream } from '../hooks/useProgressStream';
 
 const PROCESSING_STATUSES = [
   'PROCESSING', 'UPLOADING', 'EXTRACTING_AUDIO', 'TRANSCRIBING',
-  'EXTRACTING_FRAMES', 'RUNNING_OCR', 'CHUNKING', 'DETECTING_TOPICS',
-  'MERGING_ALIGNMENT', 'UNDERSTANDING_CONTENT', 'GENERATING_ARTIFACT',
-  'GENERATING_NOTES', 'EXPORTING',
+  'EXTRACTING_FRAMES', 'CHUNKING', 'DETECTING_TOPICS',
 ];
 
 const STATUS_COLORS = {
@@ -29,14 +27,8 @@ const STATUS_LABELS = {
   EXTRACTING_AUDIO: 'Extracting Audio…',
   TRANSCRIBING: 'Transcribing…',
   EXTRACTING_FRAMES: 'Extracting Frames…',
-  RUNNING_OCR: 'Running OCR…',
   CHUNKING: 'Chunking…',
   DETECTING_TOPICS: 'Detecting Topics…',
-  MERGING_ALIGNMENT: 'Aligning Data…',
-  UNDERSTANDING_CONTENT: 'Understanding Content…',
-  GENERATING_ARTIFACT: 'Generating Artifact…',
-  GENERATING_NOTES: 'Generating Notes…',
-  EXPORTING: 'Exporting…',
   PROCESSING: 'Processing…',
 };
 

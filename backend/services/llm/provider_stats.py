@@ -8,6 +8,7 @@ Note: Cost tracking is omitted as this system exclusively uses free API tiers.
 import collections
 import time
 import logging
+import threading
 from typing import Dict, Tuple
 
 logger = logging.getLogger(__name__)
@@ -19,32 +20,37 @@ class ProviderStats:
         # Key: (provider, model)
         self.window_size = window_size
         self.history: Dict[Tuple[str, str], collections.deque] = {}
+        self._lock = threading.Lock()
 
     def record_call(self, provider: str, model: str,
                     success: bool, latency: float):
         key = (provider, model)
-        if key not in self.history:
-            self.history[key] = collections.deque(maxlen=self.window_size)
+        with self._lock:
+            if key not in self.history:
+                self.history[key] = collections.deque(maxlen=self.window_size)
 
-        self.history[key].append({
-            "success": 1 if success else 0,
-            "latency": latency,
-            "timestamp": time.time()
-        })
+            self.history[key].append({
+                "success": 1 if success else 0,
+                "latency": latency,
+                "timestamp": time.time()
+            })
 
     def get_stats(self, provider: str, model: str) -> dict:
         key = (provider, model)
-        if key not in self.history or len(self.history[key]) == 0:
-            return {"success_rate": 1.0, "avg_latency": 0.0, "samples": 0}
+        with self._lock:
+            if key not in self.history or len(self.history[key]) == 0:
+                return {"success_rate": 1.0, "avg_latency": 0.0, "samples": 0}
 
-        history = self.history[key]
-        success_rate = sum(x["success"] for x in history) / len(history)
-        avg_latency = sum(x["latency"] for x in history) / len(history)
+            # Create a snapshot to iterate over safely
+            history_snapshot = list(self.history[key])
+
+        success_rate = sum(x["success"] for x in history_snapshot) / len(history_snapshot)
+        avg_latency = sum(x["latency"] for x in history_snapshot) / len(history_snapshot)
 
         return {
             "success_rate": success_rate,
             "avg_latency": avg_latency,
-            "samples": len(history)
+            "samples": len(history_snapshot)
         }
 
     def calculate_score(self, provider: str, model: str) -> float:

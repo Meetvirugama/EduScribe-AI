@@ -41,7 +41,6 @@ mutagen==1.47.0
 networkx==3.2.1
 numba==0.60.0
 
-openai-whisper==20250625
 orjson==3.11.5
 packaging==26.2
 prompt_toolkit==3.0.52

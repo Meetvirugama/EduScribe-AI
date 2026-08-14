@@ -53,12 +53,6 @@ class SchemaRegistry:
 
     _registry: dict[TaskType, Type[BaseModel]] = {
         # ── Core schemas (from original registry) ────────────────────────────
-        TaskType.LECTURE_ANALYSIS: LectureAnalysis,
-        TaskType.TOPIC_DETECTION: TopicList,
-        TaskType.SUBTOPIC_DETECTION: SubtopicList,
-        TaskType.KNOWLEDGE_GAP_ANALYSIS: KnowledgeGap,
-        TaskType.DETAILED_EXPLANATION_GEN: SubtopicExplanation,
-        TaskType.EXAMPLE_GENERATION: ExampleSet,
         TaskType.QUIZ_GENERATION: QuizSet,
         TaskType.FLASHCARD_GENERATION: FlashcardSet,
         TaskType.MIND_MAP_GENERATION: MindMap,
@@ -70,26 +64,16 @@ class SchemaRegistry:
 
         # ── Phase 2 — Content understanding schemas ──────────────────────────
         TaskType.CONCEPT_EXTRACTION: ConceptsOutput,
-        TaskType.KEYWORD_EXTRACTION: ConceptsOutput,
-        TaskType.LEARNING_OBJECTIVE_DETECTION: LearningObjectivesOutput,
-        TaskType.PREREQUISITE_DETECTION: PrerequisitesOutput,
-        TaskType.DEPENDENCY_DETECTION: PrerequisitesOutput,
-        TaskType.DIFFICULTY_CLASSIFICATION: DifficultyOutput,
 
         # ── Phase 3 — Knowledge enrichment schemas ───────────────────────────
         TaskType.DEFINITION_GENERATION: DefinitionsOutput,
-        TaskType.STEP_BY_STEP_EXPLANATION: StepByStepOutput,
-        TaskType.REAL_WORLD_APPLICATIONS: ApplicationsOutput,
-        TaskType.INDUSTRY_USE_CASES: ApplicationsOutput,
 
         # ── Phase 5 – Assessment & support schemas ───────────────────────────
-        TaskType.LEARNING_OBJECTIVE_DETECTION: LearningObjectivesOutput,
 
         # ── Phase 6 – Note Organization ────────────────────────────
         TaskType.REVISION_GENERATION: RevisionSheetOutput,
 
         # ── Phase 7 – QA & verification schemas ──────────────────────────────
-        TaskType.FACT_VERIFICATION: QAOutput,
     }
 
     @classmethod

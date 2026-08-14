@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from backend.services.llm.validation.base_schema import BaseLLMOutput
+from services.llm.validation.base_schema import BaseLLMOutput
 
 def test_base_schema_defaults_and_ignored_extras():
     """Verify that defaults are populated and extra fields are safely ignored."""

@@ -12,7 +12,7 @@ class YouTubeService:
 
     def validate_url(self, url: str):
         parsed = urlparse(url)
-        # HIGH-005: Keep in sync with YoutubeRequest._YOUTUBE_HOSTNAMES in
+        # Keep in sync with YoutubeRequest._YOUTUBE_HOSTNAMES in
         # schemas/video.py
         _ALLOWED_HOSTNAMES = {
             "www.youtube.com", "youtube.com", "youtu.be",
@@ -42,7 +42,7 @@ class YouTubeService:
         try:
             return await asyncio.to_thread(_fetch, base_ydl_opts)
         except Exception:
-            # Fallback to cookies if metadata fetch is blocked (ISSUE-021)
+            # Fallback to cookies if metadata fetch is blocked
             if os.path.exists("/.dockerenv"):
                 raise Exception("youtube_bot_protection")
             opts = dict(base_ydl_opts)
@@ -53,7 +53,7 @@ class YouTubeService:
         self.validate_url(url)
 
         base_ydl_opts = {
-            # CRITICAL-005: Request a proper video+audio stream so cv2.VideoCapture
+            # Request a proper video+audio stream so cv2.VideoCapture
             # can open the file for the vision pipeline (frame extraction, OCR).
             # The previous audio-only format caused the entire vision pipeline to
             # silently fail for all YouTube-sourced videos.
@@ -90,7 +90,7 @@ class YouTubeService:
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except Exception:
-            # Second attempt: Chrome cookies (ISSUE-021)
+            # Second attempt: Chrome cookies
             if os.path.exists("/.dockerenv"):
                 raise Exception("youtube_bot_protection")
             try:

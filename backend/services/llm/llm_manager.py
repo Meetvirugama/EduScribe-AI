@@ -30,7 +30,7 @@ import logging
 import os
 import time
 import uuid
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, Optional
 
 import litellm
 litellm.drop_params = True
@@ -68,7 +68,7 @@ class LLMManager:
                 "llm_manager: routing through LiteLLM proxy at %s",
                 LITELLM_PROXY_URL)
 
-        # CRITICAL-007: Lazily created EmbeddingManager shared by embed() calls.
+        # Lazily created EmbeddingManager shared by embed() calls.
         # EmbeddingManager reuses the same resilience infrastructure (key rotation,
         # quota tracking) as LLMManager to avoid redundant initialisation.
         self._embedding_manager: Optional[EmbeddingManager] = None
@@ -108,9 +108,7 @@ class LLMManager:
         """
         Generate embeddings by delegating to the shared EmbeddingManager.
 
-        CRITICAL-007: This method was previously missing entirely, causing an
-        AttributeError in rag/pipeline.py and rag/embedding_store.py that
-        silently killed the entire RAG pipeline (search always returned []).
+        Used by services/content/topic.py for topic-title deduplication via cosine similarity.
 
         The EmbeddingManager is lazily created on first call and reused
         across subsequent calls within the same LLMManager instance.
@@ -283,47 +281,3 @@ class LLMManager:
 
         return final_response
 
-    async def generate_stream(
-        self,
-        task: TaskType,
-        messages: list[dict[str, str]],
-        *,
-        override_model: Optional[str] = None,
-        **kwargs: Any,
-    ) -> AsyncGenerator[Any, None]:
-        """
-        Executes a streaming request through the pipeline.
-        Note: Caching and Fallback are bypassed for streams.
-        """
-        config = get_model_config(task)
-        context = RequestContext(
-            task=task,
-            messages=messages,
-            request_id=str(uuid.uuid4())[:8]
-        )
-        context.capabilities = CapabilityDetector.detect(messages)
-
-        starting_model = override_model or self._select_starting_model(config)[
-            0]
-        starting_provider = self._provider_from_model(starting_model)
-
-        api_key = self.key_manager.get_active_key(starting_provider)
-        adapter = self.adapter_factory.get_adapter(starting_provider)
-        provider_kwargs = adapter.prepare_request(
-            starting_provider, starting_model, api_key)
-        call_kwargs = {**kwargs, **provider_kwargs}
-
-        try:
-            response = await litellm.acompletion(
-                model=starting_model,
-                messages=context.messages,
-                api_key=api_key,
-                stream=True,
-                num_retries=0,
-                **call_kwargs,
-            )
-            async for chunk in response:
-                yield chunk
-        except Exception as exc:
-            ErrorHandler.handle_litellm_error(
-                exc, starting_provider, starting_model, context, self.key_manager, api_key)

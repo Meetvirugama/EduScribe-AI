@@ -1,13 +1,13 @@
 """
 schemas/video.py — Pydantic request/response schemas for the Video resource.
 
-S-13:  YoutubeRequest validates the URL at the Pydantic layer before it
+YoutubeRequest validates the URL at the Pydantic layer before it
        reaches the router, so invalid URLs are rejected with a 422 before any
-       DB record is created (ISSUE-07 fix).
+       DB record is created (fix).
 
-ISSUE-08: retention_days is bounded by MAX_RETENTION_DAYS at the schema level.
+retention_days is bounded by MAX_RETENTION_DAYS at the schema level.
 
-CS-06:  video_path (server filesystem path) is excluded from VideoResponse
+video_path (server filesystem path) is excluded from VideoResponse
         so it is never returned to the client.
 """
 from pydantic import BaseModel, field_validator
@@ -19,7 +19,7 @@ import uuid
 from models.video import VideoStatus, SourceType
 
 
-# Allowed YouTube hostnames for URL validation (S-13 / ISSUE-07)
+# Allowed YouTube hostnames for URL validation (/ )
 _YOUTUBE_HOSTNAMES = {
     "www.youtube.com",
     "youtube.com",
@@ -49,7 +49,7 @@ class VideoResponse(VideoBase):
     estimated_time_remaining_seconds: Optional[int] = None
     error_message: Optional[str] = None
     duration_seconds: Optional[int] = None
-    # CS-06: video_path intentionally excluded — server filesystem paths
+    # video_path intentionally excluded — server filesystem paths
     # must never be returned to clients (information disclosure).
     expires_at: Optional[datetime] = None
     created_at: datetime
@@ -82,7 +82,7 @@ class YoutubeRequest(BaseModel):
         """
         Reject non-YouTube URLs at the Pydantic validation layer so that
         invalid requests are rejected with a 422 before any DB record is
-        created. (S-13 / ISSUE-07)
+        created. (/ )
         """
         parsed = urlparse(v.strip())
         if parsed.netloc not in _YOUTUBE_HOSTNAMES:
@@ -95,7 +95,7 @@ class YoutubeRequest(BaseModel):
     @field_validator("retention_days")
     @classmethod
     def clamp_retention(cls, v: int) -> int:
-        """Enforce the maximum retention limit at the schema level (ISSUE-08)."""
+        """Enforce the maximum retention limit at the schema level."""
         return _validate_retention_days(v)
 
 
@@ -105,5 +105,5 @@ class VideoUpdateRetention(BaseModel):
     @field_validator("retention_days")
     @classmethod
     def clamp_retention(cls, v: int) -> int:
-        """Enforce max retention on updates too (ISSUE-08)."""
+        """Enforce max retention on updates too."""
         return _validate_retention_days(v)

@@ -3,7 +3,7 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Accept VITE_API_URL as a build argument (ISSUE-010/014)
+# Accept VITE_API_URL as a build argument
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Serve with Nginx in production (ISSUE-014)
+# Stage 2: Serve with Nginx in production
 FROM nginx:alpine
 
 # Copy built assets from the build stage

@@ -101,7 +101,6 @@ class RetryManager:
                                     providers.
         """
         @retry(
-            reraise=True,
             stop=stop_after_attempt(self.MAX_ATTEMPTS),
             wait=wait_exponential(
                 multiplier=self.WAIT_MULTIPLIER,

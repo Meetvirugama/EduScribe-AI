@@ -1,18 +1,11 @@
 """
-base_provider.py — Abstract BaseProvider Interface
+base_provider.py — Provider Exception Definitions
 
-Every LLM provider integration in EduScribe AI must inherit from this class.
-No component outside the services/llm/ directory ever calls an LLM directly;
-all calls flow through: LLM Manager → model_selector → key_manager → LiteLLM → provider API.
+Defines the core transient and permanent exception types used for LLM provider 
+resilience, retry, and fallback orchestration.
 
-LLD Reference: §15.3 Folder Structure, §15 LLM Provider Architecture
+LLD Reference: §19 Retry Strategy
 """
-
-from abc import ABC, abstractmethod
-from typing import Any
-
-
-
 
 class ProviderTransientError(Exception):
     """

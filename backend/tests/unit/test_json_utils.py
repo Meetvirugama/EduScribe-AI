@@ -1,5 +1,5 @@
 import pytest
-from backend.services.llm.validation.json_utils import JSONExtractor, JSONExtractionError
+from services.llm.validation.json_utils import JSONExtractor, JSONExtractionError
 
 def test_extract_valid_json():
     """Test extracting a perfectly valid JSON object."""

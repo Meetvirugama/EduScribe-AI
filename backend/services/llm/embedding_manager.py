@@ -80,7 +80,7 @@ class EmbeddingManager:
                 return raw
 
             except Exception as exc:
-                ErrorHandler.handle_litellm_error(exc, prov, mod, context)
+                ErrorHandler.handle_litellm_error(exc, prov, mod, context, self.key_manager, api_key)
                 raise  # Unreachable due to ErrorHandler, but keeps type checker happy
 
         last_error = None
@@ -108,6 +108,10 @@ class EmbeddingManager:
             except ProviderPermanentError as exc:
                 logger.warning(
                     f"Embedding permanent failure on {provider}, skipping provider. Error: {exc}")
+                last_error = exc
+            except Exception as exc: # Catch RetryError from tenacity
+                logger.warning(
+                    f"Embedding failed after all retries on {provider}, trying next fallback. Error: {exc}")
                 last_error = exc
 
         raise RuntimeError(

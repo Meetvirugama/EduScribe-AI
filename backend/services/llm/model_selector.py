@@ -35,41 +35,26 @@ class TaskType(Enum):
     """All task types actively executed by the EduScribe AI LLM pipeline."""
 
     # ── Phase 1 – Content Preparation ────────────────────────────────────────
-    LECTURE_ANALYSIS = "lecture_analysis"
     TRANSCRIPT_CLEANING = "transcript_cleaning"
+    ROUTING = "routing"
     METADATA_EXTRACTION = "metadata_extraction"
 
     # ── Phase 2 – Content Understanding ──────────────────────────────────────
-    TOPIC_DETECTION = "topic_detection"
-    SUBTOPIC_DETECTION = "subtopic_detection"
     CONCEPT_EXTRACTION = "concept_extraction"
-    KEYWORD_EXTRACTION = "keyword_extraction"
     KEY_POINTS_EXTRACTION = "key_points_extraction"
     RELATIONSHIP_EXTRACTION = "relationship_extraction"
     EXAMPLE_EXTRACTION = "example_extraction"
-    LEARNING_OBJECTIVE_DETECTION = "learning_objective_detection"
-    PREREQUISITE_DETECTION = "prerequisite_detection"
-    DEPENDENCY_DETECTION = "dependency_detection"
-    KNOWLEDGE_GAP_ANALYSIS = "knowledge_gap_analysis"
-    DIFFICULTY_CLASSIFICATION = "difficulty_classification"
 
     # ── Phase 3 – Knowledge Enrichment ───────────────────────────────────────
     DEFINITION_GENERATION = "definition_generation"
-    DETAILED_EXPLANATION_GEN = "detailed_explanation_generation"
-    STEP_BY_STEP_EXPLANATION = "step_by_step_explanation"
     FORMULA_EXPLANATION = "formula_explanation"
-    REAL_WORLD_APPLICATIONS = "real_world_applications"
-    INDUSTRY_USE_CASES = "industry_use_cases"
     DETAILED_NOTES = "detailed_notes"
-    CHUNK_NOTES_GENERATION = "chunk_notes_generation"
 
     # Redesigned Phase 3 Tasks
-    LEARNING_PLAN_GENERATION = "learning_plan_generation"
     TOPIC_NOTE_WRITING = "topic_note_writing"
     NOTE_REPAIR = "note_repair"
 
     # ── Phase 4 – Educational Enhancement ────────────────────────────────────
-    EXAMPLE_GENERATION = "example_generation"
     INTERVIEW_PERSPECTIVE = "interview_perspective"
 
     # ── Phase 5 – Assessment Generation ──────────────────────────────────────
@@ -81,7 +66,6 @@ class TaskType(Enum):
     REVISION_GENERATION = "revision_generation"
 
     # ── Phase 7 – Quality Assurance ──────────────────────────────────────────
-    FACT_VERIFICATION = "fact_verification"
 
 
 @dataclass
@@ -144,14 +128,6 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
 
     # ── Phase 1 – Content Preparation ──────────────────────────────────────
 
-    TaskType.LECTURE_ANALYSIS: ModelConfig(
-        # Complex Reasoning — deep structural understanding of lecture
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.1,
-        max_tokens=8192,
-    ),
     TaskType.TRANSCRIPT_CLEANING: ModelConfig(
         # Fast Processing — clean, format, structure transcript text
         primary=_FAST_PRIMARY,
@@ -159,6 +135,14 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         emergency=_FAST_EMERGENCY,
         temperature=0.1,
         max_tokens=4096,
+    ),
+    TaskType.ROUTING: ModelConfig(
+        # Fast Processing — classification/routing
+        primary=_FAST_PRIMARY,
+        secondary=_FAST_SECONDARY,
+        emergency=_FAST_EMERGENCY,
+        temperature=0.1,
+        max_tokens=512,
     ),
     TaskType.METADATA_EXTRACTION: ModelConfig(
         # Fast Processing — extract title, subject, speaker, duration
@@ -171,26 +155,12 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
 
     # ── Phase 2: Content Understanding (Extraction & Classification) ───────
     # These tasks require accurate extraction from the text.
-    TaskType.TOPIC_DETECTION: ModelConfig(
-        primary="gemini/gemini-2.5-flash",
-        secondary="gemini/gemini-1.5-flash",
-        emergency="cloudflare/@cf/meta/llama-3.1-8b-instruct",
-        temperature=0.2, max_tokens=1500
-    ),
 
     TaskType.EXAMPLE_EXTRACTION: ModelConfig(
         primary="groq/llama-3.3-70b-versatile",
         secondary="gemini/gemini-2.5-flash",
         emergency="cloudflare/@cf/meta/llama-3.1-8b-instruct",
         temperature=0.2, max_tokens=2000
-    ),
-    TaskType.SUBTOPIC_DETECTION: ModelConfig(
-        # Complex Reasoning — identify sub-topics within a topic
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.2,
-        max_tokens=8192,
     ),
     TaskType.CONCEPT_EXTRACTION: ModelConfig(
         # Fast Processing — extract key concepts and terminology
@@ -199,14 +169,6 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         emergency=_FAST_EMERGENCY,
         temperature=0.2,
         max_tokens=8192,
-    ),
-    TaskType.KEYWORD_EXTRACTION: ModelConfig(
-        # Fast Processing — extract keywords and key phrases
-        primary=_FAST_PRIMARY,
-        secondary=_FAST_SECONDARY,
-        emergency=_FAST_EMERGENCY,
-        temperature=0.1,
-        max_tokens=1024,
     ),
     TaskType.KEY_POINTS_EXTRACTION: ModelConfig(
         # Fast Processing — extract key points
@@ -224,67 +186,11 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         temperature=0.1,
         max_tokens=8192,
     ),
-    TaskType.LEARNING_OBJECTIVE_DETECTION: ModelConfig(
-        # Complex Reasoning — identify intended learning outcomes
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.2,
-        max_tokens=8192,
-    ),
-    TaskType.PREREQUISITE_DETECTION: ModelConfig(
-        # Complex Reasoning — identify prerequisite knowledge
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.2,
-        max_tokens=8192,
-    ),
-    TaskType.DEPENDENCY_DETECTION: ModelConfig(
-        # Complex Reasoning — map topic dependencies
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.2,
-        max_tokens=8192,
-    ),
-    TaskType.KNOWLEDGE_GAP_ANALYSIS: ModelConfig(
-        # Complex Reasoning — identify gaps in lecture coverage
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.3,
-        max_tokens=8192,
-    ),
-    TaskType.DIFFICULTY_CLASSIFICATION: ModelConfig(
-        # Fast Processing — classify content difficulty level
-        primary=_FAST_PRIMARY,
-        secondary=_FAST_SECONDARY,
-        emergency=_FAST_EMERGENCY,
-        temperature=0.1,
-        max_tokens=512,
-    ),
 
     # ── Phase 3 – Knowledge Enrichment ─────────────────────────────────────
 
     TaskType.DEFINITION_GENERATION: ModelConfig(
         # Complex Reasoning — generate precise definitions
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.3,
-        max_tokens=4096,
-    ),
-    TaskType.DETAILED_EXPLANATION_GEN: ModelConfig(
-        # Complex Reasoning — generate detailed subtopic explanations
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.4,
-        max_tokens=8192,
-    ),
-    TaskType.STEP_BY_STEP_EXPLANATION: ModelConfig(
-        # Complex Reasoning — generate step-by-step breakdowns
         primary=_COMPLEX_PRIMARY,
         secondary=_COMPLEX_SECONDARY,
         emergency=_COMPLEX_EMERGENCY,
@@ -298,22 +204,6 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
         emergency="cloudflare/meta/llama-3.1-8b-instruct",
         temperature=0.2,
         max_tokens=8192,
-    ),
-    TaskType.REAL_WORLD_APPLICATIONS: ModelConfig(
-        # Complex Reasoning — generate real-world use cases
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.4,
-        max_tokens=4096,
-    ),
-    TaskType.INDUSTRY_USE_CASES: ModelConfig(
-        # Complex Reasoning — generate industry-specific use cases
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.4,
-        max_tokens=4096,
     ),
     TaskType.DETAILED_NOTES: ModelConfig(
         # Complex Reasoning — generate comprehensive notes with citations
@@ -342,14 +232,6 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
 
     # ── Phase 4 – Educational Enhancement ──────────────────────────────────
 
-    TaskType.EXAMPLE_GENERATION: ModelConfig(
-        # Complex Reasoning — generate illustrative examples
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.5,
-        max_tokens=4096,
-    ),
     TaskType.INTERVIEW_PERSPECTIVE: ModelConfig(
         # Complex Reasoning — generate interview Q&A perspective
         primary=_COMPLEX_PRIMARY,
@@ -399,14 +281,6 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
 
     # ── Phase 7 – Quality Assurance ────────────────────────────────────────
 
-    TaskType.FACT_VERIFICATION: ModelConfig(
-        # Complex Reasoning — verify factual accuracy against transcript
-        primary=_COMPLEX_PRIMARY,
-        secondary=_COMPLEX_SECONDARY,
-        emergency=_COMPLEX_EMERGENCY,
-        temperature=0.1,
-        max_tokens=4096,
-    ),
 }
 
 
