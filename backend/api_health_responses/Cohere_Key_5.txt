@@ -1,0 +1,24 @@
+{
+    "id": "31c2ea1b-10cb-405b-85de-c61fb809a55c",
+    "message": {
+        "role": "assistant",
+        "content": [
+            {
+                "type": "text",
+                "text": "Machine Learning (ML) is a subset of artificial intelligence (AI) that focuses on building systems capable of learning from data, identifying patterns, and making decisions with minimal human intervention. It involves algorithms and statistical models that enable computers to improve their performance on a specific task as they are exposed to more data over time. ML powers applications like recommendation systems, image recognition, and natural language processing."
+            }
+        ]
+    },
+    "finish_reason": "COMPLETE",
+    "usage": {
+        "billed_units": {
+            "input_tokens": 15,
+            "output_tokens": 78
+        },
+        "tokens": {
+            "input_tokens": 510,
+            "output_tokens": 81
+        },
+        "cached_tokens": 448
+    }
+}

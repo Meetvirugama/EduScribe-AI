@@ -1,0 +1,48 @@
+{
+    "result": {
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                    "annotations": null,
+                    "audio": null,
+                    "content": "Machine Learning (ML) is a subset of Artificial Intelligence (AI) that enables computers to learn from data and improve their performance on a specific task without being explicitly programmed. It involves training algorithms to recognize patterns and make predictions or decisions based on the input data, allowing the system to adapt and improve over time. This self-learning capability enables ML models to solve complex problems and make accurate predictions.",
+                    "function_call": null,
+                    "reasoning": null,
+                    "refusal": null,
+                    "role": "assistant"
+                },
+                "routed_experts": null,
+                "stop_reason": null,
+                "token_ids": null
+            }
+        ],
+        "created": 1786722353,
+        "ec_transfer_params": null,
+        "id": "chatcmpl-e10ba4ed-f84b-4317-8c0c-875ab421a53c",
+        "kv_transfer_params": null,
+        "metrics": null,
+        "model": "@cf/meta/llama-3.1-8b-fast-v2",
+        "object": "chat.completion",
+        "prompt_logprobs": null,
+        "prompt_text": null,
+        "prompt_token_ids": null,
+        "response": "Machine Learning (ML) is a subset of Artificial Intelligence (AI) that enables computers to learn from data and improve their performance on a specific task without being explicitly programmed. It involves training algorithms to recognize patterns and make predictions or decisions based on the input data, allowing the system to adapt and improve over time. This self-learning capability enables ML models to solve complex problems and make accurate predictions.",
+        "service_tier": null,
+        "tool_calls": [],
+        "usage": {
+            "prompt_tokens": 50,
+            "completion_tokens": 79,
+            "total_tokens": 129,
+            "prompt_tokens_details": {
+                "cached_tokens": 0
+            },
+            "neurons": 2.96048641204834
+        }
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+}

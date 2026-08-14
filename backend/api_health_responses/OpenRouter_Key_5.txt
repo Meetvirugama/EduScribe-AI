@@ -1,0 +1,46 @@
+{
+    "id": "gen-1786722313-ZHQNpIvyUyzEb5mzAlrl",
+    "object": "chat.completion",
+    "created": 1786722313,
+    "model": "google/gemma-4-26b-a4b-it:free",
+    "provider": "Darkbloom",
+    "system_fingerprint": null,
+    "service_tier": null,
+    "choices": [
+        {
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop",
+            "native_finish_reason": "stop",
+            "message": {
+                "role": "assistant",
+                "content": "Machine Learning is a branch of artificial intelligence that focuses on building systems that learn from data to improve their performance over time without being explicitly programmed. Instead of following rigid rules, these algorithms identify patterns within datasets to make predictions or decisions. Essentially, it is the process of teaching computers to learn from experience, much like a human does.",
+                "refusal": null,
+                "reasoning": null
+            }
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 28,
+        "completion_tokens": 67,
+        "total_tokens": 95,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+        },
+        "cost_details": {
+            "upstream_inference_cost": 1.1895e-05,
+            "upstream_inference_prompt_cost": 8.4e-07,
+            "upstream_inference_completions_cost": 1.1055e-05
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "image_tokens": 0,
+            "audio_tokens": 0
+        }
+    }
+}

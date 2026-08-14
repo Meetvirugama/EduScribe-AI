@@ -1,0 +1,54 @@
+{
+    "id": "gen-1786722300-3REsWW5NQvrOelGtftmJ",
+    "object": "chat.completion",
+    "created": 1786722300,
+    "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+    "provider": "Nvidia",
+    "system_fingerprint": null,
+    "service_tier": null,
+    "choices": [
+        {
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "length",
+            "native_finish_reason": "length",
+            "message": {
+                "role": "assistant",
+                "content": "Machine learning (ML) is a branch of artificial intelligence that enables computers to learn patterns and make decisions from data without being explicitly programmed for each task. By building algorithms that improve their performance through experience, ML lets systems automatically adapt and generalize from examples, rather than following fixed, hand\u2011crafted rules",
+                "refusal": null,
+                "reasoning": "The user asks: \"What is Machine Learning? Explain it briefly in 2-3 sentences.\" Simple request. Provide concise definition. Should be 2-3 sentences. Provide answer.\n",
+                "reasoning_details": [
+                    {
+                        "type": "reasoning.text",
+                        "text": "The user asks: \"What is Machine Learning? Explain it briefly in 2-3 sentences.\" Simple request. Provide concise definition. Should be 2-3 sentences. Provide answer.\n",
+                        "format": "unknown",
+                        "index": 0
+                    }
+                ]
+            }
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 31,
+        "completion_tokens": 100,
+        "total_tokens": 131,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+        },
+        "cost_details": {
+            "upstream_inference_cost": 0,
+            "upstream_inference_prompt_cost": 0,
+            "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 42,
+            "image_tokens": 0,
+            "audio_tokens": 0
+        }
+    }
+}

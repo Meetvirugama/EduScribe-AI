@@ -18,7 +18,7 @@ faster-whisper>=1.0.3
 onnxruntime==1.17.3
 numpy<2
 exceptiongroup==1.3.1
-fastapi==0.110.0
+fastapi>=0.115,<1
 ffmpeg-python==0.2.0
 filelock==3.19.1
 fsspec==2025.10.0
@@ -72,12 +72,12 @@ tzdata==2026.2
 tzlocal==5.3.1
 ujson==5.11.0
 urllib3==2.6.3
-uvicorn==0.39.0
+uvicorn[standard]>=0.30,<1
 uvloop==0.22.1
 watchfiles==1.1.1
 wcwidth==0.8.1
 websockets==15.0.1
-yt-dlp==2025.10.14
+yt-dlp>=2025.1,<2027
 # Issue #19 — SSE progress streaming
 sse-starlette>=1.6.1
 # Issue #16 — ARQ async job queue (Redis-backed)
@@ -99,3 +99,4 @@ tenacity>=8.2.0
 # requirements (GPU/CPU variants, Paddle version matrix). Install manually:
 #   pip install paddlepaddle paddleocr
 # The codebase gracefully handles their absence with a runtime ImportError guard.
+youtube-transcript-api>=1.2,<2

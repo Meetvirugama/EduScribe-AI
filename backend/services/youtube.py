@@ -1,8 +1,8 @@
 import os
 import asyncio
-from urllib.parse import urlparse
 from yt_dlp import YoutubeDL
 from fastapi import HTTPException
+from services.transcript.url_normalizer import URLNormalizer
 from core.config import settings
 
 
@@ -11,54 +11,16 @@ class YouTubeService:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
     def validate_url(self, url: str):
-        parsed = urlparse(url)
-        # Keep in sync with YoutubeRequest._YOUTUBE_HOSTNAMES in
-        # schemas/video.py
-        _ALLOWED_HOSTNAMES = {
-            "www.youtube.com", "youtube.com", "youtu.be",
-            "m.youtube.com", "music.youtube.com",
-        }
-        if parsed.netloc not in _ALLOWED_HOSTNAMES:
-            raise HTTPException(status_code=400, detail="Invalid YouTube URL")
-
-    async def fetch_metadata(self, url: str) -> dict:
-        self.validate_url(url)
-
-        base_ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extractor_args': {'youtube': {'player_client': ['android']}},
-        }
-
-        def _fetch(ydl_opts_custom):
-            with YoutubeDL(ydl_opts_custom) as ydl:
-                info = ydl.extract_info(url, download=False)
-                return {
-                    "title": info.get("title", "Unknown"),
-                    "duration_seconds": info.get("duration", 0),
-                    "thumbnail": info.get("thumbnail"),
-                    "channel_name": info.get("uploader")
-                }
-        try:
-            return await asyncio.to_thread(_fetch, base_ydl_opts)
-        except Exception:
-            # Fallback to cookies if metadata fetch is blocked
-            if os.path.exists("/.dockerenv"):
-                raise Exception("youtube_bot_protection")
-            opts = dict(base_ydl_opts)
-            opts['cookiesfrombrowser'] = ('chrome',)
-            return await asyncio.to_thread(_fetch, opts)
+        URLNormalizer.validate_and_normalize(url)
 
     async def download_video(self, url: str, video_id: str) -> dict:
         self.validate_url(url)
 
         base_ydl_opts = {
-            # Request a proper video+audio stream so cv2.VideoCapture
-            # can open the file for the vision pipeline (frame extraction, OCR).
-            # The previous audio-only format caused the entire vision pipeline to
-            # silently fail for all YouTube-sourced videos.
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            'merge_output_format': 'mp4',
+            # Vision pipeline is disabled, so we only need audio for STT fallback.
+            # Downloading audio-only is much faster and saves bandwidth.
+            'noplaylist': True,
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
             'outtmpl': os.path.join(settings.UPLOAD_DIR, f'{video_id}.%(ext)s'),
             'quiet': True,
             'no_warnings': True,

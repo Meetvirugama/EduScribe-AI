@@ -43,12 +43,25 @@ class DefaultAdapter(BaseProviderAdapter):
         return {}
 
 
+class GroqAdapter(BaseProviderAdapter):
+    """Groq-specific adapter to bypass Cloudflare WAF by setting User-Agent."""
+
+    def prepare_request(self, provider: str, model: str,
+                        api_key: str) -> Dict[str, Any]:
+        return {
+            "extra_headers": {
+                "User-Agent": "curl/8.0"
+            }
+        }
+
+
 class ProviderAdapterFactory:
     """Factory to fetch the correct adapter for a given provider."""
 
     def __init__(self, key_manager: KeyManager):
         self._adapters: Dict[str, BaseProviderAdapter] = {
             "cloudflare": CloudflareAdapter(key_manager),
+            "groq": GroqAdapter(key_manager),
             "default": DefaultAdapter(key_manager)
         }
 

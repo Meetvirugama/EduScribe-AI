@@ -1,0 +1,24 @@
+{
+    "id": "ad13f545-812a-43db-af64-86528b75599d",
+    "message": {
+        "role": "assistant",
+        "content": [
+            {
+                "type": "text",
+                "text": "Machine Learning (ML) is a subset of artificial intelligence that enables systems to learn and improve from experience automatically, without being explicitly programmed. It involves algorithms that analyze data, identify patterns, and make predictions or decisions based on that analysis, continuously refining their accuracy over time."
+            }
+        ]
+    },
+    "finish_reason": "COMPLETE",
+    "usage": {
+        "billed_units": {
+            "input_tokens": 15,
+            "output_tokens": 54
+        },
+        "tokens": {
+            "input_tokens": 510,
+            "output_tokens": 57
+        },
+        "cached_tokens": 448
+    }
+}

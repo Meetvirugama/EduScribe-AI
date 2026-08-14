@@ -1,0 +1,28 @@
+{
+    "service_tier": "default",
+    "id": "chatcmpl-RHhGagI4P2z2ezjfykqdvPp4",
+    "object": "chat.completion",
+    "created": 1786722370,
+    "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "Machine learning is a subset of artificial intelligence (AI) that enables systems to learn from data, identify patterns, and make decisions without being explicitly programmed. It involves training algorithms on large datasets to recognize relationships and make predictions or classify new, unseen data. This process allows machines to improve their performance over time, becoming more accurate and efficient in their decision-making processes.",
+                "reasoning_content": null,
+                "name": null,
+                "tool_calls": null
+            },
+            "finish_reason": "stop",
+            "logprobs": null
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 25,
+        "total_tokens": 98,
+        "completion_tokens": 73,
+        "estimated_cost": 3.4199999999999994e-06,
+        "prompt_tokens_details": null
+    }
+}

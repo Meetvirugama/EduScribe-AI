@@ -33,9 +33,9 @@ from enum import Enum
 from typing import Any, Callable, Awaitable, Optional, List, Dict
 from dataclasses import dataclass
 
-from tenacity import RetryError
 from .provider_stats import ProviderStats
 from .capabilities import TaskRequirements, get_model_capabilities
+from .base_provider import ProviderRateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -228,13 +228,16 @@ class FallbackManager:
             model = fallback_model.model
 
             # Capability Filtering
-            if required_vision and not fallback_model.supports_vision:
+            req_vision = task_requirements.requires_vision if task_requirements else False
+            req_context = task_requirements.min_context_window if task_requirements else 0
+            
+            if req_vision and not fallback_model.supports_vision:
                 logger.debug(
                     f"fallback_manager: skipping {provider}/{model} — lacks vision capability")
                 continue
-            if min_context_window > fallback_model.max_context_window:
+            if req_context > fallback_model.max_context_window:
                 logger.debug(
-                    f"fallback_manager: skipping {provider}/{model} — insufficient context window ({fallback_model.max_context_window} < {min_context_window})")
+                    f"fallback_manager: skipping {provider}/{model} — insufficient context window ({fallback_model.max_context_window} < {req_context})")
                 continue
             breaker = self._get_circuit_breaker(provider)
             if not breaker.can_execute():
@@ -253,9 +256,9 @@ class FallbackManager:
                 )
                 continue
 
-            if key_manager.all_keys_exhausted(provider):
+            if key_manager.all_keys_exhausted(provider, model):
                 logger.debug(
-                    "fallback_manager: skipping %s/%s — all keys exhausted",
+                    "fallback_manager: skipping %s/%s — all keys exhausted or model disabled",
                     provider,
                     model,
                 )
@@ -295,35 +298,20 @@ class FallbackManager:
                 )
                 return result
 
-            except RetryError as exc:
-                latency = time.time() - start_time
-                self.stats.record_call(
-                    provider, model, success=False, latency=latency)
-
-                orig_exc = exc.last_attempt.exception() if exc.last_attempt else exc
-                is_429 = "429" in str(orig_exc) or "rate limit" in str(orig_exc).lower()
-                breaker.record_failure(is_rate_limit=is_429)
-
-                logger.warning(
-                    "fallback_manager: %s / %s failed after all retries — "
-                    "descending to next provider in chain",
-                    provider,
-                    model,
-                )
-                last_error = exc
-                continue
-
             except Exception as exc:
                 latency = time.time() - start_time
                 self.stats.record_call(
                     provider, model, success=False, latency=latency)
 
-                breaker.record_failure(is_rate_limit=False)
-                logger.error(
-                    "fallback_manager: unexpected error from %s / %s: %s",
+                is_429 = isinstance(exc, ProviderRateLimitError)
+                breaker.record_failure(is_rate_limit=is_429)
+
+                logger.warning(
+                    "fallback_manager: %s / %s failed (%s) — "
+                    "descending to next model/provider in chain",
                     provider,
                     model,
-                    exc,
+                    type(exc).__name__,
                 )
                 last_error = exc
                 continue

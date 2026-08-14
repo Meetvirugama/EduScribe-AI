@@ -73,79 +73,142 @@ async def process_video_pipeline_async(video_id_str: str):
             video.processing_started_at = datetime.now(tz=timezone.utc)
             await db.commit()
 
-            # ── STEP 1: YouTube Download ──────────────────────
+            # ── STEP 1: YouTube Metadata Fetch ──────────────────────
             if video.source_type == SourceType.YOUTUBE:
-                await update_status(db, VideoStatus.UPLOADING, "Downloading YouTube Video", 10)
-                yt_info = await youtube_service.download_video(video.youtube_url, video_id_str)
-                video.video_path = yt_info["path"]
-                video.title = yt_info["title"]
-                video.duration_seconds = yt_info["duration_seconds"]
-                video.thumbnail = yt_info["thumbnail"]
-                video.channel_name = yt_info["channel_name"]
+                await update_status(db, VideoStatus.UPLOADING, "Fetching Metadata", 10)
+                from services.transcript.metadata import MetadataAcquisition
+                metadata = await MetadataAcquisition.fetch_metadata(video.youtube_url)
+                video.title = metadata["title"]
+                video.duration_seconds = metadata["duration_seconds"]
+                video.thumbnail = metadata["thumbnail"]
+                video.channel_name = metadata["channel_name"]
                 await db.commit()
 
-            if not video.video_path or not os.path.exists(video.video_path):
-                raise Exception(f"Video file not found at path: {video.video_path}")
+            # ── STEP 2 & 3: Transcript Acquisition ────────────────────────────
+            # Try YouTube Captions first, fallback to Whisper STT
+            transcript_fetched = False
+            transcript_path = os.path.join(settings.TRANSCRIPT_DIR, f"{video_id_str}.json")
+            os.makedirs(settings.TRANSCRIPT_DIR, exist_ok=True)
+            
+            if video.source_type == SourceType.YOUTUBE:
+                await update_status(db, VideoStatus.TRANSCRIBING, "Fetching YouTube Captions", 20)
+                try:
+                    from services.transcript.captions import CaptionDiscovery
+                    from services.transcript.canonicalizer import Canonicalizer
+                    from services.transcript.exporter import Exporter
+                    from services.transcript.models import DiscoveryStatus
+                    from services.transcript.errors import CaptionDiscoveryError
+                    
+                    result = await CaptionDiscovery.discover_and_acquire(video_id_str)
+                    if result.status == DiscoveryStatus.SUCCESS:
+                        canonical_segments = Canonicalizer.canonicalize_youtube_captions(
+                            result.segments,
+                            language=result.actual_language or "en",
+                            source_type=result.source_type
+                        )
+                        
+                        # Convert TranscriptSegment dataclasses to dicts for exporter
+                        canonical_dicts = [seg.to_dict() for seg in canonical_segments]
 
-            # ── STEP 2: Extract Audio ─────────────────────────────────────────
-            await update_status(db, VideoStatus.EXTRACTING_AUDIO, "Extracting Audio (WAV)", 20)
-            audio_path = await audio_service.extract_audio(video.video_path, video_id_str)
+                        # Export artifacts
+                        output_dir = os.path.join(settings.OUTPUT_DIR, video_id_str)
+                        metadata = {"title": video.title, "duration_seconds": video.duration_seconds}
+                        artifacts = Exporter.export_all(canonical_dicts, metadata, output_dir)
+                        logger.info("Successfully exported transcript artifacts: %s", json.dumps(artifacts))
+                        
+                        word_count = sum(len(seg["text"].split()) for seg in canonical_dicts)
+                        transcript = Transcript(
+                            video_id=video_id,
+                            transcript_path=os.path.join(output_dir, "transcript.json"),
+                            language=result.actual_language or "en",
+                            word_count=word_count,
+                            source=TranscriptSource.YOUTUBE_CAPTIONS,
+                        )
+                        db.add(transcript)
+                        await db.commit()
+                        transcript_fetched = True
+                        logger.info("Successfully fetched YouTube captions for %s", video_id_str)
+                    else:
+                        logger.warning("YouTube captions not found (Status: %s, Reason: %s)", result.status, result.reason)
+                except Exception as e:
+                    logger.warning("Failed to fetch YouTube captions for %s: %s. Falling back to Whisper STT.", video_id_str, e)
+            
+            if not transcript_fetched:
+                if os.getenv("ENABLE_STT_FALLBACK", "false").lower() != "true":
+                    raise Exception("YouTube captions were not found. Video download fallback is disabled by ENABLE_STT_FALLBACK.")
+                
+                logger.info("YouTube captions unavailable. Attempting Whisper STT fallback for video %s", video_id_str)
+                if video.source_type == SourceType.YOUTUBE:
+                    await update_status(db, VideoStatus.UPLOADING, "Downloading Audio Fallback", 25)
+                    yt_info = await youtube_service.download_video(video.youtube_url, video_id_str)
+                    video.video_path = yt_info["path"]
+                    await db.commit()
 
-            # ── STEP 3: Transcribe Audio ────────────────────────────
-            await update_status(db, VideoStatus.TRANSCRIBING, "Transcribing Audio (faster-whisper)", 40)
-            transcript_res = await whisper_service.transcribe(audio_path, video_id_str)
+                if not video.video_path or not os.path.exists(video.video_path):
+                    raise Exception("Video/Audio file not found for fallback transcription.")
 
-            transcript = Transcript(
-                video_id=video_id,
-                transcript_path=transcript_res["json_path"],
-                language=transcript_res["language"],
-                word_count=transcript_res["word_count"],
-                source=TranscriptSource.WHISPER_AUDIO,
-            )
-            db.add(transcript)
-            await db.commit()
+                # ── Fallback STEP 2: Extract Audio ─────────────────────────────────────────
+                await update_status(db, VideoStatus.EXTRACTING_AUDIO, "Extracting Audio (WAV)", 20)
+                audio_path = await audio_service.extract_audio(video.video_path, video_id_str)
 
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
+                # ── Fallback STEP 3: Transcribe Audio ────────────────────────────
+                await update_status(db, VideoStatus.TRANSCRIBING, "Transcribing Audio (faster-whisper)", 40)
+                transcript_res = await whisper_service.transcribe(audio_path, video_id_str)
 
-            # ── STEP 4: Vision Pipeline ───────────────────────────────────────
-            await update_status(db, VideoStatus.EXTRACTING_FRAMES, "Running Vision Pipeline", 60)
-            vision_stats = await vision_pipeline.run(video_id_str, video.video_path)
-            logger.info("Vision Pipeline Stats: %s", vision_stats)
+                # Export Whisper result
+                try:
+                    from services.transcript.canonicalizer import Canonicalizer
+                    from services.transcript.exporter import Exporter
+                    with open(transcript_res["json_path"], "r", encoding="utf-8") as f:
+                        whisper_data = json.load(f)
+                    if "segments" in whisper_data:
+                        raw_whisper = whisper_data["segments"]
+                        canonical_segments = Canonicalizer.canonicalize_whisper_stt(raw_whisper, transcript_res["language"])
+                        
+                        canonical_dicts = [seg.to_dict() for seg in canonical_segments]
+                        
+                        output_dir = os.path.join(settings.OUTPUT_DIR, video_id_str)
+                        metadata = {"title": video.title, "duration_seconds": video.duration_seconds}
+                        artifacts = Exporter.export_all(canonical_dicts, metadata, output_dir)
+                        logger.info("Successfully exported fallback Whisper artifacts: %s", json.dumps(artifacts))
+                        transcript_res["json_path"] = os.path.join(output_dir, "transcript.json")
+                except Exception as e:
+                    logger.warning("Failed to export Whisper transcripts to canonical formats: %s", e)
+
+                transcript = Transcript(
+                    video_id=video_id,
+                    transcript_path=transcript_res["json_path"],
+                    language=transcript_res["language"],
+                    word_count=transcript_res["word_count"],
+                    source=TranscriptSource.WHISPER_AUDIO,
+                )
+                db.add(transcript)
+                await db.commit()
+
+                if os.path.exists(audio_path):
+                    os.remove(audio_path)
+
+            # ── STEP 4: Vision Pipeline (Disabled) ────────────────────────────
+            # await update_status(db, VideoStatus.EXTRACTING_FRAMES, "Running Vision Pipeline", 60)
+            # vision_stats = await vision_pipeline.run(video_id_str, video.video_path)
+            # logger.info("Vision Pipeline Stats: %s", vision_stats)
 
             # ── STEP 5: Merge Pipeline ──────────────
-            await update_status(db, VideoStatus.CHUNKING, "Aligning transcript and vision", 70)
+            await update_status(db, VideoStatus.CHUNKING, "Aligning transcript", 70)
 
             try:
                 with open(transcript.transcript_path, "r", encoding="utf-8") as f:
-                    transcript_segments = json.load(f)
+                    transcript_data = json.load(f)
+                if isinstance(transcript_data, dict) and "segments" in transcript_data:
+                    transcript_segments = transcript_data["segments"]
+                else:
+                    transcript_segments = transcript_data
             except Exception as e:
                 logger.error("Failed to read transcript for video %s: %s", video_id_str, e)
                 transcript_segments = []
 
-            f_result = await db.execute(
-                select(VideoFrame, OCRResult, FrameScore)
-                .join(FrameScore, FrameScore.frame_id == VideoFrame.id)
-                .join(OCRResult, OCRResult.frame_id == VideoFrame.id, isouter=True)
-                .where(
-                    VideoFrame.video_id == parse_video_id(video_id_str),
-                    FrameScore.is_selected == True,
-                )
-                .order_by(VideoFrame.timestamp_ms.asc())
-            )
-            rows = f_result.all()
-            
-            frames_data = [
-                {
-                    "path": frame.frame_path,
-                    "time_sec": frame.timestamp_ms / 1000.0,
-                    "ocr": ocr.clean_text if ocr and ocr.clean_text else None,
-                    "scene_number": frame.scene_number,
-                    "visual_importance_score": score.visual_importance_score if score else 0.0,
-                    "transcript_similarity": score.transcript_similarity if score else 0.0,
-                }
-                for frame, ocr, score in rows
-            ]
+            # Vision pipeline disabled; no frames
+            frames_data = []
 
             # Build and save MergedLecture (Source of Truth)
             merged_lecture = merge_builder.build(
@@ -167,7 +230,7 @@ async def process_video_pipeline_async(video_id_str: str):
             
             llm_manager = LLMManager()
             content_pipeline = ContentPipeline(llm_manager)
-            learning_context = await content_pipeline.build_learning_context(merged_lecture)
+            learning_context = await content_pipeline.build_learning_context(merged_lecture, output_dir=output_dir)
 
             # Save LearningContext to disk
             learning_context_path = os.path.join(output_dir, "learning_context.json")

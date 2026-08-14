@@ -1,0 +1,101 @@
+# Available Models for Your APIs
+
+## Groq Models
+- ✅ **openai/gpt-oss-20b**
+- ❌ canopylabs/orpheus-v1-english *(Failed: HTTP Error 400: Bad Request)*
+- ✅ **groq/compound-mini**
+- ❌ whisper-large-v3 *(Failed: HTTP Error 400: Bad Request)*
+- ✅ **openai/gpt-oss-120b**
+- ✅ **allam-2-7b**
+- ✅ **meta-llama/llama-prompt-guard-2-22m**
+- ✅ **llama-3.1-8b-instant**
+- ❌ canopylabs/orpheus-arabic-saudi *(Failed: HTTP Error 400: Bad Request)*
+- ❌ whisper-large-v3-turbo *(Failed: HTTP Error 400: Bad Request)*
+- ✅ **groq/compound**
+- ✅ **meta-llama/llama-prompt-guard-2-86m**
+- ✅ **llama-3.3-70b-versatile**
+- ✅ **qwen/qwen3.6-27b**
+- ✅ **openai/gpt-oss-safeguard-20b**
+
+## Gemini Models (Supports Generation)
+- ❌ models/gemini-2.5-flash *(Failed: HTTP Error 404: Not Found)*
+- ❌ models/gemini-2.5-pro *(Failed: HTTP Error 404: Not Found)*
+- ❌ models/gemini-2.5-flash-preview-tts *(Failed: HTTP Error 400: Bad Request)*
+- ❌ models/gemini-2.5-pro-preview-tts *(Failed: HTTP Error 429: Too Many Requests)*
+- ✅ **models/gemini-3.7-flash-video-understanding-eap**
+- ✅ **models/gemma-4-26b-a4b-it**
+- ✅ **models/gemma-4-31b-it**
+- ❌ models/gemini-flash-latest *(Failed: HTTP Error 503: Service Unavailable)*
+- ✅ **models/gemini-flash-lite-latest**
+- ❌ models/gemini-pro-latest *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-2.5-flash-lite *(Failed: HTTP Error 404: Not Found)*
+- ❌ models/gemini-2.5-flash-image *(Failed: HTTP Error 429: Too Many Requests)*
+- ✅ **models/gemini-3-flash-preview**
+- ❌ models/gemini-3.1-pro-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-3.1-pro-preview-customtools *(Failed: HTTP Error 429: Too Many Requests)*
+- ✅ **models/gemini-3.1-flash-lite-preview**
+- ✅ **models/gemini-3.1-flash-lite**
+- ❌ models/gemini-3-pro-image-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-3-pro-image *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/nano-banana-pro-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-3.1-flash-image-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-3.1-flash-image *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-3.1-flash-lite-image *(Failed: HTTP Error 429: Too Many Requests)*
+- ✅ **models/gemini-3.5-flash**
+- ✅ **models/gemini-3.5-flash-lite**
+- ❌ models/gemini-omni-flash-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ✅ **models/gemini-3.6-flash**
+- ✅ **models/gemini-3.7-flash**
+- ❌ models/lyria-3-clip-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/lyria-3-pro-preview *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/gemini-3.1-flash-tts-preview *(Failed: HTTP Error 400: Bad Request)*
+- ✅ **models/gemini-robotics-er-1.6-preview**
+- ✅ **models/gemini-robotics-er-2-preview**
+- ❌ models/gemini-2.5-computer-use-preview-10-2025 *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ models/antigravity-preview-05-2026 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ models/deep-research-max-preview-04-2026 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ models/deep-research-preview-04-2026 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ models/deep-research-pro-preview-12-2025 *(Failed: HTTP Error 400: Bad Request)*
+
+## Cohere Models
+- ✅ **c4ai-aya-expanse-32b**
+- ✅ **c4ai-aya-vision-32b**
+- ❌ cohere-transcribe-03-2026 *(Failed: HTTP Error 400: Bad Request)*
+- ✅ **command-a-03-2025**
+- ❌ command-a-plus-05-2026 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ command-a-reasoning-08-2025 *(Failed: HTTP Error 400: Bad Request)*
+- ✅ **command-a-translate-08-2025**
+- ✅ **command-a-vision-07-2025**
+- ✅ **command-r-08-2024**
+- ✅ **command-r-plus-08-2024**
+- ✅ **command-r7b-12-2024**
+- ❌ command-r7b-arabic-02-2025 *(Failed: The read operation timed out)*
+- ❌ embed-english-light-v3.0 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-english-light-v3.0-image *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-english-v3.0 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-english-v3.0-image *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-multilingual-light-v3.0 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-multilingual-light-v3.0-image *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-multilingual-v3.0 *(Failed: HTTP Error 400: Bad Request)*
+- ❌ embed-multilingual-v3.0-image *(Failed: HTTP Error 400: Bad Request)*
+
+## OpenRouter Free Models
+- ✅ **liquid/lfm-2.5-2.6b:free**
+- ✅ **nvidia/nemotron-3.5-lightning:free**
+- ❌ poolside/laguna-s-2.1:free *(Failed: The read operation timed out)*
+- ❌ poolside/laguna-xs-2.1:free *(Failed: HTTP Error 429: Too Many Requests)*
+- ✅ **cohere/north-mini-code:free**
+- ✅ **nvidia/nemotron-3.5-content-safety:free**
+- ✅ **nvidia/nemotron-3-ultra-550b-a55b:free**
+- ✅ **nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free**
+- ❌ google/gemma-4-26b-a4b-it:free *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ google/gemma-4-31b-it:free *(Failed: HTTP Error 429: Too Many Requests)*
+- ❌ google/lyria-3-pro-preview *(Failed: HTTP Error 502: Bad Gateway)*
+- ❌ google/lyria-3-clip-preview *(Failed: HTTP Error 502: Bad Gateway)*
+- ✅ **nvidia/nemotron-3-super-120b-a12b:free**
+- ✅ **openrouter/free**
+- ✅ **nvidia/nemotron-3-nano-30b-a3b:free**
+- ✅ **nvidia/nemotron-nano-12b-v2-vl:free**
+- ✅ **nvidia/nemotron-nano-9b-v2:free**
+- ❌ openai/gpt-oss-20b:free *(Failed: HTTP Error 429: Too Many Requests)*
+

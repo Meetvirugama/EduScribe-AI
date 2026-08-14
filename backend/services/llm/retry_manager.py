@@ -1,80 +1,35 @@
 """
-retry_manager.py — Intra-Provider Retry with Exponential Backoff
+retry_manager.py — Intra-Provider Retry Logic
 
-Implements the Retry Strategy described in §19. Transient failures
-(timeouts, rate limiting) are retried up to four times with
-exponential backoff before the request is escalated to the
-Fallback Strategy (switch provider).
-
-Permanent failures (invalid API key, malformed request) bypass
-retries entirely and fail immediately.
-
-LLD Reference: §19 Retry Strategy
-               §19.3 Detailed Explanation — Exponential Backoff Schedule
-               §23 Technology Stack — Tenacity implements retry
-
-Exponential backoff schedule (§19.3):
-    Attempt 1 — immediate retry
-    Attempt 2 — wait 2 seconds
-    Attempt 3 — wait 4 seconds
-    Attempt 4 — wait 8 seconds
-    Attempt 5 — switch provider (escalate to Fallback Strategy §20)
+Implements the intelligent Retry Strategy described in the final fallback doc.
+- 429 Rate Limit: Immediately try the next key (no exponential backoff sleep).
+- 5xx / Timeout: Retry exactly once with a 1-second delay, then escalate to fallback.
+- Permanent Errors (400, 401, 403, 404): Fail fast, bypass retries, and escalate.
 """
 
 import logging
+import asyncio
 from typing import Any, Callable, Awaitable
-
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-    RetryError,
+from .base_provider import (
+    ProviderTransientError, ProviderPermanentError,
+    ProviderServiceError, ProviderRateLimitError
 )
-
-from .base_provider import ProviderTransientError, ProviderPermanentError
 
 logger = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
-# Retry decorator
-# ---------------------------------------------------------------------------
-# Matches §19.3 exactly:
-#   Attempt 1 — immediate (no wait before the FIRST retry)
-#   Attempt 2 — wait 2 s  (multiplier=2, min=2, max=8 → 2^1=2)
-#   Attempt 3 — wait 4 s  (2^2=4)
-#   Attempt 4 — wait 8 s  (2^3=8)
-#   Attempt 5 — raises RetryError → Fallback Strategy takes over
-#
-# wait_exponential(multiplier=2, min=2, max=8) produces waits of
-# 2 s, 4 s, 8 s for the 2nd, 3rd, and 4th retry respectively,
-# matching the LLD table precisely.
-# ---------------------------------------------------------------------------
-
+class ExhaustedKeysError(Exception):
+    """Raised by llm_manager when no active keys remain for a provider/model."""
+    pass
 
 class RetryManager:
     """
     Utility class for applying the EduScribe AI retry strategy.
-
-    Wraps any async callable with the LLD-defined exponential backoff
-    policy (§19). Used by llm_manager.py before delegating to
-    fallback_manager.py.
-
-    Design notes:
-        - Tenacity is used as the underlying retry library (§23 Technology Stack).
-        - Only ProviderTransientError triggers retry. ProviderPermanentError
-          fails fast — no retry (§19.3 Transient vs. Permanent Failures).
-        - RetryError (tenacity) is caught by fallback_manager and treated
-          as the signal to switch providers (§19 → §20 escalation).
+    
+    Replaces Tenacity with a precise, deterministic retry loop that respects
+    the exact error classifications from the error_handler.
     """
 
-    # Exponential backoff schedule from LLD §19.3
-    MAX_ATTEMPTS: int = 4
-    WAIT_MULTIPLIER: float = 2.0
-    WAIT_MIN_SECONDS: float = 2.0
-    WAIT_MAX_SECONDS: float = 8.0
+    MAX_5XX_RETRIES: int = 1
 
     async def execute_with_retry(
         self,
@@ -83,60 +38,49 @@ class RetryManager:
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-        """
-        Execute `call(*args, **kwargs)` with exponential backoff retry.
+        
+        service_error_count = 0
 
-        Args:
-            provider_name: Used in log messages for observability.
-            call:          An async callable (e.g., provider.generate).
-            *args, **kwargs: Forwarded to `call`.
-
-        Returns:
-            The return value of `call` on success.
-
-        Raises:
-            ProviderPermanentError: Immediately, with no retry.
-            RetryError:             When all 4 retry attempts are exhausted,
-                                    signalling the fallback_manager to switch
-                                    providers.
-        """
-        @retry(
-            stop=stop_after_attempt(self.MAX_ATTEMPTS),
-            wait=wait_exponential(
-                multiplier=self.WAIT_MULTIPLIER,
-                min=self.WAIT_MIN_SECONDS,
-                max=self.WAIT_MAX_SECONDS,
-            ),
-            retry=retry_if_exception_type(ProviderTransientError),
-            before_sleep=before_sleep_log(logger, logging.WARNING),
-        )
-        async def _inner() -> Any:
+        while True:
             try:
+                # `call` is `_call_provider` in `llm_manager.py`.
                 return await call(*args, **kwargs)
-            except ProviderPermanentError:
-                # Permanent errors bypass retry entirely
-                logger.error(
-                    "retry_manager: permanent error from provider '%s' — failing immediately",
-                    provider_name,
-                )
+                
+            except ExhaustedKeysError as e:
+                # We have no keys left for this provider/model.
+                # Break out and let fallback_manager switch providers/models.
+                logger.warning(f"retry_manager: {e}")
                 raise
+                
+            except ProviderPermanentError as exc:
+                # 400, 401, 403, 404, validation errors
+                # These are permanent for this specific request + model + key.
+                # Just raise it so fallback_manager can catch it and try the next model.
+                logger.error(f"retry_manager: permanent error from {provider_name} — failing fast: {exc}")
+                raise
+                
+            except ProviderRateLimitError as exc:
+                # 429 Rate Limit
+                # Key is already in a 60s cooldown (done by error_handler).
+                # Loop again to immediately fetch the next healthy key from key_manager.
+                logger.info(f"retry_manager: 429 RateLimit on {provider_name}, instantly switching keys...")
+                continue
+                
+            except ProviderServiceError as exc:
+                # 5xx or Timeout
+                service_error_count += 1
+                if service_error_count > self.MAX_5XX_RETRIES:
+                    logger.warning(
+                        f"retry_manager: Exhausted 5xx retries ({self.MAX_5XX_RETRIES}) for {provider_name} "
+                        "— escalating to Fallback Strategy"
+                    )
+                    raise
+                
+                logger.info(f"retry_manager: 5xx on {provider_name}, waiting 1.0s before retry {service_error_count}...")
+                await asyncio.sleep(1.0)
+                continue
+                
             except ProviderTransientError as exc:
-                # Transient errors will be retried by tenacity
-                logger.warning(
-                    "retry_manager: transient error from provider '%s': %s "
-                    "— will retry with exponential backoff",
-                    provider_name,
-                    exc,
-                )
+                # Any other unexpected transient error. Fallback immediately to save quota/time.
+                logger.warning(f"retry_manager: unexpected transient error on {provider_name}: {exc}")
                 raise
-
-        try:
-            return await _inner()
-        except RetryError:
-            logger.warning(
-                "retry_manager: all %d retry attempts exhausted for provider '%s' "
-                "— escalating to Fallback Strategy (§20)",
-                self.MAX_ATTEMPTS,
-                provider_name,
-            )
-            raise

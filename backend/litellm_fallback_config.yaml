@@ -1,57 +1,49 @@
 fallback_chain:
   tier1:
     - provider: "gemini"
-      model: "gemini/gemini-2.5-flash"
-      supports_vision: true
+      model: "gemini/gemini-3.7-flash"
+      supports_vision: false
       max_context_window: 1048576
-    - provider: cohere
-      model: cohere/command-a-plus-05-2026
+    - provider: "cohere"
+      model: "cohere/command-r-plus-08-2024"
       supports_vision: false
       max_context_window: 128000
+    - provider: "gemini"
+      model: "gemini/gemma-4-26b-a4b-it"
+      supports_vision: false
+      max_context_window: 16384
   tier2:
-    - provider: groq
-      model: groq/llama-3.3-70b-versatile
+    - provider: "groq"
+      model: "groq/llama-3.3-70b-versatile"
+      supports_vision: false
+      max_context_window: 131072
+    - provider: "cohere"
+      model: "cohere/command-a-03-2025"
       supports_vision: false
       max_context_window: 128000
-    - provider: groq
-      model: groq/qwen3-32b
+    - provider: "groq"
+      model: "groq/openai/gpt-oss-120b"
+      supports_vision: false
+      max_context_window: 131072
+  tier3:
+    - provider: "openrouter"
+      model: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
       supports_vision: false
       max_context_window: 32768
-  tier3:
-    - provider: cohere
-      model: cohere/command-a-03-2025
-      supports_vision: false
-      max_context_window: 128000
-    - provider: cloudflare
-      model: cloudflare/@cf/moonshotai/kimi-k2.6
-      supports_vision: false
-      max_context_window: 200000
-    - provider: openrouter
-      model: openrouter/deepseek/deepseek-chat:free
-      supports_vision: false
-      max_context_window: 65536
-    - provider: openrouter
-      model: openrouter/qwen/qwen3-235b-a22b:free
+    - provider: "openrouter"
+      model: "openrouter/nvidia/nemotron-3.5-lightning:free"
       supports_vision: false
       max_context_window: 32768
   tier4:
-    - provider: openrouter
-      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+    - provider: "groq"
+      model: "groq/llama-3.1-8b-instant"
       supports_vision: false
-      max_context_window: 128000
-    - provider: openrouter
-      model: openrouter/google/gemma-4-31b-it:free
+      max_context_window: 131072
+    - provider: "openrouter"
+      model: "openrouter/liquid/lfm-2.5-2.6b:free"
       supports_vision: false
-      max_context_window: 8192
-    - provider: groq
-      model: groq/llama-3.1-8b-instant
+      max_context_window: 32768
+    - provider: "cloudflare"
+      model: "cloudflare/@cf/moonshotai/kimi-k2.7-code"
       supports_vision: false
-      max_context_window: 128000
-    - provider: cloudflare
-      model: cloudflare/@cf/openai/gpt-oss-120b
-      supports_vision: false
-      max_context_window: 8192
-    - provider: cloudflare
-      model: cloudflare/@cf/openai/gpt-oss-20b
-      supports_vision: false
-      max_context_window: 8192
+      max_context_window: 200000

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 os.environ["LITELLM_LOG"] = "ERROR"
 load_dotenv()
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.llm.llm_manager import LLMManager
 from services.llm.embedding_manager import EmbeddingManager

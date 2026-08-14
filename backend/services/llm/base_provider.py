@@ -10,30 +10,32 @@ LLD Reference: §19 Retry Strategy
 class ProviderTransientError(Exception):
     """
     Raised for retryable, temporary provider failures.
-    Examples: HTTP 429 rate limit, timeout, HTTP 503 Service Unavailable.
-
-    The retry_manager.py (Tenacity) will catch this and apply exponential backoff:
-        Attempt 1 — immediate
-        Attempt 2 — wait 2 s
-        Attempt 3 — wait 4 s
-        Attempt 4 — wait 8 s
-        Attempt 5 — escalate to fallback_manager (switch provider)
-
-    LLD Reference: §19 Retry Strategy
     """
-
 
 class ProviderPermanentError(Exception):
     """
     Raised for non-retryable, permanent provider failures.
-    Examples: invalid API key (HTTP 401/403), malformed request (HTTP 400).
-
-    These bypass the retry mechanism entirely and fail immediately,
-    since retrying a permanent error can never succeed and would only
-    waste quota.
-
-    LLD Reference: §19 Retry Strategy — Transient vs. Permanent Failures
     """
+
+class ProviderCapabilityError(ProviderPermanentError):
+    """400 Request/capability error (e.g. invalid request format for the model)."""
+    pass
+
+class ProviderAuthenticationError(ProviderPermanentError):
+    """401/403 Invalid authentication or access permission."""
+    pass
+
+class ProviderModelNotFoundError(ProviderPermanentError):
+    """404 Model unavailable (not found in the specific account/project)."""
+    pass
+
+class ProviderRateLimitError(ProviderTransientError):
+    """429 Rate or quota limit reached."""
+    pass
+
+class ProviderServiceError(ProviderTransientError):
+    """5xx Provider/gateway error or Timeout."""
+    pass
 
 class ModelOutputError(ProviderPermanentError):
     """

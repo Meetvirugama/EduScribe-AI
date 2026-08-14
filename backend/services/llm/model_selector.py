@@ -94,23 +94,23 @@ class ModelConfig:
 # ---------------------------------------------------------------------------
 
 # ── Capability: Complex Reasoning & Long Context Analysis ──────────────────
-_COMPLEX_PRIMARY = "groq/llama-3.3-70b-versatile"
-_COMPLEX_SECONDARY = "cohere/command-a-plus-05-2026"
+_COMPLEX_PRIMARY = "gemini/gemini-3.7-flash"
+_COMPLEX_SECONDARY = "cohere/command-r-plus-08-2024"
 _COMPLEX_EMERGENCY = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 
 # ── Capability: Cleaning, Formatting & Fast Processing ────────────────────
-_FAST_PRIMARY = "groq/llama-3.3-70b-versatile"
-_FAST_SECONDARY = "groq/llama-3.1-8b-instant"
-_FAST_EMERGENCY = "cohere/command-a-03-2025"
+_FAST_PRIMARY = "groq/llama-3.1-8b-instant"
+_FAST_SECONDARY = "groq/llama-3.3-70b-versatile"
+_FAST_EMERGENCY = "cloudflare/@cf/meta/llama-3.1-8b-instruct"
 
 # ── Capability: Code & Math Generation ────────────────────────────────────
-_CODE_PRIMARY = "cloudflare/@cf/moonshotai/kimi-k2.7-code"
-_CODE_SECONDARY = "groq/llama-3.3-70b-versatile"
+_CODE_PRIMARY = "groq/openai/gpt-oss-120b"
+_CODE_SECONDARY = "openrouter/cohere/north-mini-code:free"
 _CODE_EMERGENCY = "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct"
 
 # ── Capability: Vision & Multimodal Analysis ──────────────────────────────
-_VISION_PRIMARY = "gemini/gemini-2.5-pro"
-_VISION_SECONDARY = "gemini/gemini-2.5-flash"
+_VISION_PRIMARY = "gemini/gemini-2.5-flash"
+_VISION_SECONDARY = "gemini/gemini-3.6-flash"
 _VISION_EMERGENCY = "cloudflare/@cf/meta/llama-3.2-11b-vision-instruct"
 
 
@@ -158,9 +158,9 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
     # These tasks require accurate extraction from the text.
 
     TaskType.EXAMPLE_EXTRACTION: ModelConfig(
-        primary="groq/llama-3.3-70b-versatile",
-        secondary="gemini/gemini-2.5-flash",
-        emergency="cloudflare/@cf/meta/llama-3.1-8b-instruct",
+        primary=_COMPLEX_PRIMARY,
+        secondary=_COMPLEX_SECONDARY,
+        emergency=_COMPLEX_EMERGENCY,
         temperature=0.2, max_tokens=2000
     ),
     TaskType.CONCEPT_EXTRACTION: ModelConfig(
@@ -200,9 +200,9 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
     ),
     TaskType.FORMULA_EXPLANATION: ModelConfig(
         # Code & Math — explain mathematical formulas
-        primary="groq/llama-3.3-70b-versatile",
-        secondary="gemini/gemini-2.5-flash",
-        emergency="cloudflare/meta/llama-3.1-8b-instruct",
+        primary=_CODE_PRIMARY,
+        secondary=_CODE_SECONDARY,
+        emergency=_CODE_EMERGENCY,
         temperature=0.2,
         max_tokens=8192,
     ),

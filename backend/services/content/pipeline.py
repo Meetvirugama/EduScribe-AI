@@ -63,13 +63,32 @@ class ContentPipeline:
         self.detailed_notes_generator = DetailedNotesGenerator(llm_manager)
 
     async def build_learning_context(
-            self, merged_lecture: MergedLecture) -> LectureContext:
+            self, merged_lecture: MergedLecture, output_dir: str = None) -> LectureContext:
         """
         Execute Phase 1 → Phase 2 → Phase 3 sequentially.
         Returns the fully populated LectureContext (with detailed_notes_md).
         """
         logger.info(
             f"Starting content pipeline for video {merged_lecture.video_id}")
+
+        def _save_checkpoint(ctx: LectureContext, step_name: str):
+            if not output_dir:
+                return
+            import os, json, dataclasses
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+                path = os.path.join(output_dir, "learning_context.json")
+                
+                def pydantic_encoder(obj):
+                    if hasattr(obj, "model_dump"):
+                        return obj.model_dump()
+                    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+                    
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(dataclasses.asdict(ctx.state), f, indent=2, default=pydantic_encoder)
+                logger.info(f"Checkpoint saved after {step_name} to {path}")
+            except Exception as e:
+                logger.error(f"Failed to save checkpoint after {step_name}: {e}")
 
         # ── Build initial context ────────────────────────────────────────────
         lecture_input = LectureInput(
@@ -108,6 +127,7 @@ class ContentPipeline:
         )
         logger.info(
             f"Phase 1 complete: unified_md ({len(context.unified_md)} chars)")
+        _save_checkpoint(context, "Phase 1")
 
         # ══════════════════════════════════════════════════════════════════════
         # PHASE 2: Parallel Extractions
@@ -142,6 +162,7 @@ class ContentPipeline:
                 "Phase 2: Skipping relationship extraction — concepts failed.")
 
         logger.info("Phase 2 complete.")
+        _save_checkpoint(context, "Phase 2")
 
         # ══════════════════════════════════════════════════════════════════════
         # PHASE 3: Detailed Learning Note
@@ -157,5 +178,15 @@ class ContentPipeline:
         logger.info(
             f"Phase 3 complete: detailed_notes_md ({len(context.detailed_notes_md)} chars)"
         )
+        _save_checkpoint(context, "Phase 3")
+        
+        # Explicitly save detailed_notes.md for easy access
+        if output_dir and context.detailed_notes_md:
+            try:
+                import os
+                with open(os.path.join(output_dir, "detailed_notes.md"), "w", encoding="utf-8") as f:
+                    f.write(context.detailed_notes_md)
+            except Exception as e:
+                logger.error(f"Failed to save detailed_notes.md: {e}")
 
         return context

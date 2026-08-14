@@ -12,9 +12,9 @@ import os
 import re
 import time
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import Lock
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Set
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +28,15 @@ class KeyMetadata:
     failure_count: int = 0
     cooldown_until: float = 0.0
     exhausted: bool = False
+    disabled_models: Set[str] = field(default_factory=set)
 
-    def is_healthy(self) -> bool:
-        """A key is healthy if it's not permanently exhausted and not in cooldown."""
+    def is_healthy_for_model(self, model: Optional[str] = None) -> bool:
+        """A key is healthy if it's not permanently exhausted, not in cooldown, and the model isn't disabled for it."""
         if self.exhausted:
             return False
         if time.time() < self.cooldown_until:
+            return False
+        if model and model in self.disabled_models:
             return False
         return True
 
@@ -145,9 +148,9 @@ class KeyManager:
     # Public API
     # ---------------------------------------------------------------------------
 
-    def get_active_key(self, provider: str) -> Optional[str]:
+    def get_active_key(self, provider: str, model: Optional[str] = None) -> Optional[str]:
         """
-        Return the next healthy API key for the given provider using round-robin.
+        Return the next healthy API key for the given provider (and optionally model) using round-robin.
         Automatically cycles to the next healthy key on every call.
         """
         keys = self._keys.get(provider)
@@ -160,7 +163,7 @@ class KeyManager:
                 idx = (start_idx + i) % len(keys)
                 meta = keys[idx]
 
-                if meta.is_healthy():
+                if meta.is_healthy_for_model(model):
                     meta.last_used = time.time()
                     # Advance for the next call to achieve round-robin load
                     # balancing
@@ -179,11 +182,29 @@ class KeyManager:
                 return meta.account_id
         return None
 
+    def mark_model_disabled(self, provider: str, key_val: str, model: str) -> None:
+        """Mark a specific model as disabled for a specific key (e.g. 404 Not Found)."""
+        keys = self._keys.get(provider)
+        if not keys:
+            return
+
+        with self._locks[provider]:
+            for meta in keys:
+                if meta.key == key_val:
+                    meta.disabled_models.add(model)
+                    logger.warning(
+                        "key_manager: model '%s' disabled for %s key (404 Model Not Found)",
+                        model, provider
+                    )
+                    break
+
     def mark_key_exhausted(self, provider: str, key_val: str,
                            error_type: str = "quota") -> bool:
         """
         Mark a specific key as exhausted or place it in cooldown.
-        error_type: "quota" (permanent), "rate_limit" (60s cooldown)
+        error_type: "quota", "auth" (permanent) 
+                    "rate_limit" (60s cooldown)
+                    "timeout", "service_error" (30s cooldown)
 
         Returns:
             True  — at least one key is still healthy; retry.
@@ -197,10 +218,17 @@ class KeyManager:
             for meta in keys:
                 if meta.key == key_val:
                     meta.failure_count += 1
+                    
                     if error_type == "rate_limit":
                         meta.cooldown_until = time.time() + 60.0
                         logger.warning(
                             "key_manager: %s key placed in 60s cooldown (429 Rate Limit)",
+                            provider
+                        )
+                    elif error_type in ("timeout", "service_error"):
+                        meta.cooldown_until = time.time() + 30.0
+                        logger.warning(
+                            "key_manager: %s key placed in 30s cooldown (5xx/Timeout)",
                             provider
                         )
                     else:
@@ -212,16 +240,16 @@ class KeyManager:
                     break
 
             # Check if any keys are still healthy
-            return any(m.is_healthy() for m in keys)
+            return any(m.is_healthy_for_model() for m in keys)
 
-    def all_keys_exhausted(self, provider: str) -> bool:
-        """Return True if every configured key for this provider is unavailable."""
+    def all_keys_exhausted(self, provider: str, model: Optional[str] = None) -> bool:
+        """Return True if every configured key for this provider/model is unavailable."""
         keys = self._keys.get(provider)
         if not keys:
             return True
 
         with self._locks[provider]:
-            return not any(m.is_healthy() for m in keys)
+            return not any(m.is_healthy_for_model(model) for m in keys)
 
     def reset_provider_keys(self, provider: str) -> None:
         """Reset exhaustion/cooldown state for a provider."""
@@ -233,6 +261,7 @@ class KeyManager:
                 meta.exhausted = False
                 meta.cooldown_until = 0.0
                 meta.failure_count = 0
+                meta.disabled_models.clear()
             self._current_index[provider] = 0
         logger.info("key_manager: reset all keys for provider '%s'", provider)
 

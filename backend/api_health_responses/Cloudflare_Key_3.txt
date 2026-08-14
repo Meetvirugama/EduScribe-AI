@@ -1,0 +1,48 @@
+{
+    "result": {
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                    "annotations": null,
+                    "audio": null,
+                    "content": "Machine learning is a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed. It involves training algorithms on large datasets to make predictions, classify patterns, or make decisions, allowing the system to improve its performance over time. This process enables machines to learn from experience and adapt to new situations.",
+                    "function_call": null,
+                    "reasoning": null,
+                    "refusal": null,
+                    "role": "assistant"
+                },
+                "routed_experts": null,
+                "stop_reason": null,
+                "token_ids": null
+            }
+        ],
+        "created": 1786722355,
+        "ec_transfer_params": null,
+        "id": "chatcmpl-6b4a7ec7-5723-4438-a837-da330b2181bb",
+        "kv_transfer_params": null,
+        "metrics": null,
+        "model": "@cf/meta/llama-3.1-8b-fast-v2",
+        "object": "chat.completion",
+        "prompt_logprobs": null,
+        "prompt_text": null,
+        "prompt_token_ids": null,
+        "response": "Machine learning is a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed. It involves training algorithms on large datasets to make predictions, classify patterns, or make decisions, allowing the system to improve its performance over time. This process enables machines to learn from experience and adapt to new situations.",
+        "service_tier": null,
+        "tool_calls": [],
+        "usage": {
+            "prompt_tokens": 50,
+            "completion_tokens": 63,
+            "total_tokens": 113,
+            "prompt_tokens_details": {
+                "cached_tokens": 0
+            },
+            "neurons": 2.4026012420654297
+        }
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+}

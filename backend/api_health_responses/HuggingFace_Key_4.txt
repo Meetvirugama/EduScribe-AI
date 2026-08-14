@@ -1,0 +1,28 @@
+{
+    "service_tier": "default",
+    "id": "chatcmpl-RQhjW0buRKi2VD6aT0E2RCp2",
+    "object": "chat.completion",
+    "created": 1786722387,
+    "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "Machine Learning (ML) is a subset of Artificial Intelligence (AI) that enables systems to learn from data, identify patterns, and make decisions without being explicitly programmed. It involves training algorithms to improve their performance on a specific task, such as image recognition, natural language processing, or predictive modeling. Through ML, systems can adapt and evolve over time, improving their accuracy and effectiveness in real-world applications.",
+                "reasoning_content": null,
+                "name": null,
+                "tool_calls": null
+            },
+            "finish_reason": "stop",
+            "logprobs": null
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 25,
+        "total_tokens": 106,
+        "completion_tokens": 81,
+        "estimated_cost": 3.7399999999999998e-06,
+        "prompt_tokens_details": null
+    }
+}

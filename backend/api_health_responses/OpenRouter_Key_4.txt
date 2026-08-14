@@ -1,0 +1,54 @@
+{
+    "id": "gen-1786722307-jz1Ss1v00GGf1Q4yvnp9",
+    "object": "chat.completion",
+    "created": 1786722307,
+    "model": "nvidia/nemotron-nano-9b-v2:free",
+    "provider": "Nvidia",
+    "system_fingerprint": null,
+    "service_tier": null,
+    "choices": [
+        {
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "length",
+            "native_finish_reason": "length",
+            "message": {
+                "role": "assistant",
+                "content": null,
+                "refusal": null,
+                "reasoning": "Okay, the user asked me to explain Machine Learning in 2-3 sentences. Let me start by recalling what ML is. It's a part of artificial intelligence where computers learn from data. I should mention how it works without explicit programming. Maybe use an example like algorithms learning patterns from data to make predictions or decisions.\n\nWait, I need to keep it brief. So first sentence could be a definition: Machine Learning is a subset of AI where systems learn from data to improve performance on tasks",
+                "reasoning_details": [
+                    {
+                        "type": "reasoning.text",
+                        "text": "Okay, the user asked me to explain Machine Learning in 2-3 sentences. Let me start by recalling what ML is. It's a part of artificial intelligence where computers learn from data. I should mention how it works without explicit programming. Maybe use an example like algorithms learning patterns from data to make predictions or decisions.\n\nWait, I need to keep it brief. So first sentence could be a definition: Machine Learning is a subset of AI where systems learn from data to improve performance on tasks",
+                        "format": "unknown",
+                        "index": 0
+                    }
+                ]
+            }
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 27,
+        "completion_tokens": 100,
+        "total_tokens": 127,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+        },
+        "cost_details": {
+            "upstream_inference_cost": 0,
+            "upstream_inference_prompt_cost": 0,
+            "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 128,
+            "image_tokens": 0,
+            "audio_tokens": 0
+        }
+    }
+}

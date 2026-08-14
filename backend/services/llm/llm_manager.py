@@ -185,7 +185,12 @@ class LLMManager:
 
         # 5. Pipeline Stage: Execution Closure
         async def _call_provider(provider: str, model: str) -> dict[str, Any]:
-            api_key = self.key_manager.get_active_key(provider)
+            api_key = self.key_manager.get_active_key(provider, model)
+            if not api_key:
+                # Signal to the retry_manager that this provider is out of keys
+                from .retry_manager import ExhaustedKeysError
+                raise ExhaustedKeysError(f"No active keys available for {provider}/{model}")
+
             adapter = self.adapter_factory.get_adapter(provider)
             provider_kwargs = adapter.prepare_request(provider, model, api_key)
 
