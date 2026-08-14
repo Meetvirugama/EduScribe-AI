@@ -14,12 +14,10 @@ LLD Reference: §20 Fallback Strategy
                §20.4 Internal Workflow
 
 Fallback order (§20.3):
-    Tier 1: Gemini 2.5 Flash → Gemini 2.5 Flash Lite
-            DeepSeek V3 (OpenRouter :free) → Qwen3 235B (OpenRouter :free)
-    Tier 2: Cerebras/Llama-4-Scout → Cerebras/Qwen3-32B
-            Groq/Llama-3.3-70B → Groq/Qwen3-32B
-    Tier 3: Together AI (Llama-3.3-70B-Free) → SambaNova → Mistral Small 3.2
-    Tier 4: OpenRouter/free router → Groq/Llama-3.1-8B → Mistral/open-mistral-nemo
+    Tier 1 (Primary):    Gemini 2.5 Flash, Cohere Command-A-Plus
+    Tier 2 (Secondary):  Groq Llama-3.3-70B, Groq Qwen3-32B
+    Tier 3 (Tertiary):   Cohere Command-A, Cloudflare Kimi-k2.6, OpenRouter DeepSeek/Qwen3-235B
+    Tier 4 (Emergency):  OpenRouter Llama-3.3-70B/Gemma, Groq 8B, Cloudflare GPT-OSS
 
 Three-layer resilience architecture (LLD §21.3):
     1. API Key Rotation  — try all keys on current provider
@@ -37,6 +35,7 @@ from dataclasses import dataclass
 
 from tenacity import RetryError
 from .provider_stats import ProviderStats
+from .capabilities import TaskRequirements, get_model_capabilities
 
 logger = logging.getLogger(__name__)
 
@@ -177,8 +176,7 @@ class FallbackManager:
         retry_manager: Any,        # RetryManager instance
         preferred_provider: Optional[str] = None,
         preferred_model: Optional[str] = None,
-        required_vision: bool = False,
-        min_context_window: int = 0,
+        task_requirements: Optional[TaskRequirements] = None,
     ) -> Any:
         """
         Try each (provider, model) entry in FALLBACK_CHAIN in order,

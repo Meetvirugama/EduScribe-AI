@@ -18,6 +18,9 @@ class ErrorHandler:
         req_id = context.request_id
         task_val = context.task.value
 
+        if isinstance(exc, (ProviderTransientError, ProviderPermanentError)):
+            raise exc
+
         if isinstance(exc, litellm.RateLimitError):
             logger.warning(
                 f"LLM_REQUEST_FAILED | req_id={req_id} | task={task_val} | provider={provider} | model={model} | reason=RateLimitError (429)")

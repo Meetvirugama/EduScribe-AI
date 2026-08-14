@@ -23,9 +23,20 @@ LLD Reference: §15.1 The Four-Tier Waterfall
 
 import logging
 import time
-from typing import Optional
+from typing import Optional, List, Dict
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class QuotaPolicy:
+    provider: str
+    model: Optional[str] = None
+    requests_per_minute: Optional[int] = None
+    requests_per_day: Optional[int] = None
+    tokens_per_day: Optional[int] = None
+    metering_style: str = "request_token"
+    reset_timezone: Optional[str] = None
 
 # ---------------------------------------------------------------------------
 # Free-tier daily limits per provider, sourced from LLD §15.2 and §18.11.
@@ -33,69 +44,68 @@ logger = logging.getLogger(__name__)
 # format: (requests_per_minute, requests_per_day, tokens_per_day)
 # None means "unlimited" or "not separately capped".
 # ---------------------------------------------------------------------------
-PROVIDER_FREE_TIER_LIMITS: dict[str, dict] = {
-    # LLD §15.2: ~15 RPM (verify), ~1,500 RPD (verify)
-    # Key purposes: K1=NoteGen, K2=OCR+Vision, K3=HTML+Markdown, K4=Backup
-    "gemini": {
-        "rpm": 15,
-        "rpd": 1500,
-        "tokens_per_day": None,
-        "context_window": 1_048_576,
-    },
-    # LLD §15.2: 20 RPM, 50 RPD free / 1,000 RPD after $10 lifetime purchase
-    # Key purposes: K1=DeepSeekV3, K2=Qwen, K3=Llama, K4=Mistral, K5=Emergency
-    "openrouter": {
-        "rpm": 20,
-        "rpd": 50,       # update to 1000 after lifetime purchase
-        "tokens_per_day": None,
-        "context_window": 128_000,
-    },
-    # LLD §15.2: 30 RPM, 14,400 RPD
-    # Key purposes: K1=DeepSeek-R1(Math), K2=Llama33(Notes), K3=Qwen(Code),
-    #               K4=Whisper(Speech), K5=Backup
-    "groq": {
-        "rpm": 30,
-        "rpd": 14_400,
-        "tokens_per_day": None,
-        "context_window": 128_000,
-    },
-    # Hugging Face Inference API — free tier (rate-limited per model)
-    # Key purposes: K1=BGE-M3, K2=e5-Mistral, K3=Jina-via-HF, K4=Research
-    # Env vars: HF_API_KEY_1/2/3/4
-    "huggingface": {
-        "rpm": 30,
-        "rpd": None,
-        "tokens_per_day": None,
-        "context_window": 32_000,
-    },
-    # Jina AI — free tier: 1M tokens/month (primary RAG embedding pipeline)
-    # Transcript → Chunking → Jina → Qdrant
-    "jina": {
-        "rpm": 60,
-        "rpd": None,
-        "tokens_per_day": None,
-        "context_window": 8_192,
-    },
-    # Cohere — free tier: 20 RPM, 1,000 calls/month (trial key)
-    # Key purposes: K1=Reranking, K2=Embeddings, K3=Search, K4=Backup,
-    # K5=HighTraffic
-    "cohere": {
-        "rpm": 20,
-        "rpd": None,
-        "tokens_per_day": None,
-        "context_window": 128_000,
-    },
+# ---------------------------------------------------------------------------
+# Free-tier daily limits per provider, sourced from LLD §15.2 and §18.11.
+# These are approximate — always verify against the official dashboard.
+# ---------------------------------------------------------------------------
+PROVIDER_QUOTA_POLICIES: List[QuotaPolicy] = [
+    QuotaPolicy(
+        provider="groq",
+        model=None, # Default
+        requests_per_minute=30,
+        requests_per_day=14_400,
+        tokens_per_day=500_000,
+    ),
+    QuotaPolicy(
+        provider="groq",
+        model="llama-3.3-70b-versatile",
+        requests_per_minute=30,
+        requests_per_day=1_000,
+        tokens_per_day=100_000,
+    ),
+    QuotaPolicy(
+        provider="cloudflare",
+        metering_style="compute_credit"
+    ),
+    QuotaPolicy(
+        provider="jina",
+        metering_style="one_time_balance",
+        tokens_per_day=10_000_000
+    ),
+    QuotaPolicy(
+        provider="cohere",
+        metering_style="monthly_call_cap",
+        requests_per_minute=20,
+        requests_per_day=1_000
+    ),
+    QuotaPolicy(
+        provider="openrouter",
+        metering_style="flat_daily_cap",
+        requests_per_minute=20,
+        requests_per_day=50
+    ),
+    QuotaPolicy(
+        provider="gemini",
+        metering_style="request_token",
+        reset_timezone="America/Los_Angeles",
+        requests_per_minute=15,
+        requests_per_day=1_500,
+        tokens_per_day=None
+    )
+]
 
-    # Cloudflare Workers AI — free tier: 10,000 neurons/day
-    # Vision Router / Edge: K1=Llama, K2=BGE-embed, K3=Whisper, K4=EdgeChat,
-    # K5=Backup
-    "cloudflare": {
-        "rpm": 60,
-        "rpd": None,
-        "tokens_per_day": None,
-        "context_window": 32_000,
-    },
-}
+def get_quota_policy(provider: str, model: Optional[str] = None) -> QuotaPolicy:
+    best_match = None
+    default_match = None
+    
+    for policy in PROVIDER_QUOTA_POLICIES:
+        if policy.provider == provider:
+            if policy.model == model:
+                best_match = policy
+            if policy.model is None:
+                default_match = policy
+                
+    return best_match or default_match or QuotaPolicy(provider=provider)
 
 
 class QuotaTracker:
@@ -148,47 +158,21 @@ class QuotaTracker:
     # ---------------------------------------------------------------------------
 
     def has_quota(self, provider: str, model: Optional[str] = None) -> bool:
-        """
-        Return True if the provider (and optionally a specific model) has
-        remaining free-tier quota for today (both requests and tokens).
-
-        Used by llm_manager.py before making an LLM call to avoid sending
-        requests to an exhausted provider (§15.4 Internal Workflow).
-
-        Args:
-            provider: Provider name, e.g. "google", "groq".
-            model:    Optional LiteLLM model ID for finer-grained tracking.
-        """
-        limits = PROVIDER_FREE_TIER_LIMITS.get(provider)
-        if limits is None:
-            # Unknown provider — assume quota available
-            logger.warning(f"quota_tracker: Unrecognized provider '{provider}' requested. Assuming unlimited quota.")
-            return True
-
-        rpd_limit = limits.get("rpd")
-        tokens_limit = limits.get("tokens_per_day")
-
+        """Check if a provider/model currently has available quota."""
+        policy = get_quota_policy(provider, model)
         has = True
 
-        if rpd_limit is not None:
+        if policy.requests_per_day is not None:
             used_rpd = self._get_rpd_used(provider)
-            if used_rpd >= rpd_limit:
+            if used_rpd >= policy.requests_per_day:
                 has = False
-                logger.info(
-                    "quota_tracker: provider '%s' has exhausted RPD quota "
-                    "(%d / %d requests today)",
-                    provider, used_rpd, rpd_limit,
-                )
+                logger.info("quota_tracker: provider '%s' has exhausted RPD quota (%d / %d requests today)", provider, used_rpd, policy.requests_per_day)
 
-        if has and tokens_limit is not None:
+        if has and policy.tokens_per_day is not None:
             used_tokens = self._get_tokens_used(provider)
-            if used_tokens >= tokens_limit:
+            if used_tokens >= policy.tokens_per_day:
                 has = False
-                logger.info(
-                    "quota_tracker: provider '%s' has exhausted Token quota "
-                    "(%d / %d tokens today)",
-                    provider, used_tokens, tokens_limit,
-                )
+                logger.info("quota_tracker: provider '%s' has exhausted Token quota (%d / %d tokens today)", provider, used_tokens, policy.tokens_per_day)
 
         return has
 
@@ -221,9 +205,8 @@ class QuotaTracker:
         return {
             "provider": provider,
             "requests_today": self._get_rpd_used(provider),
-            "rpd_limit": limits.get("rpd"),
             "tokens_today": self._get_tokens_used(provider),
-            "token_limit": limits.get("tokens_per_day"),
+            "metering_style": limits.get("metering_style"),
             "has_quota": self.has_quota(provider),
         }
 
@@ -256,15 +239,27 @@ class QuotaTracker:
     def _token_key(self, provider: str) -> str:
         return f"quota:{provider}:tokens_today"
 
-    def _seconds_until_midnight_utc(self) -> int:
-        """Return seconds remaining until the next midnight UTC (quota reset)."""
-        now = time.gmtime()
-        remaining = (
-            (23 - now.tm_hour) * 3600
-            + (59 - now.tm_min) * 60
-            + (60 - now.tm_sec)
-        )
-        return max(remaining, 1)
+    def _seconds_until_midnight(self, provider: str) -> int:
+        """Return seconds remaining until the quota reset."""
+        import datetime
+        try:
+            import pytz
+            limits = PROVIDER_FREE_TIER_LIMITS.get(provider, {})
+            tz_name = limits.get("reset_timezone", "UTC")
+            tz = pytz.timezone(tz_name)
+            now = datetime.datetime.now(tz)
+            tomorrow = now + datetime.timedelta(days=1)
+            midnight = datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=tz)
+            return max(int((midnight - now).total_seconds()), 1)
+        except ImportError:
+            # Fallback to UTC math if pytz not installed
+            now = time.gmtime()
+            remaining = (
+                (23 - now.tm_hour) * 3600
+                + (59 - now.tm_min) * 60
+                + (60 - now.tm_sec)
+            )
+            return max(remaining, 1)
 
     def _get_rpd_used(self, provider: str) -> int:
         if self._redis:
@@ -291,7 +286,7 @@ class QuotaTracker:
                 pipe.incr(self._rpd_key(provider))
                 pipe.expire(
                     self._rpd_key(provider),
-                    self._seconds_until_midnight_utc())
+                    self._seconds_until_midnight(provider))
                 pipe.execute()
                 return
             except Exception:
@@ -307,7 +302,7 @@ class QuotaTracker:
                 pipe.incrby(self._token_key(provider), tokens)
                 pipe.expire(
                     self._token_key(provider),
-                    self._seconds_until_midnight_utc())
+                    self._seconds_until_midnight(provider))
                 pipe.execute()
                 return
             except Exception:

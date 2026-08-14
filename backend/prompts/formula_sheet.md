@@ -20,7 +20,7 @@ Output ONLY valid JSON matching this schema:
             "name": "Formula name (e.g. Newton's Second Law)",
             "expression": "F = ma",
             "variables": {"F": "Force", "m": "Mass", "a": "Acceleration"},
-            "context": "When and how to apply this formula",
+            "explanation": "When and how to apply this formula",
             "sources": [
                 {
                     "chunk_id": "video123_range_0",

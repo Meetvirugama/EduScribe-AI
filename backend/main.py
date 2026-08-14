@@ -169,6 +169,10 @@ async def lifespan(app: FastAPI):
     ]:
         os.makedirs(storage_dir, exist_ok=True)
 
+    # Validate LLM Configuration
+    from services.llm.startup_validator import StartupValidator
+    StartupValidator.validate()
+
     # Start nightly cleanup scheduler (runs at 02:00 every day)
     scheduler.add_job(
         cleanup_expired_videos,

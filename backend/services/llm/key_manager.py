@@ -65,8 +65,6 @@ class KeyManager:
             return False
         if provider == "openrouter" and not key.startswith("sk-or-"):
             return False
-        if provider in ("huggingface", "hf") and not key.startswith("hf_"):
-            return False
         return True
 
     def _load_keys(self) -> None:
@@ -93,10 +91,8 @@ class KeyManager:
         for provider in providers_found:
             loaded_meta: List[KeyMetadata] = []
 
-            # Special case for huggingface
-            env_prefix = "HUGGINGFACE" if provider in (
-                "huggingface", "hf") else provider.upper()
-            actual_provider = "huggingface" if provider == "hf" else provider
+            env_prefix = provider.upper()
+            actual_provider = provider
 
             # 1. Check plural comma-separated format
             plural_var = f"{env_prefix}_API_KEYS"

@@ -34,3 +34,9 @@ class ProviderPermanentError(Exception):
 
     LLD Reference: §19 Retry Strategy — Transient vs. Permanent Failures
     """
+
+class ModelOutputError(ProviderPermanentError):
+    """
+    Raised when the model's output cannot be parsed into JSON or fails schema validation.
+    Inherits from ProviderPermanentError to bypass retries and fail fast to the next fallback tier.
+    """

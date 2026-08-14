@@ -35,21 +35,6 @@ async def run():
     except Exception as e:
         print(f"Generate Failed: {e}")
 
-    # 2. Test stream generate
-    print("\n--- Testing Streaming ---")
-    try:
-        stream = llm.generate_stream(
-            task=TaskType.METADATA_EXTRACTION, 
-            messages=[{"role": "user", "content": "Count from 1 to 3."}],
-            override_model="groq/llama-3.1-8b-instant"
-        )
-        print("Stream output: ", end="")
-        async for chunk in stream:
-            content = chunk.choices[0].delta.content or ""
-            print(content, end="", flush=True)
-        print("\nStream Success!")
-    except Exception as e:
-        print(f"Stream Failed: {e}")
 
     # 3. Test Embedding Pipeline
     print("\n--- Testing Embedding Pipeline ---")

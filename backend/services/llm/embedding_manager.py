@@ -33,6 +33,7 @@ class EmbeddingManager:
 
         # Standard embedding fallback chain
         self.fallback_chain = [
+            {"provider": "jina", "model": "jina/jina-embeddings-v3"},
             {"provider": "gemini", "model": "gemini/text-embedding-004"},
             {"provider": "cohere", "model": "cohere/embed-english-v3.0"},
             {"provider": "cloudflare",

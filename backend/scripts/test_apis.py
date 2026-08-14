@@ -52,10 +52,10 @@ async def test_all():
             account_id = km.get_active_account_id(provider, api_key)
             kwargs = {}
             if account_id:
-                kwargs["cloudflare_account_id"] = account_id
+                kwargs["api_base"] = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/"
                 
             key_preview = api_key[:10] + "..." if api_key else "None"
-            print(f"  Testing Key {i+1}/{keys_count} ({key_preview}): ", end="", flush=True)
+            print(f"  Testing Key {i+1}/{keys_count} ({key_preview}) [Account ID: {account_id}]: ", end="", flush=True)
             
             try:
                 response = await litellm.acompletion(

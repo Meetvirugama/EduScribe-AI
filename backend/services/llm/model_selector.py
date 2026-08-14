@@ -85,6 +85,7 @@ class ModelConfig:
     emergency: str
     max_tokens: int
     temperature: Optional[float] = None
+    validation_policy: str = "STRICT"  # "STRICT" or "DEGRADE"
 
 
 # ---------------------------------------------------------------------------
@@ -200,7 +201,7 @@ ROUTING_TABLE: dict[TaskType, ModelConfig] = {
     TaskType.FORMULA_EXPLANATION: ModelConfig(
         # Code & Math — explain mathematical formulas
         primary="groq/llama-3.3-70b-versatile",
-        secondary="gemini/gemini-1.5-flash",
+        secondary="gemini/gemini-2.5-flash",
         emergency="cloudflare/meta/llama-3.1-8b-instruct",
         temperature=0.2,
         max_tokens=8192,

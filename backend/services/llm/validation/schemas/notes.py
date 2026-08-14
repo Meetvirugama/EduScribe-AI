@@ -198,6 +198,23 @@ class ApplicationsOutput(BaseLLMOutput):
 
 
 # ---------------------------------------------------------------------------
+# Phase 6 — Examples (ExampleService)
+# ---------------------------------------------------------------------------
+
+class ExampleItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: str
+    problem: str
+    explanation: str = ""
+    solution: str = ""
+    topic: str = ""
+    sources: List[SourceReferenceItem] = Field(default_factory=list)
+
+
+class ExamplesOutput(BaseLLMOutput):
+    examples: List[ExampleItem] = Field(default_factory=list)
+
+# ---------------------------------------------------------------------------
 # Phase 7 — Revision Sheet
 # ---------------------------------------------------------------------------
 

@@ -17,6 +17,11 @@ class BaseLLMOutput(BaseModel):
     total_tokens: int = Field(default=0)
     schema_version: str = Field(default="1.0")
     created_at: float = Field(default_factory=time.time)
+    
+    # Fallback and Reliability
+    attempt_count: int = Field(default=1)
+    fallback_count: int = Field(default=0)
+    attempt_history: list[dict] = Field(default_factory=list)
 
     # Confidence score (optional, overridable by subclasses)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)

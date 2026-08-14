@@ -12,7 +12,8 @@ from .embedding_manager import EmbeddingManager
 from .providers.adapters import ProviderAdapterFactory
 from .error_handler import ErrorHandler
 from .pipeline import RequestContext, CapabilityDetector, RequestCache, MetricsRecorder
-from .base_provider import ProviderTransientError
+from .base_provider import ProviderTransientError, ModelOutputError
+from .validation.schemas.core import GenericTextOutput
 from .validation import (
     RawResponseParser,
     JSONExtractor,
@@ -21,6 +22,7 @@ from .validation import (
     JSONExtractionError,
 )
 from pydantic import ValidationError
+from .capabilities import TaskRequirements
 from .fallback_manager import FallbackManager
 from .retry_manager import RetryManager
 from .quota_tracker import QuotaTracker
@@ -228,17 +230,11 @@ class LLMManager:
                     # Attempt to extract JSON (will repair if needed)
                     json_data = JSONExtractor.extract_and_repair(
                         parsed["content"])
-                except JSONExtractionError as e:
-                    logger.warning(
-                        f"LLM_JSON_ERROR | req_id={context.request_id} | provider={provider} | err={e}")
-                    raise ProviderTransientError(str(e)) from e
-
-                try:
+                    
                     # Validate against strict Pydantic schema
                     validated_obj = schema_cls.model_validate(json_data)
 
-                    # Inject metadata (since schema inherits from BaseLLMOutput)
-                    # Use model_copy(update=...) for frozen models
+                    # Inject metadata
                     if hasattr(validated_obj, "model_copy"):
                         validated_obj = validated_obj.model_copy(update={
                             "provider": provider,
@@ -248,11 +244,28 @@ class LLMManager:
                         })
 
                     return validated_obj
-                except ValidationError as e:
+                    
+                except (JSONExtractionError, ValidationError) as e:
+                    if isinstance(e, JSONExtractionError):
+                        err_type = "LLM_JSON_ERROR"
+                    else:
+                        err_type = "LLM_VALIDATION_ERROR"
+                        
                     logger.warning(
-                        f"LLM_VALIDATION_ERROR | req_id={context.request_id} | provider={provider} | err={e}")
-                    raise ProviderTransientError(
-                        f"Pydantic Validation Error: {e}") from e
+                        f"{err_type} | req_id={context.request_id} | provider={provider} | err={e}")
+                        
+                    if config.validation_policy == "DEGRADE":
+                        logger.info(f"validation_policy=DEGRADE | req_id={context.request_id} | Falling back to GenericTextOutput")
+                        return GenericTextOutput(
+                            text=parsed["content"],
+                            provider=provider,
+                            model=model,
+                            latency=latency,
+                            total_tokens=usage.get("total_tokens", 0)
+                        )
+                    else:
+                        # STRICT policy -> Permanent error, triggers fallback immediately
+                        raise ModelOutputError(f"{err_type}: {e}") from e
 
             except ResponseParseError as exc:
                 logger.warning(
@@ -265,6 +278,16 @@ class LLMManager:
                 raise  # ErrorHandler always raises the mapped exception
 
         # 8. Pipeline Stage: Fallback Orchestration
+        schema_cls = SchemaRegistry.get_schema(task)
+        is_structured = schema_cls.__name__ != "GenericTextOutput"
+        
+        reqs = TaskRequirements(
+            structured_output=is_structured,
+            requires_vision=context.capabilities.requires_vision,
+            min_context_window=context.min_context_window
+        )
+
+        # 8. Pipeline Stage: Fallback Orchestration
         final_response = await self.fallback_manager.execute_with_fallback(
             call_fn=_call_provider,
             quota_tracker=self.quota_tracker,
@@ -272,8 +295,7 @@ class LLMManager:
             retry_manager=self.retry_manager,
             preferred_provider=starting_provider,
             preferred_model=starting_model,
-            required_vision=context.capabilities.requires_vision,
-            min_context_window=context.min_context_window,
+            task_requirements=reqs,
         )
 
         # 9. Pipeline Stage: Cache the result

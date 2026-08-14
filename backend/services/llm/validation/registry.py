@@ -33,6 +33,11 @@ from .schemas.notes import (
     QAOutput,
     RevisionSheetOutput,
     TopicNoteWritingOutput,
+    ExamplesOutput,
+    FormulasOutput,
+    InterviewOutput,
+    KeyPointsOutput,
+    RelationshipsOutput,
 )
 
 
@@ -67,6 +72,11 @@ class SchemaRegistry:
 
         # ── Phase 3 — Knowledge enrichment schemas ───────────────────────────
         TaskType.DEFINITION_GENERATION: DefinitionsOutput,
+        TaskType.EXAMPLE_EXTRACTION: ExamplesOutput,
+        TaskType.FORMULA_EXPLANATION: FormulasOutput,
+        TaskType.INTERVIEW_PERSPECTIVE: InterviewOutput,
+        TaskType.KEY_POINTS_EXTRACTION: KeyPointsOutput,
+        TaskType.RELATIONSHIP_EXTRACTION: RelationshipsOutput,
 
         # ── Phase 5 – Assessment & support schemas ───────────────────────────
 
